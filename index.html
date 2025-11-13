@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Habit App • Prototyp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg:#fff;
+      --fg:#000;
+      --accent-purple:#a855f7;
+      --accent-red:#ef4444;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #app {
+      position: relative;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* Views */
+
+    .view {
+      position: absolute;
+      inset: 0;
+      padding: 1.5rem 1.25rem 6rem;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+      background: var(--bg);
+    }
+
+    .view.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .primary-btn {
+      width: 100%;
+      border: none;
+      background: var(--fg);
+      color: var(--bg);
+      padding: 1rem;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .primary-btn:active {
+      transform: scale(0.98);
+    }
+
+    .secondary-btn {
+      width: 100%;
+      border: 1px solid var(--fg);
+      background: var(--bg);
+      padding: 0.8rem;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .bottom-button-wrapper {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 1.5rem;
+      padding: 0 1.25rem;
+    }
+
+    /* LOGIN */
+
+    .center-header {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      gap: 0.8rem;
+    }
+
+    .app-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .app-subtitle {
+      font-size: 0.95rem;
+      opacity: 0.7;
+      max-width: 22rem;
+    }
+
+    /* SETUP */
+
+    .setup-progress {
+      display: flex;
+      justify-content: center;
+      gap: 0.6rem;
+      margin-top: 0.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .setup-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: 1px solid var(--fg);
+      background: var(--bg);
+    }
+
+    .setup-dot.active {
+      background: var(--fg);
+    }
+
+    .setup-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 1.8rem;
+      margin-top: 0.3rem;
+    }
+
+    .setup-title-input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-size: 2.2rem;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .setup-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .icon-label {
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    select,
+    input[type="number"],
+    .setup-subtask-input {
+      flex: 1;
+      padding: 0.6rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid var(--fg);
+      background: var(--bg);
+      font-size: 0.9rem;
+    }
+
+    .icon-picker {
+      display: none;
+      border: 1px solid var(--fg);
+      background: var(--bg);
+      padding: 0.8rem;
+      border-radius: 1rem;
+      margin-top: 0.4rem;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .icon-choice {
+      border: 1px solid var(--fg);
+      padding: 0.5rem;
+      border-radius: 0.6rem;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    .icon-choice.active {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    #subtasksBuilder {
+      margin-left: 2.4rem;
+      display: none;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    #addSubtaskBtn {
+      align-self: flex-start;
+      padding: 0.4rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+    }
+
+    #subtaskList {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.3rem;
+    }
+
+    /* Schedule controls */
+
+    .schedule-mode-toggle {
+      display: flex;
+      gap: 0.4rem;
+      flex: 1;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 0.45rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid var(--fg);
+      background: var(--bg);
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .mode-btn.active {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    .days-picker {
+      display: none;
+      margin-left: 2.4rem;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      margin-top: 0.3rem;
+    }
+
+    .day-pill {
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid var(--fg);
+      font-size: 0.8rem;
+      background: var(--bg);
+      cursor: pointer;
+    }
+
+    .day-pill.active {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    #countWrapper {
+      margin-top: 0.4rem;
+    }
+
+    /* MAIN */
+
+    .main-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .main-header h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .progress-row {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      align-items: center;
+      gap: 0.4rem;
+      margin: 0.7rem 0;
+    }
+
+    .username-label {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .progress-track {
+      position: relative;
+      width: 100%;
+      height: 0.85rem;
+    }
+
+    .progress-fill {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+    }
+
+    .progress-icon {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      margin-left: 4px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.55rem;
+      border: 1px solid var(--fg);
+      border-radius: 1rem;
+      text-align: center;
+      background: var(--bg);
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .tab-btn.active {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    /* HABIT CARDS */
+
+    .habits-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      overflow-y: auto;
+      padding-bottom: 4rem;
+    }
+
+    .habit-card {
+      background: var(--bg);
+      border: 1px solid rgba(0, 0, 0, 0.25);
+      border-radius: 1.4rem;
+      padding: 0.8rem 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .habit-card:active {
+      transform: scale(0.98);
+    }
+
+    .habit-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 42px;
+      gap: 1rem;
+    }
+
+    .habit-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .habit-icon i {
+      width: 28px;
+      height: 28px;
+      display: block;
+    }
+
+    /* Neuer Counter unter dem Icon */
+    .habit-counter {
+      font-size: 0.75rem;
+      text-align: center;
+      margin-top: 0.25rem;
+      opacity: 0.7;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .habit-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.15rem;
+      padding-left: 0.2rem;
+    }
+
+    .habit-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .habit-action {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-left: auto;
+    }
+
+    .habit-action i {
+      width: 26px;
+      height: 26px;
+    }
+
+    .habit-expand {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      padding-left: calc(28px + 1.2rem);
+      padding-right: 0.6rem;
+      line-height: 1.35;
+      font-size: 0.85rem;
+      color: #444;
+      transform: translateY(-2px);
+      transition:
+        max-height 0.28s ease,
+        opacity 0.22s ease,
+        transform 0.22s ease,
+        margin-top 0.22s ease;
+    }
+
+    .habit-expand.active {
+      max-height: 400px;
+      opacity: 1;
+      transform: translateY(0);
+      margin-top: 0.45rem;
+    }
+
+    .habit-timer {
+      padding: 0.3rem 0.55rem;
+      font-size: 0.86rem;
+      border: 1px solid rgba(0,0,0,0.25);
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+      margin-left: auto;
+    }
+
+    .subtask-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-top: 0.2rem;
+    }
+
+    .subtask-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+
+    .subtask-check {
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .subtask-check i {
+      width: 18px;
+      height: 18px;
+    }
+
+    .subtask-title {
+      font-size: 0.85rem;
+    }
+
+    @keyframes icon-pop {
+      0% { transform: scale(1); }
+      50%{ transform: scale(1.25); }
+      100%{ transform: scale(1); }
+    }
+
+    .subtask-check.morphing {
+      animation: icon-pop 0.18s ease;
+    }
+
+    @keyframes pop-out {
+      0% { transform: scale(1); opacity: 1; }
+      30%{ transform: scale(1.05); }
+      100%{ transform: scale(0.4); opacity: 0; }
+    }
+
+    .pop-out {
+      animation: pop-out 0.22s ease-out forwards;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem 1rem;
+      opacity: 0.9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .empty-state-main {
+      font-weight: 600;
+      margin-top: 0.2rem;
+    }
+
+    .location-section {
+      margin-top: 1.5rem;
+      border-top: 1px solid #e5e5e5;
+      padding-top: 1rem;
+    }
+
+    .location-output {
+      font-size: 0.8rem;
+      opacity: 0.8;
+      margin-top: 0.4rem;
+    }
+  </style>
+</head>
+
+<body>
+<div id="app">
+
+  <!-- LOGIN -->
+  <section id="loginView" class="view active">
+    <div class="center-header">
+      <h1 class="app-title">Habit App</h1>
+      <p class="app-subtitle">Starte deine drei Ziele.</p>
+    </div>
+    <div class="bottom-button-wrapper">
+      <button class="primary-btn" id="goSetup">Weiter</button>
+    </div>
+  </section>
+
+  <!-- SETUP -->
+  <section id="setupView" class="view">
+
+    <div class="setup-progress">
+      <div class="setup-dot"></div>
+      <div class="setup-dot"></div>
+      <div class="setup-dot"></div>
+    </div>
+
+    <div id="setupContainer" class="setup-inner">
+      <input id="setupTitle" class="setup-title-input" placeholder="Habit-Titel" />
+
+      <div class="setup-row">
+        <div class="icon-label"><i data-lucide="toggle-right"></i></div>
+        <select id="setupType">
+          <option value="standard">Standard</option>
+          <option value="qr">QR Code</option>
+          <option value="timer">Timer</option>
+          <option value="location">Standort</option>
+        </select>
+      </div>
+
+      <div class="setup-row" id="minutesWrapper">
+        <div class="icon-label"><i data-lucide="clock"></i></div>
+        <input id="setupMinutes" type="number" min="1" max="180" value="5" />
+      </div>
+
+      <!-- Schedule mode -->
+      <div class="setup-row">
+        <div class="icon-label"><i data-lucide="calendar"></i></div>
+        <div class="schedule-mode-toggle">
+          <button class="mode-btn active" data-mode="days">Tage</button>
+          <button class="mode-btn" data-mode="count">x/Woche</button>
+        </div>
+      </div>
+
+      <div id="daysPicker" class="days-picker">
+        <button class="day-pill" data-day="1">Mo</button>
+        <button class="day-pill" data-day="2">Di</button>
+        <button class="day-pill" data-day="3">Mi</button>
+        <button class="day-pill" data-day="4">Do</button>
+        <button class="day-pill" data-day="5">Fr</button>
+        <button class="day-pill" data-day="6">Sa</button>
+        <button class="day-pill" data-day="7">So</button>
+      </div>
+
+      <div class="setup-row" id="countWrapper" style="display:none;">
+        <div class="icon-label"><i data-lucide="hash"></i></div>
+        <input id="weeklyTargetInput" type="number" min="1" max="14" value="3" />
+      </div>
+
+      <div>
+        <div class="icon-label" style="margin-bottom:0.4rem;"><i data-lucide="star"></i></div>
+        <button id="setupIconBtn" class="primary-btn"
+          style="padding:0.7rem 1rem;font-size:0.9rem;">Icon wählen</button>
+        <div id="setupIconPicker" class="icon-picker"></div>
+      </div>
+
+      <div class="setup-row">
+        <div class="icon-label"><i data-lucide="list"></i></div>
+        <label style="flex:1;display:flex;align-items:center;gap:.5rem;font-size:.9rem;">
+          <input id="subtasksToggle" type="checkbox" />
+          Unteraufgaben aktivieren
+        </label>
+      </div>
+
+      <div id="subtasksBuilder">
+        <button id="addSubtaskBtn" class="secondary-btn">Unteraufgabe hinzufügen</button>
+        <div id="subtaskList"></div>
+      </div>
+
+      <div class="bottom-button-wrapper">
+        <button class="primary-btn" id="setupNextBtn">Weiter</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN -->
+  <section id="mainView" class="view">
+
+    <header class="main-header">
+      <h2>WOCHENSTREAK 1</h2>
+    </header>
+
+    <div class="progress-row">
+      <div class="username-label">JP</div>
+      <div class="progress-track">
+        <div class="progress-fill" style="background:var(--accent-purple);width:70%;"></div>
+        <div class="progress-icon" style="left:74%;">
+          <i data-lucide="trophy"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-row">
+      <div class="username-label">Giulia</div>
+      <div class="progress-track">
+        <div class="progress-fill" style="background:var(--accent-red);width:30%;"></div>
+        <div class="progress-icon" style="left:34%;">
+          <i data-lucide="snail"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab-btn active" data-tab="all">Alle</div>
+      <div class="tab-btn" data-tab="finish">Abschließbar</div>
+    </div>
+
+    <div id="habitList" class="habits-list"></div>
+
+    <section class="location-section">
+      <button id="locationBtn" class="secondary-btn">Standort abfragen</button>
+      <div id="locationOutput" class="location-output">
+        Noch kein Standort abgefragt.
+      </div>
+    </section>
+
+  </section>
+
+</div>
+
+<script>
+  const loginView = document.getElementById("loginView");
+  const setupView = document.getElementById("setupView");
+  const mainView  = document.getElementById("mainView");
+
+  const setupContainer = document.getElementById("setupContainer");
+  const setupTitle     = document.getElementById("setupTitle");
+  const setupType      = document.getElementById("setupType");
+  const setupMinutes   = document.getElementById("setupMinutes");
+  const minutesWrapper = document.getElementById("minutesWrapper");
+  const setupIconBtn   = document.getElementById("setupIconBtn");
+  const setupIconPicker= document.getElementById("setupIconPicker");
+  const setupNextBtn   = document.getElementById("setupNextBtn");
+
+  const scheduleModeButtons = document.querySelectorAll(".mode-btn");
+  const daysPicker          = document.getElementById("daysPicker");
+  const dayPills            = document.querySelectorAll(".day-pill");
+  const weeklyTargetInput   = document.getElementById("weeklyTargetInput");
+  const countWrapper        = document.getElementById("countWrapper");
+
+  const subtasksToggle   = document.getElementById("subtasksToggle");
+  const subtasksBuilder  = document.getElementById("subtasksBuilder");
+  const addSubtaskBtn    = document.getElementById("addSubtaskBtn");
+  const subtaskListSetup = document.getElementById("subtaskList");
+
+  const habitList      = document.getElementById("habitList");
+  const locationBtn    = document.getElementById("locationBtn");
+  const locationOutput = document.getElementById("locationOutput");
+
+  const icons = ["map-pin","timer","flag","heart","dumbbell","book-open"];
+  const motivationMessages = [
+    "Du warst heute stark.",
+    "Genau so geht’s.",
+    "Wieder ein kleiner Sieg.",
+    "Heute hast du geliefert.",
+    "Das war klar und fokussiert.",
+    "Dein zukünftiges Ich dankt dir.",
+    "Das war diszipliniert.",
+    "Du gehst den richtigen Weg.",
+    "Mehr brauchst du heute nicht.",
+    "Das reicht. Gut gemacht."
+  ];
+
+  function getTodayDayIndex() {
+    const d = new Date();
+    return ((d.getDay() + 6) % 7) + 1;
+  }
+
+  function getWeekId(date) {
+    const d = new Date(date);
+    const day = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - day);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${dd}`;
+  }
+
+  function ensureWeekState(h) {
+    const currentWeek = getWeekId(new Date());
+    if (!h.weekId || h.weekId !== currentWeek) {
+      h.weekId = currentWeek;
+      h.weeklyProgress = 0;
+      h.completedDays  = [];
+      h.qrVerified     = false;
+      h.timerRunning   = false;
+      h.timerFinished  = false;
+      h.remainingSeconds = 0;
+    }
+  }
+
+  function isHabitDoneForWeek(h) {
+    if (h.scheduleMode === "days") {
+      if (!h.days || !h.days.length) return false;
+      if (!h.completedDays) h.completedDays = [];
+      return h.days.every(d => h.completedDays.includes(d));
+    } else {
+      const target = h.weeklyTarget || 1;
+      const progress = h.weeklyProgress || 0;
+      return progress >= target;
+    }
+  }
+
+  function isHabitActionableToday(h, todayIdx) {
+    if (h.scheduleMode === "days") {
+      if (!h.days || !h.days.length) return true;
+      if (!h.days.includes(todayIdx)) return false;
+      if (!h.completedDays) h.completedDays = [];
+      return !h.completedDays.includes(todayIdx);
+    } else {
+      const target   = h.weeklyTarget || 1;
+      const progress = h.weeklyProgress || 0;
+      return progress < target;
+    }
+  }
+
+  let habits = [
+    {title:"",type:"standard",icon:"map-pin",minutes:5,
+     done:false,timerRunning:false,timerFinished:false,remainingSeconds:0,
+     expanded:false,subtasksEnabled:false,subtasks:[],
+     qrVerified:false,
+     scheduleMode:"days",days:[1,2,3,4,5],weeklyTarget:5,weeklyProgress:0,
+     completedDays:[],weekId:null},
+
+    {title:"",type:"standard",icon:"map-pin",minutes:5,
+     done:false,timerRunning:false,timerFinished:false,remainingSeconds:0,
+     expanded:false,subtasksEnabled:false,subtasks:[],
+     qrVerified:false,
+     scheduleMode:"days",days:[1,3,5],weeklyTarget:3,weeklyProgress:0,
+     completedDays:[],weekId:null},
+
+    {title:"",type:"standard",icon:"map-pin",minutes:5,
+     done:false,timerRunning:false,timerFinished:false,remainingSeconds:0,
+     expanded:false,subtasksEnabled:false,subtasks:[],
+     qrVerified:false,
+     scheduleMode:"count",days:[],weeklyTarget:3,weeklyProgress:0,
+     completedDays:[],weekId:null},
+  ];
+
+  let timers      = [null,null,null];
+  let currentStep = 0;
+  let currentMode = "all";
+
+  function morphIconSimple(el) {
+    if (!el) return;
+    el.classList.remove("morphing");
+    void el.offsetWidth;
+    el.classList.add("morphing");
+  }
+
+  document.getElementById("goSetup").onclick = () => {
+    loginView.classList.remove("active");
+    setupView.classList.add("active");
+    renderSetup(true);
+  };
+
+  function updateScheduleUI(mode, h) {
+    scheduleModeButtons.forEach(btn =>
+      btn.classList.toggle("active", btn.dataset.mode === mode)
+    );
+    daysPicker.style.display  = mode === "days"  ? "flex" : "none";
+    countWrapper.style.display= mode === "count" ? "flex" : "none";
+
+    if (mode === "days") {
+      if (!h.days || !h.days.length) {
+        h.days = [1,2,3,4,5];
+      }
+      dayPills.forEach(pill => {
+        const d = parseInt(pill.dataset.day,10);
+        pill.classList.toggle("active", h.days.includes(d));
+      });
+    } else {
+      weeklyTargetInput.value = h.weeklyTarget || 3;
+    }
+  }
+
+  function renderSetup(withAnimation) {
+    document.querySelectorAll(".setup-dot").forEach((d,i) =>
+      d.classList.toggle("active", i <= currentStep)
+    );
+
+    const h = habits[currentStep];
+
+    setupTitle.value   = h.title || "";
+    setupType.value    = h.type || "standard";
+    setupMinutes.value = h.minutes || 5;
+    minutesWrapper.style.display = setupType.value === "timer" ? "flex" : "none";
+
+    subtasksToggle.checked = h.subtasksEnabled;
+    subtasksBuilder.style.display = h.subtasksEnabled ? "flex" : "none";
+
+    subtaskListSetup.innerHTML = "";
+    if (h.subtasksEnabled && h.subtasks.length) {
+      h.subtasks.forEach(st => {
+        const inp = document.createElement("input");
+        inp.type = "text";
+        inp.className = "setup-subtask-input";
+        inp.value = st.title;
+        subtaskListSetup.appendChild(inp);
+      });
+    }
+
+    const mode = h.scheduleMode || "days";
+    h.scheduleMode = mode;
+    updateScheduleUI(mode, h);
+
+    createIconPicker();
+
+    if (withAnimation) {
+      setupContainer.classList.remove("setup-animate");
+      void setupContainer.offsetWidth;
+      setupContainer.classList.add("setup-animate");
+    }
+  }
+
+  setupType.onchange = () => {
+    minutesWrapper.style.display = setupType.value === "timer" ? "flex" : "none";
+  };
+
+  scheduleModeButtons.forEach(btn => {
+    btn.onclick = () => {
+      const mode = btn.dataset.mode;
+      const h = habits[currentStep];
+      h.scheduleMode = mode;
+      updateScheduleUI(mode, h);
+    };
+  });
+
+  dayPills.forEach(pill => {
+    pill.onclick = () => {
+      pill.classList.toggle("active");
+    };
+  });
+
+  setupIconBtn.onclick = () => {
+    setupIconPicker.style.display =
+      setupIconPicker.style.display === "flex" ? "none" : "flex";
+    setupIconPicker.style.flexWrap = "wrap";
+    createIconPicker();
+  };
+
+  function createIconPicker() {
+    setupIconPicker.innerHTML = "";
+    icons.forEach(icon => {
+      const el = document.createElement("div");
+      el.className = "icon-choice";
+      if (habits[currentStep].icon === icon) el.classList.add("active");
+      el.innerHTML = `<i data-lucide="${icon}"></i>`;
+      el.onclick = () => {
+        habits[currentStep].icon = icon;
+        createIconPicker();
+        lucide.createIcons();
+      };
+      setupIconPicker.appendChild(el);
+    });
+    lucide.createIcons();
+  }
+
+  subtasksToggle.onchange = () => {
+    subtasksBuilder.style.display = subtasksToggle.checked ? "flex" : "none";
+  };
+
+  addSubtaskBtn.onclick = () => {
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.placeholder = "Unteraufgabe";
+    inp.className = "setup-subtask-input";
+    subtaskListSetup.appendChild(inp);
+  };
+
+  setupNextBtn.onclick = () => {
+    const h = habits[currentStep];
+    h.title   = setupTitle.value.trim() || "Unbenannt";
+    h.type    = setupType.value;
+    h.minutes = h.type === "timer"
+      ? Math.max(1, parseInt(setupMinutes.value || "5", 10))
+      : null;
+    h.done            = false;
+    h.timerRunning    = false;
+    h.timerFinished   = false;
+    h.remainingSeconds= 0;
+    h.expanded        = false;
+    h.qrVerified      = false;
+
+    const mode = document.querySelector(".mode-btn.active")?.dataset.mode || "days";
+    h.scheduleMode = mode;
+
+    if (mode === "days") {
+      const selectedDays = [...document.querySelectorAll(".day-pill.active")]
+        .map(p => parseInt(p.dataset.day,10));
+      h.days = selectedDays.length ? selectedDays : [1,2,3,4,5];
+      h.weeklyTarget = h.days.length;
+      h.completedDays = [];
+      h.weeklyProgress = 0;
+    } else {
+      const target = Math.max(1, parseInt(weeklyTargetInput.value || "1",10));
+      h.weeklyTarget = target;
+      h.days = [];
+      h.completedDays = [];
+      h.weeklyProgress = 0;
+    }
+
+    h.subtasksEnabled = subtasksToggle.checked;
+    h.subtasks = h.subtasksEnabled
+      ? [...subtaskListSetup.querySelectorAll("input")].map(inp => ({
+          title: inp.value.trim() || "Teilaufgabe",
+          done: false
+        }))
+      : [];
+
+    h.weekId = getWeekId(new Date());
+
+    if (currentStep < 2) {
+      currentStep++;
+      renderSetup(true);
+    } else {
+      setupView.classList.remove("active");
+      mainView.classList.add("active");
+      renderHabits(false);
+      lucide.createIcons();
+    }
+  };
+
+  function formatSeconds(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return m.toString().padStart(2,"0") + ":" + s.toString().padStart(2,"0");
+  }
+
+  function renderHabits(animated) {
+    habitList.innerHTML = "";
+
+    habits.forEach(ensureWeekState);
+
+    const todayIdx = getTodayDayIndex();
+
+    let list = habits.filter(h => !isHabitDoneForWeek(h));
+
+    if (currentMode === "finish") {
+      list = list.filter(h => isHabitActionableToday(h, todayIdx));
+    }
+
+    if (list.length === 0) {
+      const msg = motivationMessages[Math.floor(Math.random() * motivationMessages.length)];
+      habitList.innerHTML = `
+        <div class="empty-state">
+          <i data-lucide="party-popper"></i>
+          <div class="empty-state-main">Alles geschafft für diese Woche!</div>
+          <div>${msg}</div>
+        </div>
+      `;
+      lucide.createIcons();
+      return;
+    }
+
+    list.forEach(h => {
+      const habitIndex = habits.indexOf(h);
+
+      const card = document.createElement("div");
+      card.className = "habit-card";
+
+      const row = document.createElement("div");
+      row.className = "habit-row";
+
+      /* =============================
+         ICON + COUNTER (NEU)
+      ============================== */
+
+      const counterText =
+        h.scheduleMode === "days"
+          ? `${h.completedDays.length}/${h.days.length}`
+          : `${h.weeklyProgress}/${h.weeklyTarget}`;
+
+      row.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center;">
+          <div class="habit-icon"><i data-lucide="${h.icon}"></i></div>
+          <div class="habit-counter">${counterText}</div>
+        </div>
+        <div class="habit-content">
+          <div class="habit-title">${h.title}</div>
+        </div>
+      `;
+
+      const action = document.createElement("div");
+      action.className = "habit-action";
+
+      if (h.type === "timer") {
+        if (h.timerRunning) {
+          const t = document.createElement("div");
+          t.className = "habit-timer";
+          t.textContent = formatSeconds(h.remainingSeconds);
+          row.appendChild(t);
+        } else if (h.timerFinished) {
+          action.textContent = "✓";
+          action.onclick = (e) => {
+            e.stopPropagation();
+            completeHabit(h, card);
+          };
+          row.appendChild(action);
+        } else {
+          action.innerHTML = `<i data-lucide="play"></i>`;
+          action.onclick = (e) => {
+            e.stopPropagation();
+            startTimer(habitIndex);
+          };
+          row.appendChild(action);
+        }
+
+      } else if (h.type === "standard") {
+        action.textContent = "✓";
+        action.onclick = (e) => {
+          e.stopPropagation();
+          completeHabit(h, card);
+        };
+        row.appendChild(action);
+
+      } else if (h.type === "qr") {
+        if (!h.qrVerified) {
+          action.innerHTML = `<i data-lucide="scan"></i>`;
+          action.onclick = (e) => {
+            e.stopPropagation();
+            simulateQRScan(h);
+          };
+          row.appendChild(action);
+        } else {
+          action.textContent = "✓";
+          action.onclick = (e) => {
+            e.stopPropagation();
+            completeHabit(h, card);
+          };
+          row.appendChild(action);
+        }
+
+      } else if (h.type === "location") {
+        action.textContent = "✓";
+        action.onclick = (e) => {
+          e.stopPropagation();
+          completeHabit(h, card);
+        };
+        row.appendChild(action);
+
+      } else {
+        action.textContent = "✓";
+        action.onclick = (e) => {
+          e.stopPropagation();
+          completeHabit(h, card);
+        };
+        row.appendChild(action);
+      }
+
+      const expand = document.createElement("div");
+      expand.className = "habit-expand";
+
+      if (h.subtasksEnabled && h.subtasks.length) {
+        expand.innerHTML = `
+          <div>Unteraufgaben:</div>
+          <div class="subtask-wrapper">
+            ${h.subtasks.map((st, si) => `
+              <div class="subtask-row" data-hi="${habitIndex}" data-si="${si}">
+                <span class="subtask-check">
+                  <i data-lucide="${st.done ? "circle-check" : "circle"}"></i>
+                </span>
+                <span class="subtask-title" style="opacity:${st.done ? 0.5 : 1};">
+                  ${st.title}
+                </span>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      } else {
+        let infoText = "";
+        if (h.scheduleMode === "days") {
+          const map = ["Mo","Di","Mi","Do","Fr","Sa","So"];
+          const labels = (h.days || []).sort((a,b)=>a-b).map(d => map[d-1]).join(", ");
+          infoText = labels ? `Aktiv an: ${labels}` : "Tage der Woche nicht gesetzt";
+        } else {
+          infoText = `${h.weeklyTarget || 1}× pro Woche`;
+        }
+        expand.innerHTML = `<div>${infoText}</div>`;
+      }
+
+      if (h.expanded) {
+        expand.classList.add("active");
+      }
+
+      card.onclick = (e) => {
+        if (e.target === action || e.target.closest(".habit-action")) return;
+
+        habits.forEach(other => {
+          if (other !== h) other.expanded = false;
+        });
+
+        h.expanded = !h.expanded;
+        renderHabits(false);
+      };
+
+      card.appendChild(row);
+      card.appendChild(expand);
+      habitList.appendChild(card);
+    });
+
+    habitList.querySelectorAll(".subtask-row").forEach(row => {
+      row.onclick = (e) => {
+        e.stopPropagation();
+
+        const hi = parseInt(row.dataset.hi, 10);
+        const si = parseInt(row.dataset.si, 10);
+
+        const h = habits[hi];
+        const st = h.subtasks[si];
+
+        st.done = !st.done;
+
+        const iconWrap = row.querySelector(".subtask-check");
+        morphIconSimple(iconWrap);
+        iconWrap.innerHTML = `<i data-lucide="${st.done ? "circle-check" : "circle"}"></i>`;
+
+        const titleEl = row.querySelector(".subtask-title");
+        titleEl.style.opacity = st.done ? 0.5 : 1;
+
+        lucide.createIcons();
+      };
+    });
+
+    lucide.createIcons();
+  }
+
+  function completeHabit(h, cardEl) {
+    const todayIdx = getTodayDayIndex();
+
+    if (h.scheduleMode === "days") {
+      if (!h.completedDays) h.completedDays = [];
+      if (!h.completedDays.includes(todayIdx)) {
+        h.completedDays.push(todayIdx);
+      }
+      h.weeklyProgress = h.completedDays.length;
+    } else {
+      const progress = h.weeklyProgress || 0;
+      h.weeklyProgress = progress + 1;
+    }
+
+    cardEl.classList.add("pop-out");
+    setTimeout(() => {
+      renderHabits(true);
+    }, 220);
+  }
+
+  function startTimer(index) {
+    const h = habits[index];
+    if (!h || h.timerRunning) return;
+
+    h.remainingSeconds = (h.minutes || 1) * 60;
+    h.timerRunning     = true;
+    h.timerFinished    = false;
+
+    if (timers[index]) clearInterval(timers[index]);
+
+    timers[index] = setInterval(() => {
+      if (h.remainingSeconds > 0) {
+        h.remainingSeconds--;
+        renderHabits(false);
+      } else {
+        clearInterval(timers[index]);
+        timers[index] = null;
+        h.timerRunning = false;
+        h.timerFinished = true;
+        renderHabits(false);
+      }
+    }, 1000);
+
+    renderHabits(false);
+  }
+
+  function simulateQRScan(h) {
+    h.qrVerified = true;
+    renderHabits(false);
+  }
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentMode = btn.dataset.tab;
+      renderHabits(false);
+    };
+  });
+
+  locationBtn.onclick = () => {
+    if (!("geolocation" in navigator)) {
+      locationOutput.textContent = "Geolocation wird nicht unterstützt.";
+      return;
+    }
+
+    locationOutput.textContent = "Standort wird abgefragt…";
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        locationOutput.textContent =
+          `Breite ${latitude.toFixed(5)}, Länge ${longitude.toFixed(5)} (±${Math.round(accuracy)} m)`;
+      },
+      () => {
+        locationOutput.textContent = "Standort konnte nicht ermittelt werden.";
+      }
+    );
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    lucide.createIcons();
+  });
+</script>
+
+</body>
+</html>
