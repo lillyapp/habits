@@ -59,14 +59,6 @@
     gsap.fromTo(cardEl,{ scale: 0.96 },{ scale: 1, duration: 0.22, ease: "power2.out" });
   }
 
-
-  function animateSpeedlines() {
-    const icon = document.querySelectorAll('.progress-icon i');
-    icon.forEach(el=>{
-      gsap.fromTo(el,{x:-3},{x:0,duration:0.15,repeat:1,yoyo:true,ease:"power1.inOut"});
-    });
-  }
-
 </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js">
   // === Additional GSAP Animations (Package 2 + 3) ===
@@ -121,14 +113,6 @@
 
   function animateTimerStart(cardEl) {
     gsap.fromTo(cardEl,{ scale: 0.96 },{ scale: 1, duration: 0.22, ease: "power2.out" });
-  }
-
-
-  function animateSpeedlines() {
-    const icon = document.querySelectorAll('.progress-icon i');
-    icon.forEach(el=>{
-      gsap.fromTo(el,{x:-3},{x:0,duration:0.15,repeat:1,yoyo:true,ease:"power1.inOut"});
-    });
   }
 
 </script>
@@ -187,14 +171,6 @@
     gsap.fromTo(cardEl,{ scale: 0.96 },{ scale: 1, duration: 0.22, ease: "power2.out" });
   }
 
-
-  function animateSpeedlines() {
-    const icon = document.querySelectorAll('.progress-icon i');
-    icon.forEach(el=>{
-      gsap.fromTo(el,{x:-3},{x:0,duration:0.15,repeat:1,yoyo:true,ease:"power1.inOut"});
-    });
-  }
-
 </script>
 
   <style>
@@ -228,7 +204,7 @@
     /* Views */
 
     .view {
-      position: absolute; right:0;
+      position: absolute;
       inset: 0;
       padding: 1.5rem 1.25rem 6rem;
       display: flex;
@@ -271,7 +247,7 @@
     }
 
     .bottom-button-wrapper {
-      position: absolute; right:0;
+      position: absolute;
       left: 0;
       right: 0;
       bottom: 1.5rem;
@@ -497,13 +473,13 @@
     }
 
     .progress-fill {
-      position: absolute; right:0;
+      position: absolute;
       inset: 0;
       border-radius: 999px;
     }
 
     .progress-icon {
-      position: absolute; right:0;
+      position: absolute;
       top: 50%;
       transform: translate(-50%, -50%);
       margin-left: 4px;
@@ -986,7 +962,6 @@
   let timers      = [null,null,null];
   let currentStep = 0;
   let currentMode = "all";
-  let userXP = 0;
 
   // GSAP Helper-Funktionen (modular, Option B1)
 
@@ -1136,24 +1111,27 @@
       u.effort > max ? u.effort : max
     , 0);
 
-        efforts.forEach(u => {
+    efforts.forEach(u => {
       const fillEl = document.getElementById(u.fillId);
       const iconEl = document.getElementById(u.iconId);
       if (!fillEl || !iconEl) return;
 
-      // dynamic leader icon
-      const leaderEffort = Math.max(...efforts.map(e=>e.effort));
-      const isLeader = u.effort === leaderEffort && leaderEffort>0;
-      iconEl.innerHTML = isLeader ? '<i data-lucide="trophy"></i>' : '<i data-lucide="turtle"></i>';
-      lucide.createIcons();
-
       let pct = 0;
-      if (leaderEffort > 0) {
-        pct = (u.effort / leaderEffort) * 100;
+      if (maxEffort > 0) {
+        pct = (u.effort / maxEffort) * 100;
       }
+
       animateXPProgress(fillEl, iconEl, pct);
-      animateSpeedlines();
-    }););
+    });
+    animateProgressIcons();
+  }
+
+  document.getElementById("goSetup").onclick = () => {
+    animateLoginToSetup(() => {
+      loginView.classList.remove("active");
+      setupView.classList.add("active");
+      renderSetup(true);
+    });
   };
 
   function updateScheduleUI(mode, h) {
@@ -1319,7 +1297,6 @@
       animateSetupToMain(() => {
         setupView.classList.remove("active");
         mainView.classList.add("active");
-        gsap.fromTo("#mainView",{opacity:0,y:40},{opacity:1,y:0,duration:0.5,ease:"power3.out"});
         renderHabits(false);
         lucide.createIcons();
         updateProgressBars();
@@ -1563,9 +1540,7 @@
         renderHabits(true);
       }, 220);
     } else {
-      userXP += 20;
-    animateLevelUpFlash(cardEl);
-    renderHabits(false);
+      renderHabits(false);
     }
   }
 
@@ -1720,14 +1695,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function animateTimerStart(cardEl) {
     gsap.fromTo(cardEl,{ scale: 0.96 },{ scale: 1, duration: 0.22, ease: "power2.out" });
-  }
-
-
-  function animateSpeedlines() {
-    const icon = document.querySelectorAll('.progress-icon i');
-    icon.forEach(el=>{
-      gsap.fromTo(el,{x:-3},{x:0,duration:0.15,repeat:1,yoyo:true,ease:"power1.inOut"});
-    });
   }
 
 </script>
