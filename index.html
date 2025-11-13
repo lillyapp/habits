@@ -4,7 +4,198 @@
   <meta charset="UTF-8" />
   <title>Habit App • Prototyp</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@latest">
+  // === Additional GSAP Animations (Package 2 + 3) ===
+
+  function animateCardSwipeIn() {
+    const cards = document.querySelectorAll(".habit-card");
+    if (!cards.length) return;
+    gsap.fromTo(cards,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.32, ease: "power3.out", stagger: 0.06 });
+  }
+
+  function animateEmptyState() {
+    const box = document.querySelector(".empty-state");
+    if (!box) return;
+    gsap.fromTo(box,{ scale: 0.9, opacity: 0 },{ scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.8)" });
+    const icon = box.querySelector("i");
+    if (icon) {
+      gsap.fromTo(icon,{ y: -10, rotate: -10 },{ y: 0, rotate: 0, duration: 0.6, ease: "elastic.out(1, 0.4)", delay: 0.1 });
+    }
+    for (let i = 0; i < 12; i++) {
+      const d = document.createElement("div");
+      d.classList.add("confetti-dot");
+      Object.assign(d.style,{ position: "absolute", width: "6px", height: "6px", borderRadius: "50%", background: `hsl(${Math.random()*360}, 80%, 60%)`, top: "50%", left: "50%", pointerEvents: "none" });
+      box.appendChild(d);
+      gsap.to(d,{ x: (Math.random()-0.5)*140, y: (Math.random()-1)*120, scale: Math.random()*0.7+0.7, opacity: 0, duration: 0.9 + Math.random()*0.4, ease: "power2.out", onComplete: () => d.remove() });
+    }
+  }
+
+  function animateTabSlide(renderCallback) {
+    const list = document.getElementById("habitList");
+    gsap.to(list,{ x: -20, opacity: 0, duration: 0.22, ease: "power2.in", onComplete: () => {
+      renderCallback();
+      gsap.fromTo(list,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.25, ease: "power2.out" });
+    }});
+  }
+
+  function animateXPProgress(fillEl, iconEl, newPct) {
+    const oldPct = parseFloat(fillEl.style.width) || 0;
+    gsap.fromTo(fillEl,{ width: oldPct + "%" },{ width: newPct + "%", duration: 0.55, ease: "power3.out" });
+    gsap.fromTo(iconEl,{ xPercent: oldPct },{ xPercent: newPct, duration: 0.55, ease: "power3.out", delay: 0.05 });
+    gsap.fromTo(iconEl,{ scale: 1 },{ scale: 1.15, duration: 0.25, ease: "back.out(3)", yoyo: true, repeat: 1 });
+  }
+
+  function animateLevelUpFlash(cardEl) {
+    const overlay = document.createElement("div");
+    overlay.style = `position:absolute; inset:0; background:white; opacity:0; pointer-events:none; border-radius:1.4rem;`;
+    cardEl.appendChild(overlay);
+    gsap.fromTo(overlay,{ opacity: 0 },{ opacity: 1, duration: 0.08, yoyo: true, repeat: 1, onComplete: () => overlay.remove() });
+    gsap.to(cardEl,{ scale: 0.85, duration: 0.18, ease: "power1.in", onComplete: () => 
+      gsap.to(cardEl,{ scale: 1, opacity: 0, duration: 0.28, ease: "power2.out" })
+    });
+  }
+
+  function animateTimerStart(cardEl) {
+    gsap.fromTo(cardEl,{ scale: 0.96 },{ scale: 1, duration: 0.22, ease: "power2.out" });
+  }
+
+
+  function animateSpeedlines() {
+    const icon = document.querySelectorAll('.progress-icon i');
+    icon.forEach(el=>{
+      gsap.fromTo(el,{x:-3},{x:0,duration:0.15,repeat:1,yoyo:true,ease:"power1.inOut"});
+    });
+  }
+
+</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js">
+  // === Additional GSAP Animations (Package 2 + 3) ===
+
+  function animateCardSwipeIn() {
+    const cards = document.querySelectorAll(".habit-card");
+    if (!cards.length) return;
+    gsap.fromTo(cards,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.32, ease: "power3.out", stagger: 0.06 });
+  }
+
+  function animateEmptyState() {
+    const box = document.querySelector(".empty-state");
+    if (!box) return;
+    gsap.fromTo(box,{ scale: 0.9, opacity: 0 },{ scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.8)" });
+    const icon = box.querySelector("i");
+    if (icon) {
+      gsap.fromTo(icon,{ y: -10, rotate: -10 },{ y: 0, rotate: 0, duration: 0.6, ease: "elastic.out(1, 0.4)", delay: 0.1 });
+    }
+    for (let i = 0; i < 12; i++) {
+      const d = document.createElement("div");
+      d.classList.add("confetti-dot");
+      Object.assign(d.style,{ position: "absolute", width: "6px", height: "6px", borderRadius: "50%", background: `hsl(${Math.random()*360}, 80%, 60%)`, top: "50%", left: "50%", pointerEvents: "none" });
+      box.appendChild(d);
+      gsap.to(d,{ x: (Math.random()-0.5)*140, y: (Math.random()-1)*120, scale: Math.random()*0.7+0.7, opacity: 0, duration: 0.9 + Math.random()*0.4, ease: "power2.out", onComplete: () => d.remove() });
+    }
+  }
+
+  function animateTabSlide(renderCallback) {
+    const list = document.getElementById("habitList");
+    gsap.to(list,{ x: -20, opacity: 0, duration: 0.22, ease: "power2.in", onComplete: () => {
+      renderCallback();
+      gsap.fromTo(list,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.25, ease: "power2.out" });
+    }});
+  }
+
+  function animateXPProgress(fillEl, iconEl, newPct) {
+    const oldPct = parseFloat(fillEl.style.width) || 0;
+    gsap.fromTo(fillEl,{ width: oldPct + "%" },{ width: newPct + "%", duration: 0.55, ease: "power3.out" });
+    gsap.fromTo(iconEl,{ xPercent: oldPct },{ xPercent: newPct, duration: 0.55, ease: "power3.out", delay: 0.05 });
+    gsap.fromTo(iconEl,{ scale: 1 },{ scale: 1.15, duration: 0.25, ease: "back.out(3)", yoyo: true, repeat: 1 });
+  }
+
+  function animateLevelUpFlash(cardEl) {
+    const overlay = document.createElement("div");
+    overlay.style = `position:absolute; inset:0; background:white; opacity:0; pointer-events:none; border-radius:1.4rem;`;
+    cardEl.appendChild(overlay);
+    gsap.fromTo(overlay,{ opacity: 0 },{ opacity: 1, duration: 0.08, yoyo: true, repeat: 1, onComplete: () => overlay.remove() });
+    gsap.to(cardEl,{ scale: 0.85, duration: 0.18, ease: "power1.in", onComplete: () => 
+      gsap.to(cardEl,{ scale: 1, opacity: 0, duration: 0.28, ease: "power2.out" })
+    });
+  }
+
+  function animateTimerStart(cardEl) {
+    gsap.fromTo(cardEl,{ scale: 0.96 },{ scale: 1, duration: 0.22, ease: "power2.out" });
+  }
+
+
+  function animateSpeedlines() {
+    const icon = document.querySelectorAll('.progress-icon i');
+    icon.forEach(el=>{
+      gsap.fromTo(el,{x:-3},{x:0,duration:0.15,repeat:1,yoyo:true,ease:"power1.inOut"});
+    });
+  }
+
+</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/EasePack.min.js">
+  // === Additional GSAP Animations (Package 2 + 3) ===
+
+  function animateCardSwipeIn() {
+    const cards = document.querySelectorAll(".habit-card");
+    if (!cards.length) return;
+    gsap.fromTo(cards,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.32, ease: "power3.out", stagger: 0.06 });
+  }
+
+  function animateEmptyState() {
+    const box = document.querySelector(".empty-state");
+    if (!box) return;
+    gsap.fromTo(box,{ scale: 0.9, opacity: 0 },{ scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.8)" });
+    const icon = box.querySelector("i");
+    if (icon) {
+      gsap.fromTo(icon,{ y: -10, rotate: -10 },{ y: 0, rotate: 0, duration: 0.6, ease: "elastic.out(1, 0.4)", delay: 0.1 });
+    }
+    for (let i = 0; i < 12; i++) {
+      const d = document.createElement("div");
+      d.classList.add("confetti-dot");
+      Object.assign(d.style,{ position: "absolute", width: "6px", height: "6px", borderRadius: "50%", background: `hsl(${Math.random()*360}, 80%, 60%)`, top: "50%", left: "50%", pointerEvents: "none" });
+      box.appendChild(d);
+      gsap.to(d,{ x: (Math.random()-0.5)*140, y: (Math.random()-1)*120, scale: Math.random()*0.7+0.7, opacity: 0, duration: 0.9 + Math.random()*0.4, ease: "power2.out", onComplete: () => d.remove() });
+    }
+  }
+
+  function animateTabSlide(renderCallback) {
+    const list = document.getElementById("habitList");
+    gsap.to(list,{ x: -20, opacity: 0, duration: 0.22, ease: "power2.in", onComplete: () => {
+      renderCallback();
+      gsap.fromTo(list,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.25, ease: "power2.out" });
+    }});
+  }
+
+  function animateXPProgress(fillEl, iconEl, newPct) {
+    const oldPct = parseFloat(fillEl.style.width) || 0;
+    gsap.fromTo(fillEl,{ width: oldPct + "%" },{ width: newPct + "%", duration: 0.55, ease: "power3.out" });
+    gsap.fromTo(iconEl,{ xPercent: oldPct },{ xPercent: newPct, duration: 0.55, ease: "power3.out", delay: 0.05 });
+    gsap.fromTo(iconEl,{ scale: 1 },{ scale: 1.15, duration: 0.25, ease: "back.out(3)", yoyo: true, repeat: 1 });
+  }
+
+  function animateLevelUpFlash(cardEl) {
+    const overlay = document.createElement("div");
+    overlay.style = `position:absolute; inset:0; background:white; opacity:0; pointer-events:none; border-radius:1.4rem;`;
+    cardEl.appendChild(overlay);
+    gsap.fromTo(overlay,{ opacity: 0 },{ opacity: 1, duration: 0.08, yoyo: true, repeat: 1, onComplete: () => overlay.remove() });
+    gsap.to(cardEl,{ scale: 0.85, duration: 0.18, ease: "power1.in", onComplete: () => 
+      gsap.to(cardEl,{ scale: 1, opacity: 0, duration: 0.28, ease: "power2.out" })
+    });
+  }
+
+  function animateTimerStart(cardEl) {
+    gsap.fromTo(cardEl,{ scale: 0.96 },{ scale: 1, duration: 0.22, ease: "power2.out" });
+  }
+
+
+  function animateSpeedlines() {
+    const icon = document.querySelectorAll('.progress-icon i');
+    icon.forEach(el=>{
+      gsap.fromTo(el,{x:-3},{x:0,duration:0.15,repeat:1,yoyo:true,ease:"power1.inOut"});
+    });
+  }
+
+</script>
 
   <style>
     :root {
@@ -795,6 +986,123 @@
   let timers      = [null,null,null];
   let currentStep = 0;
   let currentMode = "all";
+  let userXP = 0;
+
+  // GSAP Helper-Funktionen (modular, Option B1)
+
+  function animateLoginToSetup(onDone) {
+    gsap.to("#loginView", {
+      duration: 0.45,
+      opacity: 0,
+      y: -40,
+      ease: "power2.in",
+      onComplete: () => {
+        if (typeof onDone === "function") onDone();
+        gsap.fromTo(
+          "#setupView",
+          { opacity: 0, y: 40 },
+          { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }
+        );
+      }
+    });
+  }
+
+  function animateSetupToMain(onDone) {
+    gsap.to("#setupView", {
+      duration: 0.45,
+      opacity: 0,
+      y: -40,
+      ease: "power2.in",
+      onComplete: () => {
+        if (typeof onDone === "function") onDone();
+        gsap.fromTo(
+          "#mainView",
+          { opacity: 0, y: 40 },
+          { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }
+        );
+      }
+    });
+  }
+
+  function animateHabitCards() {
+    const cards = document.querySelectorAll(".habit-card");
+    if (!cards.length) return;
+    gsap.fromTo(
+      cards,
+      { opacity: 0, y: 12, scale: 0.98 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.25, ease: "power2.out", stagger: 0.05 }
+    );
+  }
+
+  function animateProgressIcons() {
+    const icons = document.querySelectorAll(".progress-icon");
+    if (!icons.length) return;
+    gsap.fromTo(
+      icons,
+      { y: -4, scale: 0.9 },
+      { y: 0, scale: 1, duration: 0.6, ease: "elastic.out(1, 0.5)" }
+    );
+  }
+
+  function animateExpandOpen(el) {
+    if (!el) return;
+    gsap.killTweensOf(el);
+    gsap.set(el, { display: "block" });
+    gsap.fromTo(
+      el,
+      { maxHeight: 0, opacity: 0, y: -4 },
+      { maxHeight: 400, opacity: 1, y: 0, duration: 0.25, ease: "power2.out" }
+    );
+  }
+
+  function animateExpandClose(el) {
+    if (!el) return;
+    gsap.killTweensOf(el);
+    gsap.to(el, {
+      maxHeight: 0,
+      opacity: 0,
+      y: -4,
+      duration: 0.2,
+      ease: "power2.in"
+    });
+  }
+
+  function animateTabChange() {
+    const list = document.getElementById("habitList");
+    if (!list) return;
+    gsap.to(list, {
+      opacity: 0,
+      y: 10,
+      duration: 0.18,
+      ease: "power1.in",
+      onComplete: () => {
+        renderHabits(false);
+        gsap.fromTo(
+          list,
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }
+        );
+      }
+    });
+  }
+
+  function animateTimerStart(cardEl) {
+    if (!cardEl) return;
+    gsap.fromTo(
+      cardEl,
+      { scale: 0.97 },
+      { scale: 1, duration: 0.2, ease: "power2.out" }
+    );
+  }
+
+  function animateSubtaskToggle(el) {
+    if (!el) return;
+    gsap.fromTo(
+      el,
+      { scale: 0.9 },
+      { scale: 1, duration: 0.18, ease: "power2.out" }
+    );
+  }
 
   function morphIconSimple(el) {
     if (!el) return;
@@ -838,15 +1146,18 @@
         pct = (u.effort / maxEffort) * 100;
       }
 
-      fillEl.style.width = pct + "%";
-      iconEl.style.left  = pct + "%";
+      animateXPProgress(fillEl, iconEl, pct);
+      animateSpeedlines();
     });
+    animateProgressIcons();
   }
 
   document.getElementById("goSetup").onclick = () => {
-    loginView.classList.remove("active");
-    setupView.classList.add("active");
-    renderSetup(true);
+    animateLoginToSetup(() => {
+      loginView.classList.remove("active");
+      setupView.classList.add("active");
+      renderSetup(true);
+    });
   };
 
   function updateScheduleUI(mode, h) {
@@ -1009,11 +1320,14 @@
       currentStep++;
       renderSetup(true);
     } else {
-      setupView.classList.remove("active");
-      mainView.classList.add("active");
-      renderHabits(false);
-      lucide.createIcons();
-      updateProgressBars();
+      animateSetupToMain(() => {
+        setupView.classList.remove("active");
+        mainView.classList.add("active");
+        gsap.fromTo("#mainView",{opacity:0,y:40},{opacity:1,y:0,duration:0.5,ease:"power3.out"});
+        renderHabits(false);
+        lucide.createIcons();
+        updateProgressBars();
+      });
     }
   };
 
@@ -1047,6 +1361,7 @@
       `;
       lucide.createIcons();
       updateProgressBars();
+      animateEmptyState();
       return;
     }
 
@@ -1094,6 +1409,7 @@
           action.innerHTML = `<i data-lucide="play"></i>`;
           action.onclick = (e) => {
             e.stopPropagation();
+            animateTimerStart(card);
             startTimer(habitIndex);
           };
           row.appendChild(action);
@@ -1172,19 +1488,27 @@
         expand.innerHTML = `<div>${infoText}</div>`;
       }
 
-      if (h.expanded) {
-        expand.classList.add("active");
-      }
-
       card.onclick = (e) => {
         if (e.target === action || e.target.closest(".habit-action")) return;
 
-        habits.forEach(other => {
-          if (other !== h) other.expanded = false;
+        const allExpands = document.querySelectorAll(".habit-expand");
+
+        habits.forEach((other, idx) => {
+          const expEl = allExpands[idx];
+          if (!expEl) return;
+          if (other !== h && other.expanded) {
+            other.expanded = false;
+            animateExpandClose(expEl);
+          }
         });
 
+        const expandEl = card.querySelector(".habit-expand");
         h.expanded = !h.expanded;
-        renderHabits(false);
+        if (h.expanded) {
+          animateExpandOpen(expandEl);
+        } else {
+          animateExpandClose(expandEl);
+        }
       };
 
       card.appendChild(row);
@@ -1207,6 +1531,7 @@
         const iconWrap = row.querySelector(".subtask-check");
         morphIconSimple(iconWrap);
         iconWrap.innerHTML = `<i data-lucide="${st.done ? "circle-check" : "circle"}"></i>`;
+        animateSubtaskToggle(iconWrap);
 
         const titleEl = row.querySelector(".subtask-title");
         titleEl.style.opacity = st.done ? 0.5 : 1;
@@ -1218,6 +1543,8 @@
 
     lucide.createIcons();
     updateProgressBars();
+    animateHabitCards();
+    animateCardSwipeIn();
   }
 
   function completeHabit(h, cardEl) {
@@ -1240,7 +1567,9 @@
         renderHabits(true);
       }, 220);
     } else {
-      renderHabits(false);
+      userXP += 20;
+    animateLevelUpFlash(cardEl);
+    renderHabits(false);
     }
   }
 
@@ -1280,7 +1609,7 @@
       document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       currentMode = btn.dataset.tab;
-      renderHabits(false);
+      animateTabSlide(() => renderHabits(false));
     };
   });
 
@@ -1342,6 +1671,69 @@ document.addEventListener("DOMContentLoaded", () => {
 });
   
   
+
+  // === Additional GSAP Animations (Package 2 + 3) ===
+
+  function animateCardSwipeIn() {
+    const cards = document.querySelectorAll(".habit-card");
+    if (!cards.length) return;
+    gsap.fromTo(cards,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.32, ease: "power3.out", stagger: 0.06 });
+  }
+
+  function animateEmptyState() {
+    const box = document.querySelector(".empty-state");
+    if (!box) return;
+    gsap.fromTo(box,{ scale: 0.9, opacity: 0 },{ scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.8)" });
+    const icon = box.querySelector("i");
+    if (icon) {
+      gsap.fromTo(icon,{ y: -10, rotate: -10 },{ y: 0, rotate: 0, duration: 0.6, ease: "elastic.out(1, 0.4)", delay: 0.1 });
+    }
+    for (let i = 0; i < 12; i++) {
+      const d = document.createElement("div");
+      d.classList.add("confetti-dot");
+      Object.assign(d.style,{ position: "absolute", width: "6px", height: "6px", borderRadius: "50%", background: `hsl(${Math.random()*360}, 80%, 60%)`, top: "50%", left: "50%", pointerEvents: "none" });
+      box.appendChild(d);
+      gsap.to(d,{ x: (Math.random()-0.5)*140, y: (Math.random()-1)*120, scale: Math.random()*0.7+0.7, opacity: 0, duration: 0.9 + Math.random()*0.4, ease: "power2.out", onComplete: () => d.remove() });
+    }
+  }
+
+  function animateTabSlide(renderCallback) {
+    const list = document.getElementById("habitList");
+    gsap.to(list,{ x: -20, opacity: 0, duration: 0.22, ease: "power2.in", onComplete: () => {
+      renderCallback();
+      gsap.fromTo(list,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.25, ease: "power2.out" });
+    }});
+  }
+
+  function animateXPProgress(fillEl, iconEl, newPct) {
+    const oldPct = parseFloat(fillEl.style.width) || 0;
+    gsap.fromTo(fillEl,{ width: oldPct + "%" },{ width: newPct + "%", duration: 0.55, ease: "power3.out" });
+    gsap.fromTo(iconEl,{ xPercent: oldPct },{ xPercent: newPct, duration: 0.55, ease: "power3.out", delay: 0.05 });
+    gsap.fromTo(iconEl,{ scale: 1 },{ scale: 1.15, duration: 0.25, ease: "back.out(3)", yoyo: true, repeat: 1 });
+  }
+
+  function animateLevelUpFlash(cardEl) {
+    const overlay = document.createElement("div");
+    overlay.style = `position:absolute; inset:0; background:white; opacity:0; pointer-events:none; border-radius:1.4rem;`;
+    cardEl.appendChild(overlay);
+    gsap.fromTo(overlay,{ opacity: 0 },{ opacity: 1, duration: 0.08, yoyo: true, repeat: 1, onComplete: () => overlay.remove() });
+    gsap.to(cardEl,{ scale: 0.85, duration: 0.18, ease: "power1.in", onComplete: () => 
+      gsap.to(cardEl,{ scale: 1, opacity: 0, duration: 0.28, ease: "power2.out" })
+    });
+  }
+
+  function animateTimerStart(cardEl) {
+    gsap.fromTo(cardEl,{ scale: 0.96 },{ scale: 1, duration: 0.22, ease: "power2.out" });
+  }
+
+
+  function animateSpeedlines() {
+    const icon = document.querySelectorAll('.progress-icon i');
+    icon.forEach(el=>{
+      gsap.fromTo(el,{x:-3},{x:0,duration:0.15,repeat:1,yoyo:true,ease:"power1.inOut"});
+    });
+  }
+
 </script>
 
 </body>
