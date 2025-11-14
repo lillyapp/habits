@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Corbado Login Test</title>
+
+  <!-- Corbado Web-JS -->
+  <link 
+    rel="stylesheet" 
+    href="https://unpkg.com/@corbado/web-js@2.9.0/dist/bundle/index.css"
+  />
+  <script 
+    src="https://unpkg.com/@corbado/web-js@2.9.0/dist/bundle/index.js"
+  ></script>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f5f5f5;
+    }
+    #box {
+      width: 100%;
+      max-width: 360px;
+      padding: 20px;
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 1.4rem;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="box">
+  <h2>Login</h2>
+
+  <!-- Corbado UI wird hier geladen -->
+  <div id="corbadoContainer"></div>
+</div>
+
+<script>
+  // Corbado initialisieren
+  const cb = new Corbado({
+    projectID: "pro-8203476425584199588",
+    apiKey: "corbado1_GHlBk2HgxuV6dBaKT2QZTfJJFxdleU",
+    redirectUrl: "http://lillyapp.github.io/habits/"
+  });
+
+  // Login-UI einfügen
+  cb.mountLogin({
+    containerId: "corbadoContainer",
+    mode: "login",
+    onLoggedIn: (user) => {
+      console.log("Eingeloggt:", user);
+
+      // Mini-Test: Bestätigung anzeigen
+      alert("Login erfolgreich!\nUser ID:\n" + user.sub);
+    }
+  });
+</script>
+
+</body>
+</html>
