@@ -2,70 +2,69 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Corbado Login Test (iOS Fix)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corbado Login</title>
 
-  <!-- Eruda Konsole -->
+  <!-- Offizielles Corbado Styling -->
+  <link rel="stylesheet" href="https://unpkg.com/@corbado/web-js@2/dist/bundle/index.css">
+  
+  <!-- Eruda Debugging für iOS -->
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>eruda.init();</script>
 
-  <!-- Corbado (mit Integrity — funktioniert in Safari iOS) -->
-  <script 
-    src="https://cdn.corbado.com/web-js/v2.8.0/bundle/index.umd.js"
-    integrity="sha256-TraEfK7nUlE3UaF7YJVofCYEfVZETvdt+CwMHP8GYAo="
-    crossorigin="anonymous">
-  </script>
-
-  <link 
-    rel="stylesheet" 
-    href="https://cdn.corbado.com/web-js/v2.8.0/bundle/index.css"
-    integrity="sha256-twOPusV6sv8jTKoyyhYuKsL9w12hk2v+535JgGTv4vQ="
-    crossorigin="anonymous">
-
   <style>
-    body { font-family: system-ui; padding: 20px; }
-    button { padding: 14px; width: 100%; margin-top: 10px; }
-    #corbadoContainer { margin-top:20px; min-height:150px; }
+    body {
+      font-family: system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f5f5f5;
+      margin: 0;
+    }
+    #box {
+      width: 100%;
+      max-width: 400px;
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 
 <body>
 
-<h2>Login Test</h2>
+<div id="box">
+  <h2 style="text-align:center;">Login</h2>
+  <div id="authUI"></div>
+</div>
 
-<button id="loginBtn">Login starten</button>
+<!-- Offizielle JS (ES MODULE, laut Corbado Docs) -->
+<script type="module">
+  import { Corbado } from "https://unpkg.com/@corbado/web-js@2/dist/bundle/index.js";
 
-<div id="corbadoContainer"></div>
+  console.log("Corbado geladen:", Corbado);
 
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("Corbado global:", window.Corbado);
-
-  if (!window.Corbado) {
-    console.error("Corbado wurde nicht geladen!");
-    return;
-  }
-
-  const cb = new Corbado({
-    projectID: "pro-8203476425584199588",
-    apiKey: "corbado1_GHlBk2HgxuV6dBaKT2QZTfJJFxdleU",
-    redirectUrl: "https://lillyapp.github.io/habits/"
+  // 1️⃣ Muss laut Docs zuerst geladen werden
+  await Corbado.load({
+    projectId: "pro-8203476425584199588",
+    apiKey: "corbado1_GHlBk2HgxuV6dBaKT2QZTfJJFxdleU"
   });
 
-  document.getElementById("loginBtn").onclick = () => {
-    cb.mountLogin({
-      containerId: "corbadoContainer",
+  console.log("Corbado initialisiert, mount UI…");
+
+  // 2️⃣ Offizielles Mounting der UI
+  Corbado.mountAuthUI(
+    document.getElementById("authUI"),
+    {
       mode: "login",
-      onLoggedIn: user => {
+      onLoggedIn: (user) => {
         console.log("Login erfolgreich:", user);
-        alert("OK: " + user.sub);
-      },
-      onError: err => {
-        console.error("Login Fehler:", err);
+        alert("Login erfolgreich:\n" + user.sub);
       }
-    });
-  };
-});
+    }
+  );
 </script>
 
 </body>
