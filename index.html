@@ -7,7 +7,8 @@
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Matter.js Physik -->
+
+  <!-- Matter.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 
   <style>
@@ -16,6 +17,12 @@
       --white:#fff;
       --gray:#e5e5e5;
       --lightgray:#f2f2f2;
+      --p1:#FFE8A3;
+      --p2:#CFFFD8;
+      --p3:#D6E5FF;
+      --p4:#FFD6E8;
+      --p5:#E9DAFF;
+      --p6:#FFF2C7;
     }
 
     body {
@@ -28,18 +35,15 @@
       position:relative;
     }
 
+    /* Screens */
     .screen {
       display:none;
       position:absolute;
       inset:0;
-      width:100%;
-      height:100%;
     }
-    .screen.active {
-      display:flex;
-    }
+    .active { display:flex; }
 
-    /* Login-Screen */
+    /* Login */
     #loginScreen {
       flex-direction:column;
       justify-content:center;
@@ -47,9 +51,9 @@
     }
 
     @keyframes pulse {
-      0%   { transform:scale(1); }
-      50%  { transform:scale(1.06); }
-      100% { transform:scale(1); }
+      0% {transform:scale(1);}
+      50%{transform:scale(1.06);}
+      100%{transform:scale(1);}
     }
 
     #loginCircle {
@@ -66,18 +70,18 @@
       font-weight:600;
       text-align:center;
       padding:0 20px;
+      max-width:240px;
     }
 
     #loginButtonBar {
       position:absolute;
       bottom:24px;
-      left:0;
       width:100%;
       display:flex;
       gap:14px;
       padding:0 20px;
-      box-sizing:border-box;
       transition:bottom .25s ease;
+      box-sizing:border-box;
     }
 
     .btn {
@@ -88,8 +92,8 @@
       font-size:17px;
     }
 
-    #btnLogin    { background:#000; color:#fff; }
-    #btnRegister { background:#e5e5e5; color:#000; }
+    #btnLogin    {background:#000;color:#fff;}
+    #btnRegister {background:#e5e5e5;}
 
     #loginForm {
       display:none;
@@ -97,7 +101,7 @@
       gap:12px;
       padding:20px;
       width:100%;
-      max-width:600px;
+      max-width:500px;
       box-sizing:border-box;
     }
 
@@ -109,52 +113,38 @@
       font-size:16px;
     }
 
-    /* Hauptscreen */
+    /* Main Screen */
     #mainScreen {
       flex-direction:column;
       padding:20px;
       padding-bottom:100px;
-      box-sizing:border-box;
       overflow-y:auto;
+      box-sizing:border-box;
     }
 
     #topStatsBox {
       width:100%;
       max-width:600px;
-      margin:0 auto 20px auto;
-      background:var(--gray);
+      background:#e5e5e5;
       border-radius:18px;
       padding:16px;
+      margin:0 auto 20px;
       box-sizing:border-box;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-
-    #progressLabel {
-      font-size:15px;
-      font-weight:600;
-      opacity:.8;
     }
 
     .progress {
       width:100%;
       height:12px;
-      background:var(--lightgray);
+      background:#f2f2f2;
       border-radius:6px;
       overflow:hidden;
     }
 
     .progress-inner {
-      height:100%;
       width:0%;
+      height:100%;
       background:#000;
       transition:width .3s ease;
-    }
-
-    #progressText {
-      font-size:13px;
-      opacity:.8;
     }
 
     #habitList {
@@ -162,76 +152,28 @@
       width:100%;
       max-width:600px;
       margin:0 auto;
-      min-height:360px;
-      box-sizing:border-box;
+      height: calc(100vh - 260px);
+      overflow:hidden;
     }
 
-    /* Quadratische Karten */
     .habitCard {
       position:absolute;
       width:100px;
       height:100px;
-      border:3px solid var(--black);
+      border:3px solid #000;
       border-radius:20px;
-      box-sizing:border-box;
-      padding:14px;
+      box-shadow:0 6px 14px rgba(0,0,0,0.12);
       display:flex;
       justify-content:center;
       align-items:center;
       text-align:center;
-      box-shadow:0 6px 18px rgba(0,0,0,0.12);
-      color:#000;
-      will-change:transform;
-      touch-action:none; /* wichtig für sauberes Draggen */
-    }
-
-    .habitCard-title {
-      font-size:18px;
+      font-size:15px;
       font-weight:600;
-      line-height:1.3;
+      padding:10px;
+      touch-action:none;
+      transition:opacity .2s ease;
     }
 
-    /* Overlay neue Habit */
-    #newHabitOverlay {
-      position:absolute;
-      inset:0;
-      display:none;
-      justify-content:center;
-      align-items:center;
-      z-index:40;
-      backdrop-filter:blur(2px);
-    }
-
-    #newHabitCard {
-      background:#e5e5e5;
-      border-radius:18px;
-      padding:20px;
-      width:100%;
-      max-width:360px;
-      box-shadow:0 8px 30px rgba(0,0,0,0.2);
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-
-    #newHabitTitle {
-      padding:14px;
-      border-radius:12px;
-      border:none;
-      background:#fff;
-      font-size:16px;
-    }
-
-    #newHabitOkBtn {
-      padding:12px;
-      border-radius:14px;
-      border:none;
-      background:#000;
-      color:#fff;
-      font-size:17px;
-    }
-
-    /* Plus-Button unten */
     #bottomActionBar {
       position:fixed;
       bottom:20px;
@@ -239,26 +181,58 @@
       transform:translateX(-50%);
       width:calc(100% - 40px);
       max-width:600px;
-      padding:10px 14px;
       background:#000;
       color:#fff;
       border-radius:18px;
+      padding:10px 14px;
+      font-size:26px;
+      font-weight:600;
       display:flex;
       justify-content:center;
       align-items:center;
-      font-size:26px;
+    }
+
+    #newCenterHabit {
+      position:absolute;
+      width:100px;
+      height:100px;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      background:#e5e5e5;
+      border:3px solid #000;
+      border-radius:20px;
+      display:none;
+      justify-content:center;
+      align-items:center;
+      font-size:15px;
       font-weight:600;
-      box-sizing:border-box;
       z-index:50;
+    }
+
+    #newCenterOk {
+      position:absolute;
+      top:calc(50% + 80px);
+      left:50%;
+      transform:translateX(-50%);
+      background:#000;
+      color:#fff;
+      border:none;
+      padding:8px 20px;
+      border-radius:12px;
+      font-size:15px;
+      display:none;
+      z-index:51;
     }
   </style>
 </head>
+
 <body>
 
 <!-- LOGIN -->
 <div id="loginScreen" class="screen active">
   <div id="loginCircle"></div>
-  <div id="loginHeadline">Hallo, bitte melde dich an, um deine Gewohnheiten zu sehen</div>
+  <div id="loginHeadline">Hallo, bitte melde dich an</div>
 
   <div id="loginButtonBar">
     <button id="btnLogin" class="btn">Login</button>
@@ -275,422 +249,344 @@
 <!-- MAIN -->
 <div id="mainScreen" class="screen">
   <div id="topStatsBox">
-    <div id="progressLabel">Fortschritt</div>
-    <div class="progress">
-      <div class="progress-inner" id="progressInner"></div>
-    </div>
-    <div id="progressText">0 / 0 erledigt</div>
+    <div class="progress"><div class="progress-inner" id="progressInner"></div></div>
   </div>
 
   <div id="habitList"></div>
 
-  <div id="newHabitOverlay">
-    <div id="newHabitCard">
-      <div style="font-size:20px;font-weight:600;">Neue Gewohnheit</div>
-      <input id="newHabitTitle" placeholder="Titel..." />
-      <button id="newHabitOkBtn">OK</button>
-    </div>
-  </div>
+  <div id="newCenterHabit">Neu</div>
+  <button id="newCenterOk">OK</button>
 </div>
 
 <div id="bottomActionBar">+</div>
 
 <script>
-  /* Supabase init */
-  const { createClient } = supabase;
-  const supabaseClient = createClient("https://gglgenarpskajkaanknk.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4");
+/* ------------------------------ */
+/* SUPABASE */
+/* ------------------------------ */
+const supabaseClient = supabase.createClient(
+  "https://gglgenarpskajkaanknk.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4"
+);
 
-  /* Matter.js Alias */
-  const Engine = Matter.Engine;
-  const World  = Matter.World;
-  const Bodies = Matter.Bodies;
-  const Body   = Matter.Body;
+/* ------------------------------ */
+/* PHYSIK SETUP */
+/* ------------------------------ */
+const Engine = Matter.Engine;
+const World  = Matter.World;
+const Bodies = Matter.Bodies;
+const Body   = Matter.Body;
 
-  let engine = null;
-  let world  = null;
-  let physicsInitialized = false;
+let engine, world;
+let habitBodies = [];
+let walls = [];
+let physicsReady = false;
 
-  const CARD_SIZE = 160;
-  const CARD_HALF = CARD_SIZE / 2;
-  const pastelColors = ["#FFE8A3","#CFFFD8","#D6E5FF","#FFD6E8","#E9DAFF","#FFF2C7"];
+const CARD_SIZE = 100;
+const CARD_HALF = CARD_SIZE/2;
 
-  /* Wander-Parameter */
-  const MAX_SPEED       = 2.0;
-  const MIN_SPEED       = 0.3;
-  const WANDER_FORCE    = 0.0008;
-  const WANDER_INTERVAL = 200; // ms
+/* ruhige Physik */
+const MAX_SPEED = 1.2;
+const MIN_SPEED = 0.15;
+const WANDER_FORCE = 0.0014;
+const WANDER_INTERVAL = 260;
 
-  /* Flick-Thresholds */
-  const FLICK_DISTANCE = 80;
-  const FLICK_SPEED    = 600;
-  const OFFSCREEN_MARGIN = 120;
+const habitListEl = document.getElementById("habitList");
 
-  const loginScreen     = document.getElementById("loginScreen");
-  const mainScreen      = document.getElementById("mainScreen");
-  const loginForm       = document.getElementById("loginForm");
-  const loginButtonBar  = document.getElementById("loginButtonBar");
-  const loginEmail      = document.getElementById("loginEmail");
-  const loginPassword   = document.getElementById("loginPassword");
-  const habitListEl     = document.getElementById("habitList");
-  const bottomActionBar = document.getElementById("bottomActionBar");
-  const newHabitOverlay = document.getElementById("newHabitOverlay");
-  const newHabitTitle   = document.getElementById("newHabitTitle");
-  const progressInner   = document.getElementById("progressInner");
-  const progressText    = document.getElementById("progressText");
-  const newHabitOkBtn   = document.getElementById("newHabitOkBtn");
-  const btnLogin        = document.getElementById("btnLogin");
-  const btnRegister     = document.getElementById("btnRegister");
-  const loginOkBtn      = document.getElementById("loginOkBtn");
+async function initPhysics() {
+  if (physicsReady) return;
+  physicsReady = true;
 
-  let habitBodies = []; // { body, el }
-  let walls = [];
-  let addMode = false;
+  engine = Engine.create();
+  world = engine.world;
+  engine.gravity.x = 0;
+  engine.gravity.y = 0;
 
-  /* Login-Buttons */
-  btnLogin.onclick = () => {
-    loginForm.style.display = "flex";
-    loginForm.dataset.mode = "login";
-    loginButtonBar.style.bottom = "260px";
-  };
+  createBounds();
 
-  btnRegister.onclick = () => {
-    loginForm.style.display = "flex";
-    loginForm.dataset.mode = "register";
-    loginButtonBar.style.bottom = "260px";
-  };
+  let last = performance.now();
+  function loop(now){
+    const dt = now - last;
+    last = now;
+    Engine.update(engine, dt);
 
-  loginOkBtn.onclick = async () => {
-    const email = loginEmail.value;
-    const password = loginPassword.value;
-    const mode = loginForm.dataset.mode;
+    updateDOM();
+    checkEdgeCompletion();
 
-    if (mode === "login") {
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (!error) {
-        loginScreen.classList.remove("active");
-        mainScreen.classList.add("active");
-        await ensurePhysics();
-        loadHabits();
-      } else {
-        alert("Login fehlgeschlagen");
-      }
-    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
 
-    if (mode === "register") {
-      const { error } = await supabaseClient.auth.signUp({ email, password });
-      if (!error) alert("Registrierung erfolgreich – bitte E-Mail bestätigen.");
-      else alert("Registrierung fehlgeschlagen.");
-    }
-  };
+  setInterval(()=>applyWander(),WANDER_INTERVAL);
+}
 
-  /* Physik initialisieren */
-  async function ensurePhysics() {
-    if (physicsInitialized) return;
-    physicsInitialized = true;
+function createBounds(){
+  const r = habitListEl.getBoundingClientRect();
+  const w = r.width;
+  const h = r.height;
+  const thick = 60;
 
-    engine = Engine.create();
-    world  = engine.world;
-    engine.gravity.x = 0;
-    engine.gravity.y = 0;
+  if (walls.length){
+    walls.forEach(wb=>World.remove(world,wb));
+  }
+  walls = [];
 
-    createBounds();
+  const left   = Bodies.rectangle(-thick/2, h/2, thick, h+thick,{isStatic:true});
+  const right  = Bodies.rectangle(w+thick/2, h/2, thick, h+thick,{isStatic:true});
+  const top    = Bodies.rectangle(w/2, -thick/2, w+thick, thick,{isStatic:true});
+  const bottom = Bodies.rectangle(w/2, h+thick/2, w+thick, thick,{isStatic:true});
 
-    let lastTime = performance.now();
-    function tick(now) {
-      const delta = now - lastTime;
-      lastTime = now;
-      Engine.update(engine, delta);
+  walls.push(left,right,top,bottom);
+  World.add(world,walls);
+}
 
-      updateDomFromPhysics();
-      checkOffscreenFlicks();
+function applyWander(){
+  habitBodies.forEach(({body})=>{
+    const vx = body.velocity.x;
+    const vy = body.velocity.y;
+    const speed = Math.sqrt(vx*vx+vy*vy);
 
-      requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-
-    // Endloses Wanderverhalten
-    setInterval(() => {
-      habitBodies.forEach(({ body }) => {
-        if (!body) return;
-        const vx = body.velocity.x;
-        const vy = body.velocity.y;
-        const speed = Math.sqrt(vx*vx + vy*vy);
-
-        // zu langsam → neuer Impuls
-        if (speed < MIN_SPEED) {
-          const angle = Math.random() * Math.PI * 2;
-          Body.applyForce(body, body.position, {
-            x: Math.cos(angle) * WANDER_FORCE,
-            y: Math.sin(angle) * WANDER_FORCE
-          });
-          return;
-        }
-
-        // zu schnell → leicht bremsen
-        if (speed > MAX_SPEED) {
-          Body.setVelocity(body, {
-            x: vx * 0.9,
-            y: vy * 0.9
-          });
-          return;
-        }
-
-        // normal → kleiner wander-Impuls
-        const angle = Math.random() * Math.PI * 2;
-        Body.applyForce(body, body.position, {
-          x: Math.cos(angle) * WANDER_FORCE,
-          y: Math.sin(angle) * WANDER_FORCE
-        });
+    if (speed < MIN_SPEED){
+      const a = Math.random()*Math.PI*2;
+      Body.applyForce(body,body.position,{
+        x:Math.cos(a)*WANDER_FORCE,
+        y:Math.sin(a)*WANDER_FORCE
       });
-    }, WANDER_INTERVAL);
-  }
-
-  /* Begrenzungen */
-  function createBounds() {
-    const rect = habitListEl.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.height;
-    const thickness = 80;
-
-    if (walls.length) {
-      walls.forEach(wb => World.remove(world, wb));
-      walls = [];
-    }
-
-    const left   = Bodies.rectangle(-thickness/2, h/2, thickness, h + thickness, { isStatic:true });
-    const right  = Bodies.rectangle(w + thickness/2, h/2, thickness, h + thickness, { isStatic:true });
-    const top    = Bodies.rectangle(w/2, -thickness/2, w + thickness, thickness, { isStatic:true });
-    const bottom = Bodies.rectangle(w/2, h + thickness/2, w + thickness, thickness, { isStatic:true });
-
-    walls.push(left, right, top, bottom);
-    World.add(world, walls);
-  }
-
-  /* Progress */
-  function updateProgress(all) {
-    const total = all.length;
-    const done  = all.filter(h => h.zustand === "erledigt").length;
-    const pct   = total > 0 ? (done / total) * 100 : 0;
-    progressInner.style.width = pct + "%";
-    progressText.textContent = `${done} / ${total} erledigt`;
-  }
-
-  /* Habits laden */
-  async function loadHabits() {
-    const user = (await supabaseClient.auth.getUser()).data.user;
-    if (!user) return;
-
-    const { data, error } = await supabaseClient
-      .from("habits")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at");
-
-    if (error) {
-      console.error(error);
       return;
     }
 
-    updateProgress(data || []);
-
-    const openHabits = (data || []).filter(h => h.zustand !== "erledigt");
-
-    // alte Bodies entfernen
-    habitBodies.forEach(({ body }) => World.remove(world, body));
-    habitBodies = [];
-    habitListEl.innerHTML = "";
-
-    const rect = habitListEl.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.height;
-
-    openHabits.forEach(habit => {
-      const el = document.createElement("div");
-      el.className = "habitCard";
-      el.dataset.id = habit.id;
-      el.style.background = pastelColors[Math.floor(Math.random() * pastelColors.length)];
-      el.innerHTML = `<div class="habitCard-title">${habit.titel}</div>`;
-      habitListEl.appendChild(el);
-
-      const startX = CARD_HALF + Math.random() * (w - CARD_SIZE);
-      const startY = CARD_HALF + Math.random() * (h - CARD_SIZE);
-
-      const body = Bodies.rectangle(startX, startY, CARD_SIZE, CARD_SIZE, {
-        frictionAir: 0.03,
-        restitution: 0.9
-      });
-      body.habitId = habit.id;
-      body.domEl   = el;
-      body.armedForCompletion = false;
-      body.markedDone = false;
-
-      World.add(world, body);
-      habitBodies.push({ body, el });
-
-      // zufälliger Startschubs
-      Body.setVelocity(body, {
-        x:(Math.random()*2 - 1) * 1.0,
-        y:(Math.random()*2 - 1) * 1.0
-      });
-
-      attachTouchHandlers(el, body);
-    });
-  }
-
-  /* DOM-Positionen aus Physik */
-  function updateDomFromPhysics() {
-    const rect = habitListEl.getBoundingClientRect();
-    const offsetX = rect.left;
-    const offsetY = rect.top;
-
-    habitBodies.forEach(({ body, el }) => {
-      const x = body.position.x;
-      const y = body.position.y;
-      el.style.transform = `translate(${x - CARD_HALF}px, ${y - CARD_HALF}px)`;
-    });
-  }
-
-  /* Offscreen-Erkennung für Flick */
-  function checkOffscreenFlicks() {
-    const rect = habitListEl.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.height;
-
-    habitBodies.slice().forEach(({ body, el }) => {
-      if (!body.armedForCompletion || body.markedDone) return;
-      const x = body.position.x;
-      const y = body.position.y;
-
-      if (x < -OFFSCREEN_MARGIN ||
-          x > w + OFFSCREEN_MARGIN ||
-          y < -OFFSCREEN_MARGIN ||
-          y > h + OFFSCREEN_MARGIN) {
-        body.markedDone = true;
-        completeHabit(body.habitId, body, el);
-      }
-    });
-  }
-
-  async function completeHabit(habitId, body, el) {
-    World.remove(world, body);
-    if (el && el.parentNode) el.parentNode.removeChild(el);
-
-    await supabaseClient
-      .from("habits")
-      .update({ zustand: "erledigt" })
-      .eq("id", habitId);
-
-    loadHabits();
-  }
-
-  /* Drag / Flick */
-  function attachTouchHandlers(el, body) {
-    let dragging = false;
-    let lastPositions = []; // {x,y,time}
-
-    function containerRect() {
-      return habitListEl.getBoundingClientRect();
-    }
-
-    el.addEventListener("touchstart", e => {
-      if (addMode) return;
-      dragging = true;
-      lastPositions = [];
-      const t = e.touches[0];
-      const rect = containerRect();
-      const x = t.clientX - rect.left;
-      const y = t.clientY - rect.top;
-
-      Body.setVelocity(body, {x:0,y:0});
-      Body.setAngularVelocity(body, 0);
-
-      lastPositions.push({x,y,time:performance.now()});
-      e.preventDefault();
-    }, { passive:false });
-
-    el.addEventListener("touchmove", e => {
-      if (!dragging || addMode) return;
-      const t = e.touches[0];
-      const rect = containerRect();
-      const x = t.clientX - rect.left;
-      const y = t.clientY - rect.top;
-
-      Body.setPosition(body, {x,y});
-
-      const now = performance.now();
-      lastPositions.push({x,y,time:now});
-      if (lastPositions.length > 5) lastPositions.shift();
-
-      e.preventDefault();
-    }, { passive:false });
-
-    el.addEventListener("touchend", () => {
-      if (!dragging) return;
-      dragging = false;
-
-      if (lastPositions.length < 2) {
-        body.armedForCompletion = false;
-        return;
-      }
-
-      const first = lastPositions[0];
-      const last  = lastPositions[lastPositions.length - 1];
-      const dt = (last.time - first.time) / 1000;
-      const dx = last.x - first.x;
-      const dy = last.y - first.y;
-
-      if (dt <= 0) {
-        body.armedForCompletion = false;
-        return;
-      }
-
-      const vx = dx / dt;
-      const vy = dy / dt;
-      const speed = Math.sqrt(vx*vx + vy*vy);
-
-      if (Math.hypot(dx,dy) > FLICK_DISTANCE && speed > FLICK_SPEED) {
-        body.armedForCompletion = true;
-        Body.setVelocity(body, {x:vx * 0.02, y:vy * 0.02});
-      } else {
-        body.armedForCompletion = false;
-        Body.setVelocity(body, {x:vx * 0.01, y:vy * 0.01});
-      }
-    }, { passive:true });
-  }
-
-  /* Plus → Overlay */
-  bottomActionBar.onclick = () => {
-    if (addMode) return;
-    addMode = true;
-    newHabitOverlay.style.display = "flex";
-    newHabitTitle.value = "";
-    newHabitTitle.focus();
-  };
-
-  newHabitOkBtn.onclick = async () => {
-    const title = newHabitTitle.value.trim();
-    if (!title) return;
-
-    const user = (await supabaseClient.auth.getUser()).data.user;
-    if (!user) return;
-
-    const { error } = await supabaseClient
-      .from("habits")
-      .insert({
-        user_id: user.id,
-        titel: title,
-        zustand: "offen"
-      });
-
-    if (error) {
-      alert("Fehler beim Speichern");
+    if (speed > MAX_SPEED){
+      Body.setVelocity(body,{x:vx*0.9,y:vy*0.9});
       return;
     }
 
-    newHabitOverlay.style.display = "none";
-    addMode = false;
-    loadHabits();
-  };
+    const a2 = Math.random()*Math.PI*2;
+    Body.applyForce(body,body.position,{
+      x:Math.cos(a2)*WANDER_FORCE,
+      y:Math.sin(a2)*WANDER_FORCE
+    });
+  });
+}
+
+/* ------------------------------ */
+/* LOGIN */
+/* ------------------------------ */
+const loginScreen = document.getElementById("loginScreen");
+const mainScreen = document.getElementById("mainScreen");
+const loginForm = document.getElementById("loginForm");
+const loginButtonBar = document.getElementById("loginButtonBar");
+const loginEmail = document.getElementById("loginEmail");
+const loginPassword = document.getElementById("loginPassword");
+
+document.getElementById("btnLogin").onclick = ()=>{
+  loginForm.style.display="flex";
+  loginForm.dataset.mode="login";
+  loginButtonBar.style.bottom="260px";
+};
+
+document.getElementById("btnRegister").onclick = ()=>{
+  loginForm.style.display="flex";
+  loginForm.dataset.mode="register";
+  loginButtonBar.style.bottom="260px";
+};
+
+document.getElementById("loginOkBtn").onclick = async ()=>{
+  const email = loginEmail.value;
+  const password = loginPassword.value;
+  const mode = loginForm.dataset.mode;
+
+  if (mode==="login"){
+    const {error} = await supabaseClient.auth.signInWithPassword({email,password});
+    if (!error){
+      loginScreen.classList.remove("active");
+      mainScreen.classList.add("active");
+      await initPhysics();
+      loadHabits();
+    }
+  }
+
+  if (mode==="register"){
+    await supabaseClient.auth.signUp({email,password});
+  }
+};
+
+/* ------------------------------ */
+/* HABITS */
+/* ------------------------------ */
+async function loadHabits(){
+  const user = (await supabaseClient.auth.getUser()).data.user;
+  if (!user)return;
+
+  const {data} = await supabaseClient
+    .from("habits")
+    .select("*")
+    .eq("user_id",user.id);
+
+  updateProgress(data);
+  const open = data.filter(x=>x.zustand!=="erledigt");
+
+  habitBodies.forEach(({body})=>World.remove(world,body));
+  habitBodies = [];
+  habitListEl.innerHTML = "";
+
+  const r = habitListEl.getBoundingClientRect();
+  const w = r.width;
+  const h = r.height;
+
+  open.forEach(habit=>{
+    const el = document.createElement("div");
+    el.className="habitCard";
+    el.textContent = habit.titel;
+    el.dataset.id = habit.id;
+    el.style.background = randomPastel();
+    habitListEl.appendChild(el);
+
+    const x = CARD_HALF + Math.random()*(w-CARD_SIZE);
+    const y = CARD_HALF + Math.random()*(h-CARD_SIZE);
+
+    const body = Bodies.rectangle(x,y,CARD_SIZE,CARD_SIZE,{
+      frictionAir:0.015,
+      restitution:0.7,
+      sleepThreshold:-1,
+      inertia:Infinity
+    });
+
+    body.habitId = habit.id;
+    body.domEl = el;
+    body.readyToComplete = false;
+
+    World.add(world,body);
+    habitBodies.push({body,el});
+
+    Body.setVelocity(body,{
+      x:(Math.random()*2-1)*0.3,
+      y:(Math.random()*2-1)*0.3
+    });
+
+    attachDrag(el,body);
+  });
+}
+
+function randomPastel(){
+  const arr=["var(--p1)","var(--p2)","var(--p3)","var(--p4)","var(--p5)","var(--p6)"];
+  return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function updateDOM(){
+  habitBodies.forEach(({body,el})=>{
+    el.style.transform = `translate(${body.position.x-CARD_HALF}px,${body.position.y-CARD_HALF}px)`;
+  });
+}
+
+async function completeHabit(id,body,el){
+  World.remove(world,body);
+  el.remove();
+  await supabaseClient.from("habits").update({zustand:"erledigt"}).eq("id",id);
+  loadHabits();
+}
+
+/* Rand-Check */
+function checkEdgeCompletion(){
+  const r = habitListEl.getBoundingClientRect();
+  habitBodies.forEach(({body,el})=>{
+    if (!body.readyToComplete)return;
+    const x = body.position.x;
+    const y = body.position.y;
+
+    if (x< -50 || x>r.width+50 || y< -50 || y>r.height+50){
+      completeHabit(body.habitId,body,el);
+    }
+  });
+}
+
+/* ------------------------------ */
+/* DRAG */
+/* ------------------------------ */
+function attachDrag(el,body){
+  let dragging=false;
+
+  const getRect=()=>habitListEl.getBoundingClientRect();
+
+  el.addEventListener("touchstart",e=>{
+    dragging=true;
+    Body.setVelocity(body,{x:0,y:0});
+    e.preventDefault();
+  },{passive:false});
+
+  el.addEventListener("touchmove",e=>{
+    if(!dragging)return;
+
+    const t=e.touches[0];
+    const r=getRect();
+
+    const x=t.clientX-r.left;
+    const y=t.clientY-r.top;
+
+    Body.setPosition(body,{x,y});
+
+    const hitEdge =
+      x<20 || x>r.width-20 || y<20 || y>r.height-20;
+
+    if(hitEdge){
+      el.style.opacity="0.5";
+      body.readyToComplete=true;
+    } else {
+      el.style.opacity="1";
+      body.readyToComplete=false;
+    }
+
+    e.preventDefault();
+  },{passive:false});
+
+  el.addEventListener("touchend",()=>{
+    dragging=false;
+    if (!body.readyToComplete){
+      el.style.opacity="1";
+    }
+  });
+}
+
+/* ------------------------------ */
+/* PLUS BUTTON */
+/* ------------------------------ */
+const newCenter = document.getElementById("newCenterHabit");
+const newCenterOk = document.getElementById("newCenterOk");
+
+document.getElementById("bottomActionBar").onclick=()=>{
+  newCenter.style.display="flex";
+  newCenterOk.style.display="block";
+
+  habitBodies.forEach(({body})=>{
+    const a=Math.random()*Math.PI*2;
+    Body.applyForce(body,body.position,{
+      x:Math.cos(a)*0.03,
+      y:Math.sin(a)*0.03
+    });
+  });
+};
+
+newCenterOk.onclick=async()=>{
+  const user=(await supabaseClient.auth.getUser()).data.user;
+  await supabaseClient.from("habits").insert({
+    user_id:user.id,
+    titel:"Neue Aufgabe",
+    zustand:"offen"
+  });
+
+  newCenter.style.display="none";
+  newCenterOk.style.display="none";
+  loadHabits();
+};
+
+/* ------------------------------ */
+/* Progress */
+/* ------------------------------ */
+function updateProgress(list){
+  const done=list.filter(x=>x.zustand==="erledigt").length;
+  const total=list.length;
+  const pct=total?done/total*100:0;
+  document.getElementById("progressInner").style.width=pct+"%";
+}
 </script>
 </body>
 </html>
