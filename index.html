@@ -8,15 +8,11 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Matter.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-
   <style>
     :root {
       --black:#000;
       --white:#fff;
       --gray:#e5e5e5;
-      --lightgray:#f2f2f2;
       --p1:#FFE8A3;
       --p2:#CFFFD8;
       --p3:#D6E5FF;
@@ -50,179 +46,106 @@
       align-items:center;
     }
 
-    @keyframes pulse {
-      0% {transform:scale(1);}
-      50%{transform:scale(1.06);}
-      100%{transform:scale(1);}
-    }
+    @keyframes pulse {0%{transform:scale(1);}50%{transform:scale(1.06);}100%{transform:scale(1);}}
 
     #loginCircle {
-      width:30px;
-      height:30px;
-      background:#000;
-      border-radius:50%;
+      width:30px;height:30px;background:#000;border-radius:50%;
       animation:pulse 2.2s ease-in-out infinite;
     }
 
     #loginHeadline {
-      margin-top:28px;
-      font-size:26px;
-      font-weight:600;
-      text-align:center;
-      padding:0 20px;
-      max-width:240px;
+      margin-top:28px;font-size:26px;font-weight:600;
+      text-align:center;padding:0 20px;max-width:240px;
     }
 
     #loginButtonBar {
-      position:absolute;
-      bottom:24px;
-      width:100%;
-      display:flex;
-      gap:14px;
-      padding:0 20px;
-      transition:bottom .25s ease;
-      box-sizing:border-box;
+      position:absolute;bottom:24px;width:100%;display:flex;
+      gap:14px;padding:0 20px;transition:bottom .25s ease;
     }
 
     .btn {
-      flex:1;
-      padding:14px;
-      border:none;
-      border-radius:20px;
-      font-size:17px;
+      flex:1;padding:14px;border:none;border-radius:20px;font-size:17px;
     }
 
-    #btnLogin    {background:#000;color:#fff;}
+    #btnLogin {background:#000;color:#fff;}
     #btnRegister {background:#e5e5e5;}
 
     #loginForm {
-      display:none;
-      flex-direction:column;
-      gap:12px;
-      padding:20px;
-      width:100%;
-      max-width:500px;
-      box-sizing:border-box;
+      display:none;flex-direction:column;gap:12px;padding:20px;
+      width:100%;max-width:500px;box-sizing:border-box;
     }
 
     .login-input {
-      padding:12px;
-      border:none;
-      border-radius:12px;
-      background:#e5e5e5;
-      font-size:16px;
+      padding:12px;border:none;border-radius:12px;
+      background:#e5e5e5;font-size:16px;
     }
 
-    /* Main Screen */
+    /* Main */
     #mainScreen {
       flex-direction:column;
-      padding:20px;
-      padding-bottom:100px;
-      overflow-y:auto;
-      box-sizing:border-box;
+      padding:20px;padding-bottom:120px;
+      box-sizing:border-box;overflow-y:auto;
     }
 
     #topStatsBox {
-      width:100%;
-      max-width:600px;
-      background:#e5e5e5;
+      width:calc(100% - 40px);
+      max-width:600px;background:#e5e5e5;
+      margin:0 auto 20px;padding:16px;
       border-radius:18px;
-      padding:16px;
-      margin:0 auto 20px;
-      box-sizing:border-box;
     }
 
-    .progress {
-      width:100%;
-      height:12px;
-      background:#f2f2f2;
-      border-radius:6px;
-      overflow:hidden;
+    .progress {width:100%;height:12px;background:#f2f2f2;border-radius:6px;overflow:hidden;}
+    .progress-inner {width:0;height:100%;background:#000;transition:width .35s ease;
     }
+      #habitList {
+  width: calc(100% - 40px);
+  max-width: 600px;
+  margin: 0 auto;
 
-    .progress-inner {
-      width:0%;
-      height:100%;
-      background:#000;
-      transition:width .3s ease;
-    }
+  display: grid;
 
-    #habitList {
-      position:relative;
-      width:100%;
-      max-width:600px;
-      margin:0 auto;
-      height: calc(100vh - 260px);
-      overflow:hidden;
-    }
+  /* genau 3 Elemente pro Reihe */
+  grid-template-columns: repeat(3, 100px);
+
+  grid-auto-rows: 100px;
+  gap: 16px;
+
+  justify-content: center; /* zentriert das gesamte Grid */
+  justify-items: center;
+  align-items: center;
+}
 
     .habitCard {
-      position:absolute;
-      width:100px;
-      height:100px;
-      border:3px solid #000;
-      border-radius:20px;
+      position:relative;
+      width:100px;height:100px;
+      border:3px solid #000;border-radius:20px;
       box-shadow:0 6px 14px rgba(0,0,0,0.12);
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      text-align:center;
-      font-size:15px;
-      font-weight:600;
-      padding:10px;
-      touch-action:none;
-      transition:opacity .2s ease;
+      background:#fff;
+      display:flex;justify-content:center;
+      align-items:center;text-align:center;
+      font-size:15px;font-weight:600;
+      user-select:none;
+      transition:transform .25s ease, opacity .25s ease;
     }
 
-    #bottomActionBar {
-      position:fixed;
-      bottom:20px;
-      left:50%;
-      transform:translateX(-50%);
-      width:calc(100% - 40px);
-      max-width:600px;
-      background:#000;
-      color:#fff;
-      border-radius:18px;
-      padding:10px 14px;
-      font-size:26px;
-      font-weight:600;
-      display:flex;
-      justify-content:center;
-      align-items:center;
+    .habitInput {
+      width:80%;border:none;border-radius:10px;
+      padding:6px;font-size:14px;text-align:center;
     }
 
-    #newCenterHabit {
-      position:absolute;
-      width:100px;
-      height:100px;
-      left:50%;
-      top:50%;
-      transform:translate(-50%,-50%);
-      background:#e5e5e5;
-      border:3px solid #000;
-      border-radius:20px;
-      display:none;
-      justify-content:center;
-      align-items:center;
-      font-size:15px;
-      font-weight:600;
+    .dragging {
+      opacity:0.6;
+      transform:scale(1.06);
       z-index:50;
     }
 
-    #newCenterOk {
-      position:absolute;
-      top:calc(50% + 80px);
-      left:50%;
+    #bottomActionBar {
+      position:fixed;bottom:20px;left:50%;
       transform:translateX(-50%);
-      background:#000;
-      color:#fff;
-      border:none;
-      padding:8px 20px;
-      border-radius:12px;
-      font-size:15px;
-      display:none;
-      z-index:51;
+      width:calc(100% - 40px);max-width:600px;
+      background:#000;color:#fff;border-radius:18px;
+      padding:10px 14px;font-size:26px;font-weight:600;
+      display:flex;justify-content:center;align-items:center;
     }
   </style>
 </head>
@@ -240,8 +163,8 @@
   </div>
 
   <div id="loginForm">
-    <input id="loginEmail" type="email" placeholder="E-Mail" class="login-input" />
-    <input id="loginPassword" type="password" placeholder="Passwort" class="login-input" />
+    <input id="loginEmail" type="email" placeholder="E-Mail" class="login-input">
+    <input id="loginPassword" type="password" placeholder="Passwort" class="login-input">
     <button id="loginOkBtn" class="btn" style="background:#000;color:#fff;">OK</button>
   </div>
 </div>
@@ -253,218 +176,85 @@
   </div>
 
   <div id="habitList"></div>
-
-  <div id="newCenterHabit">Neu</div>
-  <button id="newCenterOk">OK</button>
 </div>
 
 <div id="bottomActionBar">+</div>
 
 <script>
-/* ------------------------------ */
-/* SUPABASE */
-/* ------------------------------ */
+/* -------------------------- */
+/* Supabase */
+/* -------------------------- */
 const supabaseClient = supabase.createClient(
   "https://gglgenarpskajkaanknk.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4"
 );
 
-/* ------------------------------ */
-/* PHYSIK SETUP */
-/* ------------------------------ */
-const Engine = Matter.Engine;
-const World  = Matter.World;
-const Bodies = Matter.Bodies;
-const Body   = Matter.Body;
-
-let engine, world;
-let habitBodies = [];
-let walls = [];
-let physicsReady = false;
-
-const CARD_SIZE = 100;
-const CARD_HALF = CARD_SIZE/2;
-
-/* ruhige Physik */
-const MAX_SPEED = 1.2;
-const MIN_SPEED = 0.15;
-const WANDER_FORCE = 0.0014;
-const WANDER_INTERVAL = 260;
-
-const habitListEl = document.getElementById("habitList");
-
-async function initPhysics() {
-  if (physicsReady) return;
-  physicsReady = true;
-
-  engine = Engine.create();
-  world = engine.world;
-  engine.gravity.x = 0;
-  engine.gravity.y = 0;
-
-  createBounds();
-
-  let last = performance.now();
-  function loop(now){
-    const dt = now - last;
-    last = now;
-    Engine.update(engine, dt);
-
-    updateDOM();
-    checkEdgeCompletion();
-
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
-
-  setInterval(()=>applyWander(),WANDER_INTERVAL);
-}
-
-function createBounds(){
-  const r = habitListEl.getBoundingClientRect();
-  const w = r.width;
-  const h = r.height;
-  const thick = 60;
-
-  if (walls.length){
-    walls.forEach(wb=>World.remove(world,wb));
-  }
-  walls = [];
-
-  const left   = Bodies.rectangle(-thick/2, h/2, thick, h+thick,{isStatic:true});
-  const right  = Bodies.rectangle(w+thick/2, h/2, thick, h+thick,{isStatic:true});
-  const top    = Bodies.rectangle(w/2, -thick/2, w+thick, thick,{isStatic:true});
-  const bottom = Bodies.rectangle(w/2, h+thick/2, w+thick, thick,{isStatic:true});
-
-  walls.push(left,right,top,bottom);
-  World.add(world,walls);
-}
-
-function applyWander(){
-  habitBodies.forEach(({body})=>{
-    const vx = body.velocity.x;
-    const vy = body.velocity.y;
-    const speed = Math.sqrt(vx*vx+vy*vy);
-
-    if (speed < MIN_SPEED){
-      const a = Math.random()*Math.PI*2;
-      Body.applyForce(body,body.position,{
-        x:Math.cos(a)*WANDER_FORCE,
-        y:Math.sin(a)*WANDER_FORCE
-      });
-      return;
-    }
-
-    if (speed > MAX_SPEED){
-      Body.setVelocity(body,{x:vx*0.9,y:vy*0.9});
-      return;
-    }
-
-    const a2 = Math.random()*Math.PI*2;
-    Body.applyForce(body,body.position,{
-      x:Math.cos(a2)*WANDER_FORCE,
-      y:Math.sin(a2)*WANDER_FORCE
-    });
-  });
-}
-
-/* ------------------------------ */
 /* LOGIN */
-/* ------------------------------ */
-const loginScreen = document.getElementById("loginScreen");
-const mainScreen = document.getElementById("mainScreen");
-const loginForm = document.getElementById("loginForm");
-const loginButtonBar = document.getElementById("loginButtonBar");
-const loginEmail = document.getElementById("loginEmail");
-const loginPassword = document.getElementById("loginPassword");
-
-document.getElementById("btnLogin").onclick = ()=>{
+btnLogin.onclick=()=>{
   loginForm.style.display="flex";
   loginForm.dataset.mode="login";
   loginButtonBar.style.bottom="260px";
 };
-
-document.getElementById("btnRegister").onclick = ()=>{
+btnRegister.onclick=()=>{
   loginForm.style.display="flex";
   loginForm.dataset.mode="register";
   loginButtonBar.style.bottom="260px";
 };
 
-document.getElementById("loginOkBtn").onclick = async ()=>{
-  const email = loginEmail.value;
-  const password = loginPassword.value;
-  const mode = loginForm.dataset.mode;
+loginOkBtn.onclick=async()=>{
+  const email=loginEmail.value;
+  const pw=loginPassword.value;
+  const mode=loginForm.dataset.mode;
 
-  if (mode==="login"){
-    const {error} = await supabaseClient.auth.signInWithPassword({email,password});
-    if (!error){
+  if(mode==="login"){
+    const {error}=await supabaseClient.auth.signInWithPassword({email,password:pw});
+    if(!error){
       loginScreen.classList.remove("active");
       mainScreen.classList.add("active");
-      await initPhysics();
       loadHabits();
     }
-  }
-
-  if (mode==="register"){
-    await supabaseClient.auth.signUp({email,password});
+  } else {
+    await supabaseClient.auth.signUp({email,password:pw});
   }
 };
 
-/* ------------------------------ */
-/* HABITS */
-/* ------------------------------ */
-async function loadHabits(){
-  const user = (await supabaseClient.auth.getUser()).data.user;
-  if (!user)return;
+/* -------------------------- */
+/* GRID SYSTEM */
+/* -------------------------- */
 
-  const {data} = await supabaseClient
+const habitList=document.getElementById("habitList");
+
+async function loadHabits(){
+  const user=(await supabaseClient.auth.getUser()).data.user;
+
+  const {data}=await supabaseClient
     .from("habits")
     .select("*")
-    .eq("user_id",user.id);
+    .eq("user_id",user.id)
+    .order("index", { ascending:true });
 
   updateProgress(data);
-  const open = data.filter(x=>x.zustand!=="erledigt");
 
-  habitBodies.forEach(({body})=>World.remove(world,body));
-  habitBodies = [];
-  habitListEl.innerHTML = "";
+  habitList.innerHTML="";
 
-  const r = habitListEl.getBoundingClientRect();
-  const w = r.width;
-  const h = r.height;
-
-  open.forEach(habit=>{
-    const el = document.createElement("div");
-    el.className="habitCard";
-    el.textContent = habit.titel;
-    el.dataset.id = habit.id;
-    el.style.background = randomPastel();
-    habitListEl.appendChild(el);
-
-    const x = CARD_HALF + Math.random()*(w-CARD_SIZE);
-    const y = CARD_HALF + Math.random()*(h-CARD_SIZE);
-
-    const body = Bodies.rectangle(x,y,CARD_SIZE,CARD_SIZE,{
-      frictionAir:0.015,
-      restitution:0.7,
-      sleepThreshold:-1,
-      inertia:Infinity
-    });
-
-    body.habitId = habit.id;
-    body.domEl = el;
-    body.readyToComplete = false;
-
-    World.add(world,body);
-    habitBodies.push({body,el});
-
-    Body.setVelocity(body,{
-      x:(Math.random()*2-1)*0.3,
-      y:(Math.random()*2-1)*0.3
-    });
-
-    attachDrag(el,body);
+  data.filter(h=>h.zustand!=="erledigt").forEach(h=>{
+    const card=createHabitCard(h);
+    habitList.appendChild(card);
   });
+}
+
+function createHabitCard(habit){
+  const card=document.createElement("div");
+  card.className="habitCard";
+  card.dataset.id=habit.id;
+  card.dataset.index=habit.index ?? 999999;
+  card.style.background=randomPastel();
+  card.textContent=habit.titel;
+
+  card.addEventListener("pointerdown", e => startDrag(e, card));
+  card.addEventListener("dblclick", ()=>editHabit(card));
+
+  return card;
 }
 
 function randomPastel(){
@@ -472,121 +262,171 @@ function randomPastel(){
   return arr[Math.floor(Math.random()*arr.length)];
 }
 
-function updateDOM(){
-  habitBodies.forEach(({body,el})=>{
-    el.style.transform = `translate(${body.position.x-CARD_HALF}px,${body.position.y-CARD_HALF}px)`;
-  });
+/* EDIT inline */
+function editHabit(card){
+  const old=card.textContent;
+  card.innerHTML=`<input class="habitInput" value="${old}">`;
+  const input=card.querySelector(".habitInput");
+  input.focus();
+
+  input.onblur=()=>saveEdit(card,input.value);
+  input.onkeydown=e=>{if(e.key==="Enter")saveEdit(card,input.value)};
 }
 
-async function completeHabit(id,body,el){
-  World.remove(world,body);
-  el.remove();
-  await supabaseClient.from("habits").update({zustand:"erledigt"}).eq("id",id);
-  loadHabits();
+async function saveEdit(card,newVal){
+  card.textContent=newVal;
+
+  await supabaseClient
+    .from("habits")
+    .update({titel:newVal})
+    .eq("id",card.dataset.id);
 }
 
-/* Rand-Check */
-function checkEdgeCompletion(){
-  const r = habitListEl.getBoundingClientRect();
-  habitBodies.forEach(({body,el})=>{
-    if (!body.readyToComplete)return;
-    const x = body.position.x;
-    const y = body.position.y;
+/* -------------------------- */
+/* ADD NEW Habit Inline */
+/* -------------------------- */
+bottomActionBar.onclick=()=>{
+  const card=document.createElement("div");
+  card.className="habitCard";
+  card.style.background=randomPastel();
+  card.innerHTML=`<input class="habitInput" placeholder="Titel">`;
 
-    if (x< -50 || x>r.width+50 || y< -50 || y>r.height+50){
-      completeHabit(body.habitId,body,el);
-    }
-  });
-}
+  habitList.appendChild(card);
+  const input=card.querySelector("input");
+  input.focus();
 
-/* ------------------------------ */
-/* DRAG */
-/* ------------------------------ */
-function attachDrag(el,body){
-  let dragging=false;
-
-  const getRect=()=>habitListEl.getBoundingClientRect();
-
-  el.addEventListener("touchstart",e=>{
-    dragging=true;
-    Body.setVelocity(body,{x:0,y:0});
-    e.preventDefault();
-  },{passive:false});
-
-  el.addEventListener("touchmove",e=>{
-    if(!dragging)return;
-
-    const t=e.touches[0];
-    const r=getRect();
-
-    const x=t.clientX-r.left;
-    const y=t.clientY-r.top;
-
-    Body.setPosition(body,{x,y});
-
-    const hitEdge =
-      x<20 || x>r.width-20 || y<20 || y>r.height-20;
-
-    if(hitEdge){
-      el.style.opacity="0.5";
-      body.readyToComplete=true;
-    } else {
-      el.style.opacity="1";
-      body.readyToComplete=false;
-    }
-
-    e.preventDefault();
-  },{passive:false});
-
-  el.addEventListener("touchend",()=>{
-    dragging=false;
-    if (!body.readyToComplete){
-      el.style.opacity="1";
-    }
-  });
-}
-
-/* ------------------------------ */
-/* PLUS BUTTON */
-/* ------------------------------ */
-const newCenter = document.getElementById("newCenterHabit");
-const newCenterOk = document.getElementById("newCenterOk");
-
-document.getElementById("bottomActionBar").onclick=()=>{
-  newCenter.style.display="flex";
-  newCenterOk.style.display="block";
-
-  habitBodies.forEach(({body})=>{
-    const a=Math.random()*Math.PI*2;
-    Body.applyForce(body,body.position,{
-      x:Math.cos(a)*0.03,
-      y:Math.sin(a)*0.03
-    });
-  });
+  input.onblur=()=>saveNewHabit(input.value, card);
+  input.onkeydown=e=>{
+    if(e.key==="Enter")saveNewHabit(input.value, card);
+  };
 };
 
-newCenterOk.onclick=async()=>{
+async function saveNewHabit(title, card){
+  if(!title.trim()){
+    card.remove();
+    return;
+  }
+
   const user=(await supabaseClient.auth.getUser()).data.user;
-  await supabaseClient.from("habits").insert({
-    user_id:user.id,
-    titel:"Neue Aufgabe",
-    zustand:"offen"
+
+  const {data:existing}=await supabaseClient
+    .from("habits")
+    .select("index")
+    .eq("user_id", user.id);
+
+  const nextIndex = existing.length;
+
+  const {data}=await supabaseClient
+    .from("habits")
+    .insert({
+      user_id:user.id,
+      titel:title,
+      zustand:"offen",
+      index:nextIndex
+    })
+    .select()
+    .single();
+
+  card.dataset.id=data.id;
+  card.dataset.index=data.index;
+  card.textContent=data.titel;
+
+  card.addEventListener("pointerdown", e => startDrag(e, card));
+  card.addEventListener("dblclick", ()=>editHabit(card));
+}
+
+/* -------------------------- */
+/* DRAG & SORT */
+/* -------------------------- */
+
+let dragCard=null;
+let startIndex=null;
+let ghost=null;
+
+function startDrag(e, card){
+  dragCard=card;
+  startIndex=parseInt(card.dataset.index);
+
+  card.setPointerCapture(e.pointerId);
+  card.classList.add("dragging");
+
+  card.addEventListener("pointermove", moveDrag);
+  card.addEventListener("pointerup", endDrag);
+}
+
+function moveDrag(e){
+  const card=dragCard;
+  const rect=card.getBoundingClientRect();
+
+  card.style.transform=`translate(${e.clientX-rect.width/2 - rect.left}px, ${e.clientY-rect.height/2 - rect.top}px)`;
+
+  const cards=[...habitList.children].filter(c=>c!==dragCard);
+
+  const nearest=cards.find(c=>isPointerInside(e,c));
+  if(nearest){
+    reorder(dragCard,nearest);
+  }
+}
+
+function endDrag(e){
+  const card=dragCard;
+
+  card.classList.remove("dragging");
+  card.style.transform="";
+
+  card.removeEventListener("pointermove", moveDrag);
+  card.removeEventListener("pointerup", endDrag);
+  card.releasePointerCapture(e.pointerId);
+
+  dragCard=null;
+}
+
+function isPointerInside(e, card){
+  const r=card.getBoundingClientRect();
+  return (
+    e.clientX>r.left &&
+    e.clientX<r.right &&
+    e.clientY>r.top &&
+    e.clientY<r.bottom
+  );
+}
+
+function reorder(dragged, target){
+  const draggedIndex=parseInt(dragged.dataset.index);
+  const targetIndex=parseInt(target.dataset.index);
+
+  if(draggedIndex===targetIndex) return;
+
+  const all=[...habitList.children];
+  all.sort((a,b)=>parseInt(a.dataset.index)-parseInt(b.dataset.index));
+
+  all.splice(draggedIndex,1);
+  all.splice(targetIndex,0,dragged);
+
+  all.forEach((c,i)=>{
+    c.dataset.index=i;
+    habitList.appendChild(c);
   });
 
-  newCenter.style.display="none";
-  newCenterOk.style.display="none";
-  loadHabits();
-};
+  saveOrder(all);
+}
 
-/* ------------------------------ */
+async function saveOrder(all){
+  for(const c of all){
+    await supabaseClient
+      .from("habits")
+      .update({index:parseInt(c.dataset.index)})
+      .eq("id",c.dataset.id);
+  }
+}
+
 /* Progress */
-/* ------------------------------ */
 function updateProgress(list){
   const done=list.filter(x=>x.zustand==="erledigt").length;
   const total=list.length;
-  const pct=total?done/total*100:0;
-  document.getElementById("progressInner").style.width=pct+"%";
+  const pct=total?(done/total)*100:0;
+  progressInner.style.width=pct+"%";
 }
 </script>
 </body>
-</html>
+</html
