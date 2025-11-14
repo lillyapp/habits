@@ -2004,40 +2004,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 </script>
-<script>
-document.addEventListener("DOMContentLoaded", async () => {
-  console.log("Auto-Login läuft…");
-
-  const client = supabase.createClient(
-    "https://gglgenarpskajkaanknk.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4"
-  );
-
-  const { data } = await client.auth.getSession();
-
-  console.log("Session:", data);
-
-  // Falls User nicht eingeloggt → nichts tun
-  if (!data.session) {
-    console.log("Kein Auto-Login → LoginView bleibt sichtbar.");
-    return;
-  }
-
-  // Falls User eingeloggt → Setup öffnen
-  console.log("Auto-Login aktiv → user eingeloggt:", data.session.user.email);
-
-  // LoginView ausblenden
-  const loginView = document.getElementById("loginView");
-  loginView.classList.remove("active");
-
-  // SetupView öffnen
-  const setupView = document.getElementById("setupView");
-  setupView.classList.add("active");
-
-  // Deine bestehende Funktion
-  renderSetup(true);
-});
-</script>
 <!-- === DEBUG SYSTEM === -->
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <script>
