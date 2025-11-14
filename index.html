@@ -5,14 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Corbado Login Test</title>
 
-  <!-- Corbado Web-JS -->
-  <link 
-    rel="stylesheet" 
-    href="https://unpkg.com/@corbado/web-js@2.9.0/dist/bundle/index.css"
-  />
-  <script 
-    src="https://unpkg.com/@corbado/web-js@2.9.0/dist/bundle/index.js"
-  ></script>
+  <link rel="stylesheet" href="https://unpkg.com/@corbado/web-js/dist/bundle/index.css"/>
+  <script src="https://unpkg.com/@corbado/web-js/dist/bundle/index.js"></script>
 
   <style>
     body {
@@ -22,20 +16,15 @@
       align-items: center;
       min-height: 100vh;
       margin: 0;
-      background: #f5f5f5;
+      background: #fafafa;
     }
     #box {
       width: 100%;
       max-width: 360px;
+      background: white;
       padding: 20px;
       border-radius: 12px;
-      background: white;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      font-size: 1.4rem;
     }
   </style>
 </head>
@@ -44,30 +33,27 @@
 
 <div id="box">
   <h2>Login</h2>
+  <button id="loginStartBtn" style="width:100%; padding:12px;">Login starten</button>
 
-  <!-- Corbado UI wird hier geladen -->
-  <div id="corbadoContainer"></div>
+  <div id="corbadoContainer" style="margin-top:20px;"></div>
 </div>
 
 <script>
-  // Corbado initialisieren
   const cb = new Corbado({
     projectID: "pro-8203476425584199588",
     apiKey: "corbado1_GHlBk2HgxuV6dBaKT2QZTfJJFxdleU",
-    redirectUrl: "http://lillyapp.github.io/habits/"
+    redirectUrl: "https://lillyapp.github.io/habits/"  // wichtig: HTTPS
   });
 
-  // Login-UI einfügen
-  cb.mountLogin({
-    containerId: "corbadoContainer",
-    mode: "login",
-    onLoggedIn: (user) => {
-      console.log("Eingeloggt:", user);
-
-      // Mini-Test: Bestätigung anzeigen
-      alert("Login erfolgreich!\nUser ID:\n" + user.sub);
-    }
-  });
+  document.getElementById("loginStartBtn").onclick = () => {
+    cb.mountLogin({
+      containerId: "corbadoContainer",
+      mode: "login",
+      onLoggedIn: (user) => {
+        alert("Login erfolgreich: " + user.sub);
+      }
+    });
+  };
 </script>
 
 </body>
