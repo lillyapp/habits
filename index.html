@@ -3,19 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Corbado Login Test (Fixed)</title>
+  <title>Corbado Login Test (iOS Fix)</title>
 
-  <!-- Eruda Debug Console -->
+  <!-- Eruda Konsole -->
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>eruda.init();</script>
 
-  <!-- Corbado UMD Build (richtig!) -->
-  <link rel="stylesheet" href="https://cdn.corbado.com/web-js/latest/bundle/index.css"/>
-  <script src="https://cdn.corbado.com/web-js/latest/bundle/index.umd.js"></script>
+  <!-- Corbado (mit Integrity — funktioniert in Safari iOS) -->
+  <script 
+    src="https://cdn.corbado.com/web-js/v2.8.0/bundle/index.umd.js"
+    integrity="sha256-TraEfK7nUlE3UaF7YJVofCYEfVZETvdt+CwMHP8GYAo="
+    crossorigin="anonymous">
+  </script>
+
+  <link 
+    rel="stylesheet" 
+    href="https://cdn.corbado.com/web-js/v2.8.0/bundle/index.css"
+    integrity="sha256-twOPusV6sv8jTKoyyhYuKsL9w12hk2v+535JgGTv4vQ="
+    crossorigin="anonymous">
 
   <style>
     body { font-family: system-ui; padding: 20px; }
-    button { padding: 14px; width: 100%; }
+    button { padding: 14px; width: 100%; margin-top: 10px; }
     #corbadoContainer { margin-top:20px; min-height:150px; }
   </style>
 </head>
@@ -25,43 +34,37 @@
 <h2>Login Test</h2>
 
 <button id="loginBtn">Login starten</button>
+
 <div id="corbadoContainer"></div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-
-  console.log("DOM geladen — Initialisiere Corbado UMD…");
   console.log("Corbado global:", window.Corbado);
 
-  try {
-    const cb = new Corbado({
-      projectID: "pro-8203476425584199588",
-      apiKey: "corbado1_GHlBk2HgxuV6dBaKT2QZTfJJFxdleU",
-      redirectUrl: "https://lillyapp.github.io/habits/"
-    });
-
-    console.log("Corbado initialisiert:", cb);
-
-    document.getElementById("loginBtn").onclick = () => {
-      console.log("Login Button geklickt 🚀");
-
-      cb.mountLogin({
-        containerId: "corbadoContainer",
-        mode: "login",
-        onLoggedIn: user => {
-          console.log("LOGIN ERFOLGREICH:", user);
-          alert("Login OK: " + user.sub);
-        },
-        onError: err => {
-          console.error("LOGIN FEHLER:", err);
-        }
-      });
-    };
-
-  } catch (err) {
-    console.error("FEHLER BEI INIT:", err);
+  if (!window.Corbado) {
+    console.error("Corbado wurde nicht geladen!");
+    return;
   }
 
+  const cb = new Corbado({
+    projectID: "pro-8203476425584199588",
+    apiKey: "corbado1_GHlBk2HgxuV6dBaKT2QZTfJJFxdleU",
+    redirectUrl: "https://lillyapp.github.io/habits/"
+  });
+
+  document.getElementById("loginBtn").onclick = () => {
+    cb.mountLogin({
+      containerId: "corbadoContainer",
+      mode: "login",
+      onLoggedIn: user => {
+        console.log("Login erfolgreich:", user);
+        alert("OK: " + user.sub);
+      },
+      onError: err => {
+        console.error("Login Fehler:", err);
+      }
+    });
+  };
 });
 </script>
 
