@@ -2,35 +2,74 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Corbado Login Beispiel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supabase Login</title>
 
-  <!-- Stylesheet laut Doc -->
-  <link 
-    rel="stylesheet" 
-    href="https://unpkg.com/@corbado/web-js@2/dist/bundle/index.css"
-  />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Library laut Doc -->
-  <script 
-    src="https://unpkg.com/@corbado/web-js@2/dist/bundle/index.js"
-  ></script>
+  <style>
+    body { 
+      font-family: system-ui, sans-serif; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      height: 100vh; 
+      margin: 0; 
+      background: #f5f5f5; 
+    }
+    #box {
+      width: 100%; max-width: 380px; 
+      background: white; padding: 24px; 
+      border-radius: 16px; 
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    input {
+      width: 100%; padding: 12px; 
+      margin-bottom: 12px; 
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      width: 100%; padding: 12px;
+      background: black; color: white;
+      border: none; border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+  </style>
 </head>
+
 <body>
-  <div id="corbadoAuth"></div>
 
-  <script type="module">
-    await Corbado.load({
-      projectId: "pro-1234567890"
-    });
+<div id="box">
+  <h2>Login</h2>
 
-    const element = document.getElementById("corbadoAuth");
-    Corbado.mountAuthUI(element, {
-      onLoggedIn: () => {
-        console.log("User logged in");
-        // Weiterleitung oder Logik hier
+  <input id="email" type="email" placeholder="Email eingeben">
+  <button id="loginBtn">Magic Link senden</button>
+
+  <p id="status" style="margin-top:12px;"></p>
+</div>
+
+<script>
+  const supabase = supabase.createClient(
+    "https://gglgenarpskajkaanknk.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+  );
+
+  document.getElementById("loginBtn").onclick = async () => {
+    const email = document.getElementById("email").value;
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: "https://lillyapp.github.io/habits/"
       }
     });
-  </script>
+
+    document.getElementById("status").textContent =
+      error ? error.message : "Link wurde gesendet!";
+  };
+</script>
+
 </body>
 </html>
