@@ -10,7 +10,10 @@
 
   <!-- Eruda Konsole -->
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>eruda.init(); console.log("ERUDA aktiviert.");</script>
+  <script>
+    eruda.init();
+    console.log("ERUDA aktiviert.");
+  </script>
 
   <style>
     body {
@@ -77,7 +80,7 @@
 
   const client = supabase.createClient(
     "https://gglgenarpskajkaanknk.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4"
   );
 
   console.log("Supabase Client geladen:", client);
@@ -102,9 +105,10 @@
     } else {
       status.textContent = "Login erfolgreich!";
       status.style.color = "green";
+
       setTimeout(() => {
         window.location.href = "index.html";
-      }, 500);
+      }, 800);
     }
   }
 
