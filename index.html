@@ -1760,96 +1760,33 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 </script>
-<!-- ========================= -->
-<!--     SUPABASE + LOGIN      -->
-<!--        AUTO LOGIN         -->
-<!--      HABITS SPEICHERN     -->
-<!--       HABITS LADEN        -->
-<!-- ========================= -->
 <script>
-document.addEventListener("DOMContentLoaded", async () => {
-  console.log("[INIT] Login / Auto-Login / Habits aktiv");
+/* ============================================================
+   SUPABASE INITIALISIERUNG
+============================================================ */
+const client = supabase.createClient(
+  "https://gglgenarpskajkaanknk.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4"
+);
 
-  /* --- Supabase Client --- */
-  const client = supabase.createClient(
-    "https://gglgenarpskajkaanknk.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4"
-  );
 
-  /* ========================= */
-  /*       HABIT-FUNKTIONEN    */
-  /* ========================= */
-
-  async function saveHabitsToSupabase() {
-    console.log("[HABITS] Speichere Habits…");
-
-    const { data: sessionData } = await client.auth.getSession();
-    if (!sessionData.session) return;
-
-    const user_id = sessionData.session.user.id;
-
-    const h1 = document.getElementById("setup-habit-1").value.trim();
-    const h2 = document.getElementById("setup-habit-2").value.trim();
-    const h3 = document.getElementById("setup-habit-3").value.trim();
-
-    const habits = [h1, h2, h3].filter(h => h.length > 0);
-
-    // Alte löschen
-    await client.from("habits").delete().eq("user_id", user_id);
-
-    if (habits.length === 0) return;
-
-    // Neue einfügen
-    const inserts = habits.map(h => ({ user_id, name: h }));
-    const { error } = await client.from("habits").insert(inserts);
-
-    if (error) console.error("[HABITS] Fehler:", error);
-    else console.log("[HABITS] Gespeichert:", inserts);
-  }
-
-  async function loadHabitsFromSupabase() {
-    console.log("[HABITS] Lade Habits…");
-
-    const { data: sessionData } = await client.auth.getSession();
-    if (!sessionData.session) return [];
-
-    const user_id = sessionData.session.user.id;
-
-    const { data, error } = await client
-      .from("habits")
-      .select("*")
-      .eq("user_id", user_id)
-      .order("id");
-
-    if (error) {
-      console.error("[HABITS] Fehler:", error);
-      return [];
-    }
-
-    console.log("[HABITS] Geladen:", data);
-    return data || [];
-  }
-
-  /* ========================= */
-  /*          LOGIN            */
-  /* ========================= */
-
+/* ============================================================
+   LOGIN-VIEW STEP LOGIK + REGISTRIERUNG
+============================================================ */
+document.addEventListener("DOMContentLoaded", () => {
   const loginView = document.getElementById("loginView");
+  const setupView = document.getElementById("setupView");
+  const mainView = document.getElementById("mainView");
   const loginBtn = document.getElementById("goSetup");
 
-  // Falls View nicht existiert → abbrechen
-  if (!loginBtn || !loginView) {
-    console.warn("[LOGIN] loginView oder goSetup fehlt");
-    return;
-  }
+  if (!loginBtn || !loginView) return;
 
-  loginBtn.onclick = null; // überschreibe alten Handler
+  loginBtn.onclick = null;
   loginBtn.textContent = "Login";
 
   let step = 0;
   let email = "";
 
-  /* --- Wrapper über dem Button --- */
   const wrapper = document.createElement("div");
   wrapper.style.display = "none";
   wrapper.style.marginBottom = "12px";
@@ -1859,13 +1796,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   status.style.color = "red";
   status.style.fontSize = "0.8rem";
 
-  function styleInput(el) {
-    el.style.width = "100%";
-    el.style.padding = "12px";
-    el.style.marginBottom = "10px";
-    el.style.border = "1px solid #ccc";
-    el.style.borderRadius = "12px";
-    el.style.background = "#f0f0f0";
+  function styleInput(i) {
+    i.style.width = "100%";
+    i.style.padding = "12px";
+    i.style.marginBottom = "10px";
+    i.style.border = "1px solid #ccc";
+    i.style.borderRadius = "12px";
+    i.style.background = "#f0f0f0";
   }
 
   const emailInput = document.createElement("input");
@@ -1878,24 +1815,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   passInput.placeholder = "Passwort";
   styleInput(passInput);
 
-  /* --- Registrieren Button --- */
   const registerBtn = document.createElement("button");
   registerBtn.textContent = "Registrieren";
   registerBtn.style.marginTop = "10px";
   registerBtn.style.width = "100%";
   registerBtn.style.padding = "12px";
-  registerBtn.style.background = "#444";
-  registerBtn.style.color = "white";
   registerBtn.style.borderRadius = "12px";
   registerBtn.style.border = "none";
+  registerBtn.style.background = "#444";
+  registerBtn.style.color = "white";
   registerBtn.style.display = "none";
   loginBtn.parentNode.appendChild(registerBtn);
 
-  /* --- LOGIN BUTTON LOGIK --- */
+
+  /* -------------------- LOGIN BUTTON -------------------- */
   loginBtn.onclick = async () => {
     status.textContent = "";
 
-    // 1) Email anzeigen
     if (step === 0) {
       wrapper.style.display = "block";
       wrapper.innerHTML = "";
@@ -1907,23 +1843,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    // 2) Passwort anzeigen
     if (step === 1) {
       if (!emailInput.value.includes("@")) {
         status.textContent = "Bitte gültige E-Mail eingeben.";
         return;
       }
       email = emailInput.value;
+
       wrapper.innerHTML = "";
       wrapper.appendChild(passInput);
       wrapper.appendChild(status);
+
       loginBtn.textContent = "Einloggen";
       registerBtn.style.display = "block";
       step = 2;
       return;
     }
 
-    // 3) Login durchführen
     if (step === 2) {
       status.textContent = "Wird geprüft…";
 
@@ -1938,7 +1874,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       if (!data.user.email_confirmed_at) {
-        status.textContent = "Bitte bestätige zuerst deine E-Mail.";
+        status.textContent = "Bitte E-Mail bestätigen.";
         await client.auth.signOut();
         return;
       }
@@ -1946,7 +1882,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       status.style.color = "green";
       status.textContent = "Login erfolgreich!";
 
-      setTimeout(async () => {
+      setTimeout(() => {
         animateLoginToSetup(() => {
           loginView.classList.remove("active");
           setupView.classList.add("active");
@@ -1956,7 +1892,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  /* --- REGISTRIEREN BUTTON --- */
+
+  /* -------------------- REGISTRIEREN BUTTON -------------------- */
   registerBtn.onclick = async () => {
     status.textContent = "Registriere…";
 
@@ -1971,38 +1908,127 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     status.style.color = "green";
-    status.textContent =
-      "Registrierung erfolgreich! Bitte E-Mail bestätigen.";
+    status.textContent = "Bitte bestätige deine E-Mail.";
 
     loginBtn.textContent = "Einloggen";
     registerBtn.style.display = "none";
     step = 2;
   };
+});
 
-  /* ========================= */
-  /*        AUTO LOGIN         */
-  /* ========================= */
 
-  const { data: autoSession } = await client.auth.getSession();
+/* ============================================================
+   AUTO-LOGIN (PWA-tauglich)
+============================================================ */
+document.addEventListener("DOMContentLoaded", async () => {
+  const loginView = document.getElementById("loginView");
+  const setupView = document.getElementById("setupView");
+  const mainView = document.getElementById("mainView");
 
-  if (autoSession.session && autoSession.session.user.email_confirmed_at) {
-    console.log("[AUTOLOGIN] Benutzer gefunden → prüfe Habits…");
+  const { data } = await client.auth.getSession();
+  if (!data.session) return;
 
-    const habits = await loadHabitsFromSupabase();
+  const user = data.session.user;
+  if (!user.email_confirmed_at) return;
 
-    loginView.classList.remove("active");
+  const habits = await loadHabitsFromSupabase();
 
-    if (habits.length > 0) {
-      console.log("[AUTOLOGIN] Habits gefunden → mainView");
-      mainView.classList.add("active");
-      renderMainView(habits);
-    } else {
-      console.log("[AUTOLOGIN] Keine Habits → setupView");
-      setupView.classList.add("active");
-      renderSetup(true);
-    }
+  loginView.classList.remove("active");
+
+  if (habits.length > 0) {
+    mainView.classList.add("active");
+    renderMainView(habits);
+  } else {
+    setupView.classList.add("active");
+    renderSetup(true);
   }
 });
+
+
+/* ============================================================
+   HABITS LADEN
+============================================================ */
+async function loadHabitsFromSupabase() {
+  const { data: session } = await client.auth.getSession();
+  if (!session.session) return [];
+  const user_id = session.session.user.id;
+
+  const { data, error } = await client
+    .from("habits")
+    .select("*")
+    .eq("user_id", user_id)
+    .order("id");
+
+  if (error) {
+    console.error("[HABITS] Fehler beim Laden:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+
+/* ============================================================
+   HABITS SPEICHERN (3 Setup-Felder)
+============================================================ */
+async function saveHabitsToSupabase() {
+  const { data: session } = await client.auth.getSession();
+  if (!session.session) return;
+  const user_id = session.session.user.id;
+
+  const h1 = document.getElementById("setup-habit-1").value.trim();
+  const h2 = document.getElementById("setup-habit-2").value.trim();
+  const h3 = document.getElementById("setup-habit-3").value.trim();
+
+  const habits = [h1, h2, h3].filter(h => h.length > 0);
+
+  await client.from("habits").delete().eq("user_id", user_id);
+
+  if (habits.length === 0) return;
+
+  const inserts = habits.map(h => ({ user_id, name: h }));
+  const { error } = await client.from("habits").insert(inserts);
+
+  if (error) console.error(error);
+}
+
+
+/* ============================================================
+   HABIT CONFIG SPEICHERN / LADEN (optional)
+============================================================ */
+async function saveHabitConfig(habit_id, config) {
+  const { data: session } = await client.auth.getSession();
+  if (!session.session) return;
+  const user_id = session.session.user.id;
+
+  await client.from("habit_configs").delete().eq("habit_id", habit_id);
+
+  return client.from("habit_configs").insert({
+    user_id,
+    habit_id,
+    type: config.type,
+    weekly_goal: config.weekly_goal,
+    selected_weekdays: config.selected_weekdays,
+    icon: config.icon,
+    color: config.color,
+    order_position: config.order
+  });
+}
+
+async function loadHabitConfigs() {
+  const { data: session } = await client.auth.getSession();
+  if (!session.session) return [];
+  const user_id = session.session.user.id;
+
+  const { data } = await client
+    .from("habit_configs")
+    .select("*")
+    .eq("user_id", user_id)
+    .order("order_position");
+
+  return data || [];
+}
+
 </script>
 <!-- === DEBUG SYSTEM === -->
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
