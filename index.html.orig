@@ -1760,6 +1760,125 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 </script>
+<!-- LOGIN LOGIC EXTENSION -->
+<script>
+/* === Supabase Initialisierung === */
+const supabaseClient = supabase.createClient(
+  "https://gglgenarpskajkaanknk.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4"
+);
 
+console.log("Supabase Login aktiv");
+
+/* === Login UI Elemente === */
+const loginButton = document.getElementById("goSetup");
+const loginHeader = document.querySelector("#loginView .center-header");
+
+let loginStep = 0;
+let loginEmail = "";
+
+/* === Eingabefeld Container === */
+const loginInputWrapper = document.createElement("div");
+loginInputWrapper.style.display = "none";
+loginInputWrapper.style.marginBottom = "1rem";
+
+loginHeader.appendChild(loginInputWrapper);
+
+/* === E-Mail Input === */
+const emailInput = document.createElement("input");
+emailInput.type = "email";
+emailInput.placeholder = "E-Mail";
+emailInput.style.width = "100%";
+emailInput.style.padding = "12px";
+emailInput.style.borderRadius = "12px";
+emailInput.style.border = "1px solid #ddd";
+emailInput.style.background = "#f0f0f0";
+emailInput.style.marginTop = "10px";
+
+/* === Passwort Input === */
+const passwordInput = document.createElement("input");
+passwordInput.type = "password";
+passwordInput.placeholder = "Passwort";
+passwordInput.style.width = "100%";
+passwordInput.style.padding = "12px";
+passwordInput.style.borderRadius = "12px";
+passwordInput.style.border = "1px solid #ddd";
+passwordInput.style.background = "#f0f0f0";
+passwordInput.style.marginTop = "10px";
+
+/* Fehlertext */
+const loginStatus = document.createElement("p");
+loginStatus.style.color = "red";
+loginStatus.style.fontSize = "0.85rem";
+loginStatus.style.marginTop = "0.4rem";
+loginStatus.textContent = "";
+
+loginInputWrapper.appendChild(loginStatus);
+
+/* === LOGIN BUTTON LOGIK === */
+loginButton.textContent = "Login";
+
+loginButton.onclick = async () => {
+  loginStatus.textContent = "";
+
+  // Schritt 1 → Emailfeld anzeigen
+  if (loginStep === 0) {
+    loginInputWrapper.style.display = "block";
+    loginInputWrapper.innerHTML = "";
+    loginInputWrapper.appendChild(emailInput);
+    loginInputWrapper.appendChild(loginStatus);
+
+    loginButton.textContent = "Weiter";
+    loginStep = 1;
+    return;
+  }
+
+  // Schritt 2 → Passwort anzeigen
+  if (loginStep === 1) {
+    if (!emailInput.value.includes("@")) {
+      loginStatus.textContent = "Bitte gültige E-Mail eingeben.";
+      return;
+    }
+
+    loginEmail = emailInput.value;
+    loginInputWrapper.innerHTML = "";
+    loginInputWrapper.appendChild(passwordInput);
+    loginInputWrapper.appendChild(loginStatus);
+
+    loginButton.textContent = "Einloggen";
+    loginStep = 2;
+    return;
+  }
+
+  // Schritt 3 → Login durchführen
+  if (loginStep === 2) {
+    loginStatus.textContent = "Wird geprüft…";
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: loginEmail,
+      password: passwordInput.value
+    });
+
+    console.log("Login:", data, error);
+
+    if (error) {
+      loginStatus.textContent = error.message;
+      return;
+    }
+
+    // Erfolg → Weiter zum Setup
+    loginStatus.style.color = "green";
+    loginStatus.textContent = "Login erfolgreich!";
+
+    setTimeout(() => {
+      animateLoginToSetup(() => {
+        loginView.classList.remove("active");
+        setupView.classList.add("active");
+        renderSetup(true);
+      });
+    }, 600);
+  }
+};
+</script>
 </body>
 </html>
