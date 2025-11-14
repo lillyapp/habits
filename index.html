@@ -1,584 +1,300 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Habit App</title>
+  <meta charset="UTF-8" />
+  <title>GPS Aufgaben · GSAP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- Lucide -->
-<script src="https://unpkg.com/lucide@latest"></script>
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
-<!-- Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
-<style>
-  body {
-    margin:0;
-    padding:0;
-    font-family:system-ui,-apple-system,sans-serif;
-    background:#fff;
-    color:#000;
-    height:100vh;
-    overflow:hidden;
-  }
+  <style>
+    :root {
+      --page-padding: 16px;
+      --card-height: calc((100vh - 16px*4 - 60px) / 3);
+    }
 
-  /* LOGIN */
-  #loginScreen {
-    position:absolute;
-    inset:0;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    padding:20px;
-    z-index:20;
-    background:#fff;
-  }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-  @keyframes pulse {
-    0% {transform:scale(1);}
-    50%{transform:scale(1.06);}
-    100%{transform:scale(1);}
-  }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #fff;
+      height: 100vh;
+      overflow: hidden;
+    }
 
-  #loginCircle {
-    width:30px;
-    height:30px;
-    background:#000;
-    border-radius:50%;
-    animation:pulse 2.2s ease-in-out infinite;
-  }
+    .page {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: var(--page-padding);
+      gap: var(--page-padding);
+    }
 
-  #loginHeadline {
-    margin-top:28px;
-    font-size:26px;
-    font-weight:600;
-    text-align:center;
-  }
+    .cards {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--page-padding);
+    }
 
-  #loginButtonBar {
-    width:100%;
-    max-width:400px;
-    display:flex;
-    gap:14px;
-    margin-top:50px;
-  }
+    .slot {
+      position: relative;
+      height: var(--card-height);
+      perspective: 1200px;
+    }
 
-  .btn {
-    flex:1;
-    padding:14px;
-    border-radius:20px;
-    border:none;
-    font-size:17px;
-  }
+    .card {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      background: #e4e4e4;
+      padding: 24px;
 
-  #btnLogin    {background:#000; color:#fff;}
-  #btnRegister {background:#e5e5e5; color:#000;}
+      transform-style: preserve-3d;
+      opacity: 0;
+      cursor: pointer;
+    }
 
-  #loginForm {
-    width:100%;
-    max-width:400px;
-    display:none;
-    flex-direction:column;
-    gap:12px;
-    margin-top:30px;
-  }
+    .card-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      border-radius: 24px;
+      padding: 24px;
+    }
 
-  .login-input {
-    padding:12px;
-    border:none;
-    border-radius:12px;
-    background:#e5e5e5;
-  }
+    /* Vorderseite */
+    .front {
+      background: transparent;
+    }
 
-  #loginError {
-    margin-top:12px;
-    color:#ef4444;
-    font-size:14px;
-    display:none;
-    text-align:center;
-  }
+    /* Rückseite */
+    .back {
+      background: #e4e4e4;
+      transform: rotateY(180deg);
 
-  /* MAIN */
-  #mainScreen {
-    position:absolute;
-    inset:0;
-    overflow-y:auto;
-    padding:20px;
-    padding-bottom:120px;
-    display:none;
-  }
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+    }
 
-  #addBtn {
-    position:fixed;
-    top:22px;
-    right:22px;
-    width:34px;
-    height:34px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    cursor:pointer;
-    z-index:10;
-  }
+    .gps-big {
+      width: 48px;
+      height: 48px;
+      stroke: #000;
+    }
 
-  #addBtn svg {
-    width:28px;
-    height:28px;
-  }
+    .address-input {
+      border: none;
+      background: transparent;
+      padding: 10px 16px;
+      width: 70%;
+      font-size: 1.2rem;
+      border-bottom: 2px solid #000;
+      outline: none;
+      text-align: center;
+    }
 
-  .habitBlock {
-    margin-bottom:25px;
-    padding-top:35px;
-  }
+    /* Titel-Eingabe */
+    .card-input {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      font-size: 2rem;
+      font-weight: 800;
+      border: none;
+      outline: none;
+      background: transparent;
+      width: 70%;
+      color: #666;
+    }
 
-  .habitTitle {
-    font-size:26px;
-    font-weight:700;
-  }
+    .card-input::placeholder {
+      color: #999;
+    }
 
-  .habitTitleInput {
-    font-size:26px;
-    font-weight:700;
-    border:none;
-    background:transparent;
-    outline:none;
-    width:100%;
-  }
+    /* GPS Icon oben rechts */
+    .gps-icon {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 28px;
+      height: 28px;
+      stroke: #000;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      cursor: pointer;
+    }
 
-  .monthLabel {
-    font-size:11px;
-    font-weight:600;
-    text-transform:uppercase;
-    opacity:0.5;
-    margin-bottom:12px;
-  }
+    .bottom-bar {
+      width: 100%;
+      height: 60px;
+    }
 
-  .dayScroller {
-    display:flex;
-    gap:10px;
-    overflow-x:auto;
-    padding:10px 0 25px 0;
-    -webkit-overflow-scrolling:touch;
-  }
-  .dayScroller::-webkit-scrollbar {display:none;}
-
-  .dayItem {
-    text-align:center;
-    width:50px;
-    flex-shrink:0;
-  }
-
-  .dayItem.today .circle {
-    box-shadow:0 0 0 2px #000 inset;
-  }
-
-  .circle {
-    width:46px;
-    height:46px;
-    border-radius:50%;
-    background:#eee;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    font-size:17px;
-    font-weight:600;
-    margin-bottom:4px;
-    transition:background .25s ease, color .25s ease;
-  }
-
-  .circle.done {
-    background:#000;
-    color:#fff;
-  }
-
-  .weekday {
-    font-size:11px;
-    opacity:0.4;
-  }
-
-  /* NAV */
-  #bottomNav {
-    position:fixed;
-    bottom:0;
-    left:0;
-    width:100%;
-    background:#fff;
-    height:70px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    gap:80px;
-    z-index:5;
-    display:none;
-  }
-
-  .navItem {opacity:0.6; transition:.25s;}
-  .navItem.active {opacity:1;}
-</style>
+    .add-btn {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 999px;
+      background: #000;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+  </style>
 </head>
-
 <body>
 
-<!-- LOGIN -->
-<div id="loginScreen">
-  <div id="loginCircle"></div>
-  <div id="loginHeadline">Hallo, bitte melde dich an</div>
+  <div class="page">
+    <div class="cards">
+      <div class="slot" id="slot1"></div>
+      <div class="slot" id="slot2"></div>
+      <div class="slot" id="slot3"></div>
+    </div>
 
-  <div id="loginButtonBar">
-    <button class="btn" id="btnLogin">Login</button>
-    <button class="btn" id="btnRegister">Registrieren</button>
+    <div class="bottom-bar">
+      <button class="add-btn" id="addBtn">+</button>
+    </div>
   </div>
 
-  <div id="loginForm">
-    <input id="loginEmail" class="login-input" placeholder="E-Mail" type="email" />
-    <input id="loginPassword" class="login-input" placeholder="Passwort" type="password" />
-    <button class="btn" id="loginOkBtn">OK</button>
-  </div>
+  <script>
+    lucide.createIcons();
 
-  <div id="loginError"></div>
-</div>
+    const activeColors = ["#3b82f6", "#f97316", "#22c55e"];
+    const titleColors  = ["#1e3a8a", "#b45309", "#166534"];
 
-<!-- MAIN -->
-<div id="mainScreen">
-  <div id="addBtn"><i data-lucide="plus"></i></div>
-  <div id="app"></div>
-</div>
+    const slotOrder = ["slot3", "slot2", "slot1"];
+    let count = 0;
 
-<!-- NAV -->
-<div id="bottomNav">
-  <div id="navHome" class="navItem active"><i data-lucide="home"></i></div>
-  <div id="navStats" class="navItem"><i data-lucide="bar-chart-3"></i></div>
-</div>
+    document.getElementById("addBtn").addEventListener("click", () => {
+      if (count >= 3) return;
 
-<script>
-lucide.createIcons();
+      const slotId = slotOrder[count];
+      const slot = document.getElementById(slotId);
 
-/* Konstante: wie viele Tage nach vorne */
-const RANGE_DAYS = 60;
+      const card = document.createElement("div");
+      card.className = "card";
+      card.dataset.index = count;
+      card.dataset.active = "false";
+      card.dataset.gps = "false";
 
-/* Supabase init */
-const supabaseClient = supabase.createClient(
-  "https://gglgenarpskajkaanknk.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4"
-);
+      card.innerHTML = `
+        <div class="card-face front">
+          <input class="card-input" placeholder="Titel eingeben..." />
 
-const loginScreen = document.getElementById("loginScreen");
-const mainScreen  = document.getElementById("mainScreen");
-const bottomNav   = document.getElementById("bottomNav");
-const loginForm   = document.getElementById("loginForm");
-const loginError  = document.getElementById("loginError");
-const appEl       = document.getElementById("app");
-const navHome     = document.getElementById("navHome");
-const navStats    = document.getElementById("navStats");
+          <i data-lucide="map-pin" class="gps-icon"></i>
+        </div>
 
-/* Hilfsfunktion: yyyy-mm-dd ohne TZ-Probleme */
-function toISODate(y,m,d){
-  const mm = String(m+1).padStart(2,"0");
-  const dd = String(d).padStart(2,"0");
-  return `${y}-${mm}-${dd}`;
-}
-
-/* LOGIN */
-document.getElementById("btnLogin").onclick    = () => loginForm.style.display="flex";
-document.getElementById("btnRegister").onclick = () => loginForm.style.display="flex";
-
-document.getElementById("loginOkBtn").onclick = async () => {
-  loginError.style.display = "none";
-
-  const email = loginEmail.value;
-  const password = loginPassword.value;
-
-  if (!email || !password) {
-    loginError.textContent = "Bitte alles ausfüllen.";
-    loginError.style.display = "block";
-    return;
-  }
-
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    loginError.textContent = error.message;
-    loginError.style.display = "block";
-    return;
-  }
-
-  loginScreen.style.display="none";
-  mainScreen.style.display="block";
-  bottomNav.style.display="flex";
-  loadHabits();
-};
-
-/* Habits + Days laden */
-async function loadHabits(){
-  const user = (await supabaseClient.auth.getUser()).data.user;
-  if (!user) return;
-
-  const { data: habits, error } = await supabaseClient
-    .from("habits")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("active", true)
-    .order("created_at");
-
-  if (error) {
-    console.error(error);
-    return;
-  }
-
-  for (const h of habits) {
-    h.days = await loadDaysForward(h.id);
-  }
-
-  renderHabits(habits);
-}
-
-/* Tage ab HEUTE nach vorne anlegen / laden */
-async function loadDaysForward(habitId){
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  const y0 = today.getFullYear();
-  const m0 = today.getMonth();
-  const d0 = today.getDate();
-
-  const end = new Date(today);
-  end.setDate(end.getDate() + RANGE_DAYS - 1);
-  end.setHours(0,0,0,0);
-  const y1 = end.getFullYear();
-  const m1 = end.getMonth();
-  const d1 = end.getDate();
-
-  const startIso = toISODate(y0,m0,d0);
-  const endIso   = toISODate(y1,m1,d1);
-
-  // vorhandene Tage im Bereich
-  const { data: existing, error } = await supabaseClient
-    .from("habit_days")
-    .select("*")
-    .eq("habit_id", habitId)
-    .gte("date", startIso)
-    .lte("date", endIso);
-
-  if (error) {
-    console.error(error);
-    return [];
-  }
-
-  const map = new Map();
-  (existing || []).forEach(d => map.set(d.date, d));
-
-  const weekdayMap = ["S","M","T","W","T","F","S"];
-  const missing = [];
-
-  for (let i = 0; i < RANGE_DAYS; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() + i);
-    const iso = toISODate(d.getFullYear(), d.getMonth(), d.getDate());
-    if (!map.has(iso)) {
-      missing.push({
-        habit_id: habitId,
-        date: iso,
-        weekday: weekdayMap[d.getDay()],
-        done: false
-      });
-    }
-  }
-
-  if (missing.length) {
-    const { error: insErr } = await supabaseClient
-      .from("habit_days")
-      .insert(missing);
-    if (insErr) console.error(insErr);
-  }
-
-  const { data: final, error: finErr } = await supabaseClient
-    .from("habit_days")
-    .select("*")
-    .eq("habit_id", habitId)
-    .gte("date", startIso)
-    .lte("date", endIso)
-    .order("date");
-
-  if (finErr) {
-    console.error(finErr);
-    return [];
-  }
-
-  return final;
-}
-
-/* Rendering */
-function renderHabits(habits){
-  appEl.innerHTML = "";
-
-  const today = new Date();
-  const monthNames = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
-  const monthLabel = `${monthNames[today.getMonth()]} ${today.getFullYear()}`;
-
-  habits.forEach(habit => {
-    const block = document.createElement("div");
-    block.className = "habitBlock";
-
-    block.innerHTML = `
-      <div class="habitTitle">${habit.titel}</div>
-      <div class="monthLabel">${monthLabel}</div>
-      <div class="dayScroller"></div>
-    `;
-
-    const scroller = block.querySelector(".dayScroller");
-
-    habit.days.forEach((day, index) => {
-      const [yy,mm,dd] = day.date.split("-");
-      const dayNum = Number(dd);
-
-      const item = document.createElement("div");
-      item.className = "dayItem";
-      if (index === 0) item.classList.add("today");
-
-      item.innerHTML = `
-        <div class="circle ${day.done ? "done" : ""}">${dayNum}</div>
-        <div class="weekday">${day.weekday}</div>
+        <div class="card-face back">
+          <i data-lucide="map-pin" class="gps-big"></i>
+          <input class="address-input" placeholder="Adresse eingeben..." />
+        </div>
       `;
 
-      const circle = item.querySelector(".circle");
-      circle.onclick = async () => {
-        const newDone = !day.done;
-        const { error } = await supabaseClient
-          .from("habit_days")
-          .update({ done: newDone })
-          .eq("id", day.id);
-        if (!error) {
-          day.done = newDone;
-          renderHabits(habits);
+      slot.appendChild(card);
+      lucide.createIcons();
+
+      // FALL-ANIMATION
+      gsap.fromTo(card,
+        { y: -300, rotate: gsap.utils.random(-6, 6), opacity: 0 },
+        { y: 0, rotate: 0, opacity: 1, duration: 0.8, ease: "back.out(1.7)" }
+      );
+
+      const input = card.querySelector(".card-input");
+      const gpsBtn = card.querySelector(".gps-icon");
+      const addressInput = card.querySelector(".address-input");
+
+      // GPS Icon erscheint nur wenn Input ausgewählt ist
+      input.addEventListener("focus", () => gpsBtn.style.opacity = 1);
+      input.addEventListener("blur",  () => gpsBtn.style.opacity = 0);
+
+      // Titel per Enter bestätigen
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter") input.blur();
+      });
+
+      // Karte toggelt Farbe (wenn nicht GPS)
+      card.addEventListener("click", e => {
+        if (card.dataset.gps === "true") return; // wenn GPS aktiv → kein Toggle
+        if (e.target === input) return;
+
+        const i = parseInt(card.dataset.index);
+        const isActive = card.dataset.active === "true";
+
+        if (isActive) {
+          deactivateCard(card, input);
+        } else {
+          activateCard(card, input, i);
         }
-      };
+      });
 
-      scroller.appendChild(item);
+      // GPS Modus aktivieren (Flip)
+      gpsBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        card.dataset.gps = "true";
+
+        gsap.to(card, { rotationY: 180, duration: 0.5, ease: "power2.inOut" });
+      });
+
+      // Wenn Adresse eingegeben wurde → flip zurück
+      addressInput.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addressInput.blur();
+
+          // Back → Front
+          gsap.to(card, { rotationY: 0, duration: 0.5, ease: "power2.inOut" });
+        }
+      });
+
+      // Wenn GPS-Aufgabe: beim Klick Standort prüfen
+      card.addEventListener("click", () => {
+        if (card.dataset.gps !== "true") return;
+
+        navigator.geolocation.getCurrentPosition(pos => {
+          // Dummy Beispiel-RADIUS=100m  
+          const dist = 200; // hier Erkennung simuliert
+
+          if (dist < 100) {
+            activateCard(card, input, card.dataset.index);
+          } else {
+            wiggle(card);
+          }
+        });
+      });
+
+      count++;
     });
 
-    appEl.appendChild(block);
-  });
+    function activateCard(card, input, i) {
+      card.style.background = activeColors[i];
+      input.style.color = titleColors[i];
+      card.dataset.active = "true";
+    }
 
-  // Nach dem Rendern: alle Scroller auf "heute" scrollen
-  requestAnimationFrame(() => {
-    document.querySelectorAll(".dayScroller").forEach(scroller => {
-      const todayItem = scroller.querySelector(".dayItem.today");
-      if (!todayItem) return;
-      const target = todayItem.offsetLeft - scroller.clientWidth / 2;
-      scroller.scrollLeft = target < 0 ? 0 : target;
-    });
-  });
-}
+    function deactivateCard(card, input) {
+      card.style.background = "#e4e4e4";
+      input.style.color = "#666";
+      card.dataset.active = "false";
+    }
 
-/* Add Habit – max. 3, mit Vorschau inklusive Tagen ab heute */
-document.getElementById("addBtn").onclick = async () => {
-  const user = (await supabaseClient.auth.getUser()).data.user;
-  if (!user) return;
+    function wiggle(card) {
+      gsap.fromTo(card,
+        { x: -5 },
+        { x: 5, duration: 0.08, yoyo: true, repeat: 5, ease: "power1.inOut" }
+      );
+    }
+  </script>
 
-  const { data: habits } = await supabaseClient
-    .from("habits")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("active", true);
-
-  if ((habits || []).length >= 3) return;
-
-  createNewHabitPreview();
-};
-
-function createNewHabitPreview(){
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  const monthNames = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
-  const weekdayMap = ["S","M","T","W","T","F","S"];
-
-  const block = document.createElement("div");
-  block.className = "habitBlock";
-
-  const monthLabel = `${monthNames[today.getMonth()]} ${today.getFullYear()}`;
-
-  block.innerHTML = `
-    <input id="tempHabitTitle" class="habitTitleInput" placeholder="Titel" />
-    <div class="monthLabel">${monthLabel}</div>
-    <div class="dayScroller"></div>
-  `;
-
-  const scroller = block.querySelector(".dayScroller");
-
-  // Tage ab heute vorwärts darstellen
-  for (let i=0; i<RANGE_DAYS; i++){
-    const d = new Date(today);
-    d.setDate(d.getDate() + i);
-    const dayNum = d.getDate();
-    const wd = weekdayMap[d.getDay()];
-
-    const item = document.createElement("div");
-    item.className = "dayItem";
-    if (i === 0) item.classList.add("today");
-
-    item.innerHTML = `
-      <div class="circle">${dayNum}</div>
-      <div class="weekday">${wd}</div>
-    `;
-    scroller.appendChild(item);
-  }
-
-  appEl.prepend(block);
-
-  const input = block.querySelector("#tempHabitTitle");
-  input.focus();
-
-  input.onkeydown = (e) => { if (e.key === "Enter") saveNewHabit(input.value, block); };
-  input.onblur    = () => saveNewHabit(input.value, block);
-
-  // direkt auf heute scrollen
-  requestAnimationFrame(() => {
-    const todayItem = scroller.querySelector(".dayItem.today");
-    if (!todayItem) return;
-    const target = todayItem.offsetLeft - scroller.clientWidth/2;
-    scroller.scrollLeft = target < 0 ? 0 : target;
-  });
-}
-
-async function saveNewHabit(val, block){
-  const title = val.trim();
-  if (!title) {
-    block.remove();
-    return;
-  }
-
-  const user = (await supabaseClient.auth.getUser()).data.user;
-  if (!user) { block.remove(); return; }
-
-  const { data, error } = await supabaseClient
-    .from("habits")
-    .insert({
-      user_id: user.id,
-      titel: title,
-      active: true
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error(error);
-    block.remove();
-    return;
-  }
-
-  loadHabits();
-}
-
-/* NAV */
-function setNav(which){
-  navHome.classList.remove("active");
-  navStats.classList.remove("active");
-  if (which === "home") navHome.classList.add("active");
-  if (which === "stats") navStats.classList.add("active");
-}
-
-navHome.onclick  = () => setNav("home");
-navStats.onclick = () => setNav("stats");
-</script>
 </body>
 </html>
