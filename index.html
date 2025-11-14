@@ -1,58 +1,60 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Habit App – Login</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Habit App – Login</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<style>
-  body {
-    font-family: system-ui, sans-serif;
-    background: #f5f5f5;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-  }
-  #box {
-    background: #fff;
-    padding: 24px;
-    border-radius: 16px;
-    width: 100%;
-    max-width: 380px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  }
-  input {
-    width: 100%;
-    padding: 12px;
-    margin: 8px 0;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-  }
-  button {
-    width: 100%;
-    padding: 12px;
-    background: black;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-top: 10px;
-  }
-</style>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #f5f5f5;
+    }
+    #box {
+      width: 100%;
+      max-width: 380px;
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+  </style>
 </head>
 
 <body>
 
 <div id="box">
-  <h2>Login / Register</h2>
-  <p>Email-Adresse eingeben:</p>
+  <h2>Login</h2>
 
-  <input type="email" id="email" placeholder="email@example.com">
-  <button id="sendLink">Magic Link senden</button>
+  <input id="email" type="email" placeholder="E-Mail">
+  <input id="password" type="password" placeholder="Passwort">
+
+  <button onclick="login()">Login</button>
+  <button onclick="signup()" style="background:#444;">Registrieren</button>
 
   <p id="status"></p>
 </div>
@@ -60,28 +62,45 @@
 <script>
   const supabase = supabase.createClient(
     "https://gglgenarpskajkaanknk.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // DEIN ANON KEY
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   );
 
-  document.getElementById("sendLink").onclick = async () => {
+  async function login() {
     const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
     const status = document.getElementById("status");
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email,
-      options: {
-        emailRedirectTo: "https://lillyapp.github.io/habits/"
-      }
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
     });
 
     if (error) {
-      status.textContent = "Fehler: " + error.message;
+      status.textContent = error.message;
       status.style.color = "red";
     } else {
-      status.textContent = "Link wurde gesendet! Bitte E-Mail prüfen.";
+      window.location.href = "index.html";
+    }
+  }
+
+  async function signup() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const status = document.getElementById("status");
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password
+    });
+
+    if (error) {
+      status.textContent = error.message;
+      status.style.color = "red";
+    } else {
+      status.textContent = "Registrierung erfolgreich. Jetzt einloggen.";
       status.style.color = "green";
     }
-  };
+  }
 </script>
 
 </body>
