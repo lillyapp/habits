@@ -1,2360 +1,696 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Habit App • Prototyp</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://unpkg.com/lucide@latest">
-  // === Additional GSAP Animations (Package 2 + 3) ===
+  <title>Habit App</title>
 
-  function animateCardSwipeIn() {
-    const cards = document.querySelectorAll(".habit-card");
-    if (!cards.length) return;
-    gsap.fromTo(cards,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.32, ease: "power3.out", stagger: 0.06 });
-  }
-
-  function animateEmptyState() {
-    const box = document.querySelector(".empty-state");
-    if (!box) return;
-    gsap.fromTo(box,{ scale: 0.9, opacity: 0 },{ scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.8)" });
-    const icon = box.querySelector("i");
-    if (icon) {
-      gsap.fromTo(icon,{ y: -10, rotate: -10 },{ y: 0, rotate: 0, duration: 0.6, ease: "elastic.out(1, 0.4)", delay: 0.1 });
-    }
-    for (let i = 0; i < 12; i++) {
-      const d = document.createElement("div");
-      d.classList.add("confetti-dot");
-      Object.assign(d.style,{ position: "absolute", width: "6px", height: "6px", borderRadius: "50%", background: `hsl(${Math.random()*360}, 80%, 60%)`, top: "50%", left: "50%", pointerEvents: "none" });
-      box.appendChild(d);
-      gsap.to(d,{ x: (Math.random()-0.5)*140, y: (Math.random()-1)*120, scale: Math.random()*0.7+0.7, opacity: 0, duration: 0.9 + Math.random()*0.4, ease: "power2.out", onComplete: () => d.remove() });
-    }
-  }
-
-  function animateTabSlide(renderCallback) {
-    const list = document.getElementById("habitList");
-    gsap.to(list,{ x: -20, opacity: 0, duration: 0.22, ease: "power2.in", onComplete: () => {
-      renderCallback();
-      gsap.fromTo(list,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.25, ease: "power2.out" });
-    }});
-  }
-
-  function animateXPProgress(fillEl, iconEl, newPct) {
-    const oldPct = parseFloat(fillEl.style.width) || 0;
-    gsap.fromTo(fillEl,{ width: oldPct + "%" },{ width: newPct + "%", duration: 0.55, ease: "power3.out" });
-    gsap.fromTo(iconEl,{ xPercent: oldPct },{ xPercent: newPct, duration: 0.55, ease: "power3.out", delay: 0.05 });
-    gsap.fromTo(iconEl,{ scale: 1 },{ scale: 1.15, duration: 0.25, ease: "back.out(3)", yoyo: true, repeat: 1 });
-  }
-
-  function animateLevelUpFlash(cardEl) {
-    const overlay = document.createElement("div");
-    overlay.style = `position:absolute; inset:0; background:white; opacity:0; pointer-events:none; border-radius:1.4rem;`;
-    cardEl.appendChild(overlay);
-    gsap.fromTo(overlay,{ opacity: 0 },{ opacity: 1, duration: 0.08, yoyo: true, repeat: 1, onComplete: () => overlay.remove() });
-    gsap.to(cardEl,{ scale: 0.85, duration: 0.18, ease: "power1.in", onComplete: () => 
-      gsap.to(cardEl,{ scale: 1, opacity: 0, duration: 0.28, ease: "power2.out" })
-    });
-  }
-
-  function animateTimerStart(cardEl) {
-    gsap.fromTo(cardEl,{ scale: 0.96 },{ scale: 1, duration: 0.22, ease: "power2.out" });
-  }
-
-</script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js">
-  // === Additional GSAP Animations (Package 2 + 3) ===
-
-  function animateCardSwipeIn() {
-    const cards = document.querySelectorAll(".habit-card");
-    if (!cards.length) return;
-    gsap.fromTo(cards,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.32, ease: "power3.out", stagger: 0.06 });
-  }
-
-  function animateEmptyState() {
-    const box = document.querySelector(".empty-state");
-    if (!box) return;
-    gsap.fromTo(box,{ scale: 0.9, opacity: 0 },{ scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.8)" });
-    const icon = box.querySelector("i");
-    if (icon) {
-      gsap.fromTo(icon,{ y: -10, rotate: -10 },{ y: 0, rotate: 0, duration: 0.6, ease: "elastic.out(1, 0.4)", delay: 0.1 });
-    }
-    for (let i = 0; i < 12; i++) {
-      const d = document.createElement("div");
-      d.classList.add("confetti-dot");
-      Object.assign(d.style,{ position: "absolute", width: "6px", height: "6px", borderRadius: "50%", background: `hsl(${Math.random()*360}, 80%, 60%)`, top: "50%", left: "50%", pointerEvents: "none" });
-      box.appendChild(d);
-      gsap.to(d,{ x: (Math.random()-0.5)*140, y: (Math.random()-1)*120, scale: Math.random()*0.7+0.7, opacity: 0, duration: 0.9 + Math.random()*0.4, ease: "power2.out", onComplete: () => d.remove() });
-    }
-  }
-
-  function animateTabSlide(renderCallback) {
-    const list = document.getElementById("habitList");
-    gsap.to(list,{ x: -20, opacity: 0, duration: 0.22, ease: "power2.in", onComplete: () => {
-      renderCallback();
-      gsap.fromTo(list,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.25, ease: "power2.out" });
-    }});
-  }
-
-  function animateXPProgress(fillEl, iconEl, newPct) {
-    const oldPct = parseFloat(fillEl.style.width) || 0;
-    gsap.fromTo(fillEl,{ width: oldPct + "%" },{ width: newPct + "%", duration: 0.55, ease: "power3.out" });
-    gsap.fromTo(iconEl,{ xPercent: oldPct },{ xPercent: newPct, duration: 0.55, ease: "power3.out", delay: 0.05 });
-    gsap.fromTo(iconEl,{ scale: 1 },{ scale: 1.15, duration: 0.25, ease: "back.out(3)", yoyo: true, repeat: 1 });
-  }
-
-  function animateLevelUpFlash(cardEl) {
-    const overlay = document.createElement("div");
-    overlay.style = `position:absolute; inset:0; background:white; opacity:0; pointer-events:none; border-radius:1.4rem;`;
-    cardEl.appendChild(overlay);
-    gsap.fromTo(overlay,{ opacity: 0 },{ opacity: 1, duration: 0.08, yoyo: true, repeat: 1, onComplete: () => overlay.remove() });
-    gsap.to(cardEl,{ scale: 0.85, duration: 0.18, ease: "power1.in", onComplete: () => 
-      gsap.to(cardEl,{ scale: 1, opacity: 0, duration: 0.28, ease: "power2.out" })
-    });
-  }
-
-  function animateTimerStart(cardEl) {
-    gsap.fromTo(cardEl,{ scale: 0.96 },{ scale: 1, duration: 0.22, ease: "power2.out" });
-  }
-
-</script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/EasePack.min.js">
-  // === Additional GSAP Animations (Package 2 + 3) ===
-
-  function animateCardSwipeIn() {
-    const cards = document.querySelectorAll(".habit-card");
-    if (!cards.length) return;
-    gsap.fromTo(cards,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.32, ease: "power3.out", stagger: 0.06 });
-  }
-
-  function animateEmptyState() {
-    const box = document.querySelector(".empty-state");
-    if (!box) return;
-    gsap.fromTo(box,{ scale: 0.9, opacity: 0 },{ scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.8)" });
-    const icon = box.querySelector("i");
-    if (icon) {
-      gsap.fromTo(icon,{ y: -10, rotate: -10 },{ y: 0, rotate: 0, duration: 0.6, ease: "elastic.out(1, 0.4)", delay: 0.1 });
-    }
-    for (let i = 0; i < 12; i++) {
-      const d = document.createElement("div");
-      d.classList.add("confetti-dot");
-      Object.assign(d.style,{ position: "absolute", width: "6px", height: "6px", borderRadius: "50%", background: `hsl(${Math.random()*360}, 80%, 60%)`, top: "50%", left: "50%", pointerEvents: "none" });
-      box.appendChild(d);
-      gsap.to(d,{ x: (Math.random()-0.5)*140, y: (Math.random()-1)*120, scale: Math.random()*0.7+0.7, opacity: 0, duration: 0.9 + Math.random()*0.4, ease: "power2.out", onComplete: () => d.remove() });
-    }
-  }
-
-  function animateTabSlide(renderCallback) {
-    const list = document.getElementById("habitList");
-    gsap.to(list,{ x: -20, opacity: 0, duration: 0.22, ease: "power2.in", onComplete: () => {
-      renderCallback();
-      gsap.fromTo(list,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.25, ease: "power2.out" });
-    }});
-  }
-
-  function animateXPProgress(fillEl, iconEl, newPct) {
-    const oldPct = parseFloat(fillEl.style.width) || 0;
-    gsap.fromTo(fillEl,{ width: oldPct + "%" },{ width: newPct + "%", duration: 0.55, ease: "power3.out" });
-    gsap.fromTo(iconEl,{ xPercent: oldPct },{ xPercent: newPct, duration: 0.55, ease: "power3.out", delay: 0.05 });
-    gsap.fromTo(iconEl,{ scale: 1 },{ scale: 1.15, duration: 0.25, ease: "back.out(3)", yoyo: true, repeat: 1 });
-  }
-
-  function animateLevelUpFlash(cardEl) {
-    const overlay = document.createElement("div");
-    overlay.style = `position:absolute; inset:0; background:white; opacity:0; pointer-events:none; border-radius:1.4rem;`;
-    cardEl.appendChild(overlay);
-    gsap.fromTo(overlay,{ opacity: 0 },{ opacity: 1, duration: 0.08, yoyo: true, repeat: 1, onComplete: () => overlay.remove() });
-    gsap.to(cardEl,{ scale: 0.85, duration: 0.18, ease: "power1.in", onComplete: () => 
-      gsap.to(cardEl,{ scale: 1, opacity: 0, duration: 0.28, ease: "power2.out" })
-    });
-  }
-
-  function animateTimerStart(cardEl) {
-    gsap.fromTo(cardEl,{ scale: 0.96 },{ scale: 1, duration: 0.22, ease: "power2.out" });
-  }
-
-</script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Matter.js Physik -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 
   <style>
     :root {
-      --bg:#fff;
-      --fg:#000;
-      --accent-purple:#a855f7;
-      --accent-red:#ef4444;
-      color-scheme: light;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg:#000;
-        --fg:#fff;
-        color-scheme: dark;
-      }
-
-      html, body {
-        background: var(--bg);
-        color: var(--fg);
-      }
-
-      svg, i[data-lucide] {
-        stroke: var(--fg) !important;
-        color: var(--fg) !important;
-      }
-
-      input, select {
-        background: var(--bg) !important;
-        border: 1px solid var(--fg) !important;
-        color: var(--fg) !important;
-      }
-
-      .habit-card {
-        background: var(--bg) !important;
-        border: 1px solid rgba(255,255,255,0.25) !important;
-      }
-
-      .icon-choice {
-        background: var(--bg) !important;
-        border-color: var(--fg) !important;
-      }
-
-      .icon-choice.active {
-        background: var(--fg) !important;
-        color: var(--bg) !important;
-      }
-
-      .habit-expand {
-        color: rgba(255,255,255,0.7) !important;
-      }
-
-      .progress-track {
-        background: rgba(255,255,255,0.1) !important;
-      }
-
-      .primary-btn {
-        background: var(--fg) !important;
-        color: var(--bg) !important;
-      }
-
-      .secondary-btn {
-        border: 1px solid var(--fg) !important;
-        background: var(--bg) !important;
-        color: var(--fg) !important;
-      }
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+      --black:#000;
+      --white:#fff;
+      --gray:#e5e5e5;
+      --lightgray:#f2f2f2;
     }
 
     body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--fg);
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    #app {
-      position: relative;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    /* Views */
-
-    .view {
-      position: absolute;
-      inset: 0;
-      padding: 1.5rem 1.25rem 6rem;
-      display: flex;
-      flex-direction: column;
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-      transition: opacity 0.35s ease;
-      background: var(--bg);
-    }
-
-    .view.active {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-    }
-
-    .primary-btn {
-      width: 100%;
-      border: none;
-      background: var(--fg);
-      color: var(--bg);
-      padding: 1rem;
-      border-radius: 999px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .primary-btn:active {
-      transform: scale(0.98);
-    }
-
-    .secondary-btn {
-      width: 100%;
-      border: 1px solid var(--fg);
-      background: var(--bg);
-      padding: 0.8rem;
-      border-radius: 999px;
-      cursor: pointer;
-    }
-
-    .bottom-button-wrapper {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 1.5rem;
-      padding: 0 1.25rem;
-    }
-
-    /* LOGIN */
-
-    .center-header {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      gap: 0.8rem;
-    }
-
-    .app-title {
-      font-size: 1.8rem;
-      font-weight: 700;
-    }
-
-    .app-subtitle {
-      font-size: 0.95rem;
-      opacity: 0.7;
-      max-width: 22rem;
-    }
-
-    /* SETUP */
-
-    .setup-progress {
-      display: flex;
-      justify-content: center;
-      gap: 0.6rem;
-      margin-top: 0.5rem;
-      margin-bottom: 2.5rem;
-    }
-
-    .setup-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 999px;
-      border: 1px solid var(--fg);
-      background: var(--bg);
-    }
-
-    .setup-dot.active {
-      background: var(--fg);
-    }
-
-    .setup-inner {
-      display: flex;
-      flex-direction: column;
-      gap: 1.8rem;
-      margin-top: 0.3rem;
-    }
-
-    .setup-title-input {
-      width: 100%;
-      border: none;
-      background: transparent;
-      font-size: 2.2rem;
-      font-weight: 600;
-      outline: none;
-    }
-
-    .setup-row {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .icon-label {
-      width: 42px;
-      height: 42px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    select,
-    input[type="number"],
-    .setup-subtask-input {
-      flex: 1;
-      padding: 0.6rem 0.8rem;
-      border-radius: 999px;
-      border: 1px solid var(--fg);
-      background: var(--bg);
-      font-size: 0.9rem;
-    }
-
-    .icon-picker {
-      display: none;
-      border: 1px solid var(--fg);
-      background: var(--bg);
-      padding: 0.8rem;
-      border-radius: 1rem;
-      margin-top: 0.4rem;
-      gap: 0.6rem;
-      flex-wrap: wrap;
-    }
-
-    .icon-choice {
-      border: 1px solid var(--fg);
-      padding: 0.5rem;
-      border-radius: 0.6rem;
-      width: 42px;
-      height: 42px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      background: #fff;
-    }
-
-    .icon-choice.active {
-      background: var(--fg);
-      color: var(--bg);
-    }
-
-    #subtasksBuilder {
-      margin-left: 2.4rem;
-      display: none;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    #addSubtaskBtn {
-      align-self: flex-start;
-      padding: 0.4rem 0.8rem;
-      border-radius: 999px;
-      font-size: 0.8rem;
-    }
-
-    #subtaskList {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-top: 0.3rem;
-    }
-
-    /* Schedule controls */
-
-    .schedule-mode-toggle {
-      display: flex;
-      gap: 0.4rem;
-      flex: 1;
-    }
-
-    .mode-btn {
-      flex: 1;
-      padding: 0.45rem 0.7rem;
-      border-radius: 999px;
-      border: 1px solid var(--fg);
-      background: var(--bg);
-      font-size: 0.85rem;
-      cursor: pointer;
-      text-align: center;
-    }
-
-    .mode-btn.active {
-      background: var(--fg);
-      color: var(--bg);
-    }
-
-    .days-picker {
-      display: none;
-      margin-left: 2.4rem;
-      gap: 0.4rem;
-      flex-wrap: wrap;
-      margin-top: 0.3rem;
-    }
-
-    .day-pill {
-      padding: 0.25rem 0.55rem;
-      border-radius: 999px;
-      border: 1px solid var(--fg);
-      font-size: 0.8rem;
-      background: var(--bg);
-      cursor: pointer;
-    }
-
-    .day-pill.active {
-      background: var(--fg);
-      color: var(--bg);
-    }
-
-    #countWrapper {
-      margin-top: 0.4rem;
-    }
-
-    /* MAIN */
-
-    .main-header {
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .main-header h2 {
-      font-size: 1rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-    }
-
-    .progress-row {
-      display: grid;
-      grid-template-columns: 90px 1fr;
-      align-items: center;
-      gap: 0.4rem;
-      margin: 0.7rem 0;
-    }
-
-    .username-label {
-      font-size: 0.95rem;
-      font-weight: 700;
-    }
-
-    .progress-track {
-      position: relative;
-      width: 100%;
-      height: 0.85rem;
-    }
-
-    .progress-fill {
-      position: absolute;
-      inset: 0;
-      border-radius: 999px;
-    }
-
-    .progress-icon {
-      position: absolute;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      margin-left: 4px;
-    }
-
-    .tabs {
-      display: flex;
-      gap: 1rem;
-      margin: 1rem 0;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 0.55rem;
-      border: 1px solid var(--fg);
-      border-radius: 1rem;
-      text-align: center;
-      background: var(--bg);
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-
-    .tab-btn.active {
-      background: var(--fg);
-      color: var(--bg);
-    }
-
-    /* HABIT CARDS */
-
-    .habits-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      overflow-y: auto;
-      padding-bottom: 4rem;
-    }
-
-    .habit-card {
-      background: var(--bg);
-      border: 1px solid rgba(0, 0, 0, 0.25);
-      border-radius: 1.4rem;
-      padding: 0.8rem 1.2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      cursor: pointer;
-      transition: transform 0.2s ease;
-    }
-
-    .habit-card:active {
-      transform: scale(0.98);
-    }
-
-    .habit-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      min-height: 42px;
-      gap: 1rem;
-    }
-
-    .habit-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .habit-icon i {
-      width: 28px;
-      height: 28px;
-      display: block;
-    }
-
-    .habit-counter {
-      font-size: 0.75rem;
-      text-align: center;
-      margin-top: 0.25rem;
-      opacity: 0.7;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .habit-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 0.15rem;
-      padding-left: 0.2rem;
-    }
-
-    .habit-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-    }
-
-    .habit-action {
-      width: 28px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      margin-left: auto;
-    }
-
-    .habit-action i {
-      width: 26px;
-      height: 26px;
-    }
-
-    .habit-expand {
-      overflow: hidden;
-      max-height: 0;
-      opacity: 0;
-      padding-left: calc(28px + 1.2rem);
-      padding-right: 0.6rem;
-      line-height: 1.35;
-      font-size: 0.85rem;
-      color: #444;
-      transform: translateY(-2px);
-      transition:
-        max-height 0.28s ease,
-        opacity 0.22s ease,
-        transform 0.22s ease,
-        margin-top 0.22s ease;
-    }
-
-    .habit-expand.active {
-      max-height: 400px;
-      opacity: 1;
-      transform: translateY(0);
-      margin-top: 0.45rem;
-    }
-
-    .habit-timer {
-      padding: 0.3rem 0.55rem;
-      font-size: 0.86rem;
-      border: 1px solid rgba(0,0,0,0.25);
-      border-radius: 999px;
-      font-variant-numeric: tabular-nums;
-      margin-left: auto;
-    }
-
-    .subtask-wrapper {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-      margin-top: 0.2rem;
-    }
-
-    .subtask-row {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-    }
-
-    .subtask-check {
-      width: 20px;
-      height: 20px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .subtask-check i {
-      width: 18px;
-      height: 18px;
-    }
-
-    .subtask-title {
-      font-size: 0.85rem;
-    }
-
-    @keyframes icon-pop {
-      0% { transform: scale(1); }
-      50%{ transform: scale(1.25); }
-      100%{ transform: scale(1); }
-    }
-
-    .subtask-check.morphing {
-      animation: icon-pop 0.18s ease;
-    }
-
-    @keyframes pop-out {
-      0% { transform: scale(1); opacity: 1; }
-      30%{ transform: scale(1.05); }
-      100%{ transform: scale(0.4); opacity: 0; }
-    }
-
-    .pop-out {
-      animation: pop-out 0.22s ease-out forwards;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 2rem 1rem;
-      opacity: 0.9;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .empty-state-main {
-      font-weight: 600;
-      margin-top: 0.2rem;
-    }
-
-    .location-section {
-      margin-top: 1.5rem;
-      border-top: 1px solid #e5e5e5;
-      padding-top: 1rem;
-    }
-
-    .location-output {
-      font-size: 0.8rem;
-      opacity: 0.8;
-      margin-top: 0.4rem;
+      margin:0;
+      background:var(--white);
+      color:var(--black);
+      font-family:system-ui,-apple-system,sans-serif;
+      height:100vh;
+      overflow:hidden;
+      position:relative;
+    }
+
+    .screen {
+      display:none;
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+    }
+    .screen.active {
+      display:flex;
+    }
+
+    /* Login-Screen */
+    #loginScreen {
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+    }
+
+    @keyframes pulse {
+      0%   { transform:scale(1); }
+      50%  { transform:scale(1.06); }
+      100% { transform:scale(1); }
+    }
+
+    #loginCircle {
+      width:30px;
+      height:30px;
+      background:#000;
+      border-radius:50%;
+      animation:pulse 2.2s ease-in-out infinite;
+    }
+
+    #loginHeadline {
+      margin-top:28px;
+      font-size:26px;
+      font-weight:600;
+      text-align:center;
+      padding:0 20px;
+    }
+
+    #loginButtonBar {
+      position:absolute;
+      bottom:24px;
+      left:0;
+      width:100%;
+      display:flex;
+      gap:14px;
+      padding:0 20px;
+      box-sizing:border-box;
+      transition:bottom .25s ease;
+    }
+
+    .btn {
+      flex:1;
+      padding:14px;
+      border:none;
+      border-radius:20px;
+      font-size:17px;
+    }
+
+    #btnLogin    { background:#000; color:#fff; }
+    #btnRegister { background:#e5e5e5; color:#000; }
+
+    #loginForm {
+      display:none;
+      flex-direction:column;
+      gap:12px;
+      padding:20px;
+      width:100%;
+      max-width:600px;
+      box-sizing:border-box;
+    }
+
+    .login-input {
+      padding:12px;
+      border:none;
+      border-radius:12px;
+      background:#e5e5e5;
+      font-size:16px;
+    }
+
+    /* Hauptscreen */
+    #mainScreen {
+      flex-direction:column;
+      padding:20px;
+      padding-bottom:100px;
+      box-sizing:border-box;
+      overflow-y:auto;
+    }
+
+    #topStatsBox {
+      width:100%;
+      max-width:600px;
+      margin:0 auto 20px auto;
+      background:var(--gray);
+      border-radius:18px;
+      padding:16px;
+      box-sizing:border-box;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    #progressLabel {
+      font-size:15px;
+      font-weight:600;
+      opacity:.8;
+    }
+
+    .progress {
+      width:100%;
+      height:12px;
+      background:var(--lightgray);
+      border-radius:6px;
+      overflow:hidden;
+    }
+
+    .progress-inner {
+      height:100%;
+      width:0%;
+      background:#000;
+      transition:width .3s ease;
+    }
+
+    #progressText {
+      font-size:13px;
+      opacity:.8;
+    }
+
+    #habitList {
+      position:relative;
+      width:100%;
+      max-width:600px;
+      margin:0 auto;
+      min-height:360px;
+      box-sizing:border-box;
+    }
+
+    /* Quadratische Karten */
+    .habitCard {
+      position:absolute;
+      width:100px;
+      height:100px;
+      border:3px solid var(--black);
+      border-radius:20px;
+      box-sizing:border-box;
+      padding:14px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      text-align:center;
+      box-shadow:0 6px 18px rgba(0,0,0,0.12);
+      color:#000;
+      will-change:transform;
+      touch-action:none; /* wichtig für sauberes Draggen */
+    }
+
+    .habitCard-title {
+      font-size:18px;
+      font-weight:600;
+      line-height:1.3;
+    }
+
+    /* Overlay neue Habit */
+    #newHabitOverlay {
+      position:absolute;
+      inset:0;
+      display:none;
+      justify-content:center;
+      align-items:center;
+      z-index:40;
+      backdrop-filter:blur(2px);
+    }
+
+    #newHabitCard {
+      background:#e5e5e5;
+      border-radius:18px;
+      padding:20px;
+      width:100%;
+      max-width:360px;
+      box-shadow:0 8px 30px rgba(0,0,0,0.2);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    #newHabitTitle {
+      padding:14px;
+      border-radius:12px;
+      border:none;
+      background:#fff;
+      font-size:16px;
+    }
+
+    #newHabitOkBtn {
+      padding:12px;
+      border-radius:14px;
+      border:none;
+      background:#000;
+      color:#fff;
+      font-size:17px;
+    }
+
+    /* Plus-Button unten */
+    #bottomActionBar {
+      position:fixed;
+      bottom:20px;
+      left:50%;
+      transform:translateX(-50%);
+      width:calc(100% - 40px);
+      max-width:600px;
+      padding:10px 14px;
+      background:#000;
+      color:#fff;
+      border-radius:18px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-size:26px;
+      font-weight:600;
+      box-sizing:border-box;
+      z-index:50;
     }
   </style>
 </head>
-
 <body>
-<div id="app">
 
-  <!-- LOGIN -->
-  <section id="loginView" class="view active">
-    <div class="center-header">
-      <h1 class="app-title">Habit App</h1>
-      <p class="app-subtitle">Starte deine drei Ziele.</p>
-    </div>
-    <div class="bottom-button-wrapper">
-      <button class="primary-btn" id="goSetup">Weiter</button>
-    </div>
-  </section>
+<!-- LOGIN -->
+<div id="loginScreen" class="screen active">
+  <div id="loginCircle"></div>
+  <div id="loginHeadline">Hallo, bitte melde dich an, um deine Gewohnheiten zu sehen</div>
 
-  <!-- SETUP -->
-  <section id="setupView" class="view">
+  <div id="loginButtonBar">
+    <button id="btnLogin" class="btn">Login</button>
+    <button id="btnRegister" class="btn">Registrieren</button>
+  </div>
 
-    <div class="setup-progress">
-      <div class="setup-dot"></div>
-      <div class="setup-dot"></div>
-      <div class="setup-dot"></div>
-    </div>
-
-    <div id="setupContainer" class="setup-inner">
-      <input id="setupTitle" class="setup-title-input" placeholder="Habit-Titel" />
-
-      <div class="setup-row">
-        <div class="icon-label"><i data-lucide="toggle-right"></i></div>
-        <select id="setupType">
-          <option value="standard">Standard</option>
-          <option value="qr">QR Code</option>
-          <option value="timer">Timer</option>
-          <option value="location">Standort</option>
-        </select>
-      </div>
-
-      <div class="setup-row" id="minutesWrapper">
-        <div class="icon-label"><i data-lucide="clock"></i></div>
-        <input id="setupMinutes" type="number" min="1" max="180" value="5" />
-      </div>
-
-      <!-- Schedule mode -->
-      <div class="setup-row">
-        <div class="icon-label"><i data-lucide="calendar"></i></div>
-        <div class="schedule-mode-toggle">
-          <button class="mode-btn active" data-mode="days">Tage</button>
-          <button class="mode-btn" data-mode="count">x/Woche</button>
-        </div>
-      </div>
-
-      <div id="daysPicker" class="days-picker">
-        <button class="day-pill" data-day="1">Mo</button>
-        <button class="day-pill" data-day="2">Di</button>
-        <button class="day-pill" data-day="3">Mi</button>
-        <button class="day-pill" data-day="4">Do</button>
-        <button class="day-pill" data-day="5">Fr</button>
-        <button class="day-pill" data-day="6">Sa</button>
-        <button class="day-pill" data-day="7">So</button>
-      </div>
-
-      <div class="setup-row" id="countWrapper" style="display:none;">
-        <div class="icon-label"><i data-lucide="hash"></i></div>
-        <input id="weeklyTargetInput" type="number" min="1" max="14" value="3" />
-      </div>
-
-      <div>
-        <div class="icon-label" style="margin-bottom:0.4rem;"><i data-lucide="star"></i></div>
-        <button id="setupIconBtn" class="primary-btn"
-          style="padding:0.7rem 1rem;font-size:0.9rem;">Icon wählen</button>
-        <div id="setupIconPicker" class="icon-picker"></div>
-      </div>
-
-      <div class="setup-row">
-        <div class="icon-label"><i data-lucide="list"></i></div>
-        <label style="flex:1;display:flex;align-items:center;gap:.5rem;font-size:.9rem;">
-          <input id="subtasksToggle" type="checkbox" />
-          Unteraufgaben aktivieren
-        </label>
-      </div>
-
-      <div id="subtasksBuilder">
-        <button id="addSubtaskBtn" class="secondary-btn">Unteraufgabe hinzufügen</button>
-        <div id="subtaskList"></div>
-      </div>
-
-      <div class="bottom-button-wrapper">
-        <button class="primary-btn" id="setupNextBtn">Weiter</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- MAIN -->
-  <section id="mainView" class="view">
-
-    <header class="main-header">
-      <h2>WOCHENSTREAK 1</h2>
-    </header>
-
-    <div class="progress-row">
-      <div class="username-label">JP</div>
-      <div class="progress-track">
-        <div id="progressFillJP" class="progress-fill" style="background:var(--accent-purple);width:0%;"></div>
-        <div id="progressIconJP" class="progress-icon" style="left:0%;">
-          <i data-lucide="trophy"></i>
-        </div>
-      </div>
-    </div>
-
-    <div class="progress-row">
-      <div class="username-label">Giulia</div>
-      <div class="progress-track">
-        <div id="progressFillGiulia" class="progress-fill" style="background:var(--accent-red);width:0%;"></div>
-        <div id="progressIconGiulia" class="progress-icon" style="left:0%;">
-          <i data-lucide="snail"></i>
-        </div>
-      </div>
-    </div>
-
-    <div class="tabs">
-      <div class="tab-btn active" data-tab="all">Alle</div>
-      <div class="tab-btn" data-tab="finish">Abschließbar</div>
-    </div>
-
-    <div id="habitList" class="habits-list"></div>
-
-    <section class="location-section">
-      <button id="locationBtn" class="secondary-btn">Standort abfragen</button>
-      <div id="locationOutput" class="location-output">
-        Noch kein Standort abgefragt.
-      </div>
-    </section>
-
-  </section>
-
+  <div id="loginForm">
+    <input id="loginEmail" type="email" placeholder="E-Mail" class="login-input" />
+    <input id="loginPassword" type="password" placeholder="Passwort" class="login-input" />
+    <button id="loginOkBtn" class="btn" style="background:#000;color:#fff;">OK</button>
+  </div>
 </div>
 
+<!-- MAIN -->
+<div id="mainScreen" class="screen">
+  <div id="topStatsBox">
+    <div id="progressLabel">Fortschritt</div>
+    <div class="progress">
+      <div class="progress-inner" id="progressInner"></div>
+    </div>
+    <div id="progressText">0 / 0 erledigt</div>
+  </div>
+
+  <div id="habitList"></div>
+
+  <div id="newHabitOverlay">
+    <div id="newHabitCard">
+      <div style="font-size:20px;font-weight:600;">Neue Gewohnheit</div>
+      <input id="newHabitTitle" placeholder="Titel..." />
+      <button id="newHabitOkBtn">OK</button>
+    </div>
+  </div>
+</div>
+
+<div id="bottomActionBar">+</div>
+
 <script>
-  const loginView = document.getElementById("loginView");
-  const setupView = document.getElementById("setupView");
-  const mainView  = document.getElementById("mainView");
+  /* Supabase init */
+  const { createClient } = supabase;
+  const supabaseClient = createClient("https://gglgenarpskajkaanknk.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4");
 
-  const setupContainer = document.getElementById("setupContainer");
-  const setupTitle     = document.getElementById("setupTitle");
-  const setupType      = document.getElementById("setupType");
-  const setupMinutes   = document.getElementById("setupMinutes");
-  const minutesWrapper = document.getElementById("minutesWrapper");
-  const setupIconBtn   = document.getElementById("setupIconBtn");
-  const setupIconPicker= document.getElementById("setupIconPicker");
-  const setupNextBtn   = document.getElementById("setupNextBtn");
+  /* Matter.js Alias */
+  const Engine = Matter.Engine;
+  const World  = Matter.World;
+  const Bodies = Matter.Bodies;
+  const Body   = Matter.Body;
 
-  const scheduleModeButtons = document.querySelectorAll(".mode-btn");
-  const daysPicker          = document.getElementById("daysPicker");
-  const dayPills            = document.querySelectorAll(".day-pill");
-  const weeklyTargetInput   = document.getElementById("weeklyTargetInput");
-  const countWrapper        = document.getElementById("countWrapper");
+  let engine = null;
+  let world  = null;
+  let physicsInitialized = false;
 
-  const subtasksToggle   = document.getElementById("subtasksToggle");
-  const subtasksBuilder  = document.getElementById("subtasksBuilder");
-  const addSubtaskBtn    = document.getElementById("addSubtaskBtn");
-  const subtaskListSetup = document.getElementById("subtaskList");
+  const CARD_SIZE = 160;
+  const CARD_HALF = CARD_SIZE / 2;
+  const pastelColors = ["#FFE8A3","#CFFFD8","#D6E5FF","#FFD6E8","#E9DAFF","#FFF2C7"];
 
-  const habitList      = document.getElementById("habitList");
-  const locationBtn    = document.getElementById("locationBtn");
-  const locationOutput = document.getElementById("locationOutput");
+  /* Wander-Parameter */
+  const MAX_SPEED       = 2.0;
+  const MIN_SPEED       = 0.3;
+  const WANDER_FORCE    = 0.0008;
+  const WANDER_INTERVAL = 200; // ms
 
-  const icons = ["map-pin","timer","flag","heart","dumbbell","book-open"];
-  const motivationMessages = [
-    "Du warst heute stark.",
-    "Genau so geht's.",
-    "Wieder ein kleiner Sieg.",
-    "Heute hast du geliefert.",
-    "Das war klar und fokussiert.",
-    "Dein zukünftiges Ich dankt dir.",
-    "Das war diszipliniert.",
-    "Du gehst den richtigen Weg.",
-    "Mehr brauchst du heute nicht.",
-    "Das reicht. Gut gemacht."
-  ];
+  /* Flick-Thresholds */
+  const FLICK_DISTANCE = 80;
+  const FLICK_SPEED    = 600;
+  const OFFSCREEN_MARGIN = 120;
 
-  function getTodayDayIndex() {
-    const d = new Date();
-    return ((d.getDay() + 6) % 7) + 1; // 1=Mo..7=So
-  }
+  const loginScreen     = document.getElementById("loginScreen");
+  const mainScreen      = document.getElementById("mainScreen");
+  const loginForm       = document.getElementById("loginForm");
+  const loginButtonBar  = document.getElementById("loginButtonBar");
+  const loginEmail      = document.getElementById("loginEmail");
+  const loginPassword   = document.getElementById("loginPassword");
+  const habitListEl     = document.getElementById("habitList");
+  const bottomActionBar = document.getElementById("bottomActionBar");
+  const newHabitOverlay = document.getElementById("newHabitOverlay");
+  const newHabitTitle   = document.getElementById("newHabitTitle");
+  const progressInner   = document.getElementById("progressInner");
+  const progressText    = document.getElementById("progressText");
+  const newHabitOkBtn   = document.getElementById("newHabitOkBtn");
+  const btnLogin        = document.getElementById("btnLogin");
+  const btnRegister     = document.getElementById("btnRegister");
+  const loginOkBtn      = document.getElementById("loginOkBtn");
 
-  function getWeekId(date) {
-    const d = new Date(date);
-    const day = (d.getDay() + 6) % 7; // 0=Mo..6=So
-    d.setDate(d.getDate() - day);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2,"0");
-    const dd = String(d.getDate()).padStart(2,"0");
-    return `${y}-${m}-${dd}`;
-  }
+  let habitBodies = []; // { body, el }
+  let walls = [];
+  let addMode = false;
 
-  function ensureWeekState(h) {
-    const currentWeek = getWeekId(new Date());
-    if (!h.weekId || h.weekId !== currentWeek) {
-      h.weekId = currentWeek;
-      h.weeklyProgress = 0;
-      h.completedDays  = [];
-      h.qrVerified     = false;
-      h.timerRunning   = false;
-      h.timerFinished  = false;
-      h.remainingSeconds = 0;
-    }
-  }
-
-  function isHabitDoneForWeek(h) {
-    if (h.scheduleMode === "days") {
-      if (!h.days || !h.days.length) return false;
-      if (!h.completedDays) h.completedDays = [];
-      return h.days.every(d => h.completedDays.includes(d));
-    } else {
-      const target = h.weeklyTarget || 1;
-      const progress = h.weeklyProgress || 0;
-      return progress >= target;
-    }
-  }
-
-  function isHabitActionableToday(h, todayIdx) {
-    if (h.scheduleMode === "days") {
-      if (!h.days || !h.days.length) return true;
-      if (!h.days.includes(todayIdx)) return false;
-      if (!h.completedDays) h.completedDays = [];
-      return !h.completedDays.includes(todayIdx);
-    } else {
-      const target   = h.weeklyTarget || 1;
-      const progress = h.weeklyProgress || 0;
-      return progress < target;
-    }
-  }
-
-  // Beispiel-Habits, aktuell alle user: "JP"
-  let habits = [
-    {title:"",type:"standard",icon:"map-pin",minutes:5,
-     done:false,timerRunning:false,timerFinished:false,remainingSeconds:0,
-     expanded:false,subtasksEnabled:false,subtasks:[],
-     qrVerified:false,
-     scheduleMode:"days",days:[1,2,3,4,5],weeklyTarget:5,weeklyProgress:0,
-     completedDays:[],weekId:null,user:"JP"},
-
-    {title:"",type:"standard",icon:"map-pin",minutes:5,
-     done:false,timerRunning:false,timerFinished:false,remainingSeconds:0,
-     expanded:false,subtasksEnabled:false,subtasks:[],
-     qrVerified:false,
-     scheduleMode:"days",days:[1,3,5],weeklyTarget:3,weeklyProgress:0,
-     completedDays:[],weekId:null,user:"JP"},
-
-    {title:"",type:"standard",icon:"map-pin",minutes:5,
-     done:false,timerRunning:false,timerFinished:false,remainingSeconds:0,
-     expanded:false,subtasksEnabled:false,subtasks:[],
-     qrVerified:false,
-     scheduleMode:"count",days:[],weeklyTarget:3,weeklyProgress:0,
-     completedDays:[],weekId:null,user:"JP"},
-  ];
-
-  let timers      = [null,null,null];
-  let currentStep = 0;
-  let currentMode = "all";
-
-  // GSAP Helper-Funktionen (modular, Option B1)
-
-  function animateLoginToSetup(onDone) {
-    gsap.to("#loginView", {
-      duration: 0.45,
-      opacity: 0,
-      y: -40,
-      ease: "power2.in",
-      onComplete: () => {
-        if (typeof onDone === "function") onDone();
-        gsap.fromTo(
-          "#setupView",
-          { opacity: 0, y: 40 },
-          { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }
-        );
-      }
-    });
-  }
-
-  function animateSetupToMain(onDone) {
-    gsap.to("#setupView", {
-      duration: 0.45,
-      opacity: 0,
-      y: -40,
-      ease: "power2.in",
-      onComplete: () => {
-        if (typeof onDone === "function") onDone();
-        gsap.fromTo(
-          "#mainView",
-          { opacity: 0, y: 40 },
-          { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }
-        );
-      }
-    });
-  }
-
-  function animateHabitCards() {
-    const cards = document.querySelectorAll(".habit-card");
-    if (!cards.length) return;
-    gsap.fromTo(
-      cards,
-      { opacity: 0, y: 12, scale: 0.98 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.25, ease: "power2.out", stagger: 0.05 }
-    );
-  }
-
-  function animateProgressIcons() {
-    const icons = document.querySelectorAll(".progress-icon");
-    if (!icons.length) return;
-    gsap.fromTo(
-      icons,
-      { y: -4, scale: 0.9 },
-      { y: 0, scale: 1, duration: 0.6, ease: "elastic.out(1, 0.5)" }
-    );
-  }
-
-  function animateExpandOpen(el) {
-    if (!el) return;
-    gsap.killTweensOf(el);
-    gsap.set(el, { display: "block" });
-    gsap.fromTo(
-      el,
-      { maxHeight: 0, opacity: 0, y: -4 },
-      { maxHeight: 400, opacity: 1, y: 0, duration: 0.25, ease: "power2.out" }
-    );
-  }
-
-  function animateExpandClose(el) {
-    if (!el) return;
-    gsap.killTweensOf(el);
-    gsap.to(el, {
-      maxHeight: 0,
-      opacity: 0,
-      y: -4,
-      duration: 0.2,
-      ease: "power2.in"
-    });
-  }
-
-  function animateTabChange() {
-    const list = document.getElementById("habitList");
-    if (!list) return;
-    gsap.to(list, {
-      opacity: 0,
-      y: 10,
-      duration: 0.18,
-      ease: "power1.in",
-      onComplete: () => {
-        renderHabits(false);
-        gsap.fromTo(
-          list,
-          { opacity: 0, y: 10 },
-          { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }
-        );
-      }
-    });
-  }
-
-  function animateTimerStart(cardEl) {
-    if (!cardEl) return;
-    gsap.fromTo(
-      cardEl,
-      { scale: 0.97 },
-      { scale: 1, duration: 0.2, ease: "power2.out" }
-    );
-  }
-
-  function animateSubtaskToggle(el) {
-    if (!el) return;
-    gsap.fromTo(
-      el,
-      { scale: 0.9 },
-      { scale: 1, duration: 0.18, ease: "power2.out" }
-    );
-  }
-
-  function morphIconSimple(el) {
-    if (!el) return;
-    el.classList.remove("morphing");
-    void el.offsetWidth;
-    el.classList.add("morphing");
-  }
-
-  // Effort-basierter Vergleich: Summe weeklyProgress pro User
-  function getEffortForUser(userName) {
-    return habits.reduce((sum, h) => {
-      if (h.user === userName) {
-        return sum + (h.weeklyProgress || 0);
-      }
-      return sum;
-    }, 0);
-  }
-
-  function updateProgressBars() {
-    const users = [
-      { name: "JP",     fillId: "progressFillJP",     iconId: "progressIconJP" },
-      { name: "Giulia", fillId: "progressFillGiulia", iconId: "progressIconGiulia" }
-    ];
-
-    const efforts = users.map(u => ({
-      ...u,
-      effort: getEffortForUser(u.name)
-    }));
-
-    const maxEffort = efforts.reduce((max, u) =>
-      u.effort > max ? u.effort : max
-    , 0);
-
-    efforts.forEach(u => {
-      const fillEl = document.getElementById(u.fillId);
-      const iconEl = document.getElementById(u.iconId);
-      if (!fillEl || !iconEl) return;
-
-      let pct = 0;
-      if (maxEffort > 0) {
-        pct = (u.effort / maxEffort) * 100;
-      }
-
-      animateXPProgress(fillEl, iconEl, pct);
-    });
-    animateProgressIcons();
-  }
-
-  document.getElementById("goSetup").onclick = () => {
-    animateLoginToSetup(() => {
-      loginView.classList.remove("active");
-      setupView.classList.add("active");
-      renderSetup(true);
-    });
+  /* Login-Buttons */
+  btnLogin.onclick = () => {
+    loginForm.style.display = "flex";
+    loginForm.dataset.mode = "login";
+    loginButtonBar.style.bottom = "260px";
   };
 
-  function updateScheduleUI(mode, h) {
-    scheduleModeButtons.forEach(btn =>
-      btn.classList.toggle("active", btn.dataset.mode === mode)
-    );
-    daysPicker.style.display  = mode === "days"  ? "flex" : "none";
-    countWrapper.style.display= mode === "count" ? "flex" : "none";
-
-    if (mode === "days") {
-      if (!h.days || !h.days.length) {
-        h.days = [1,2,3,4,5]; // default Mo–Fr
-      }
-      dayPills.forEach(pill => {
-        const d = parseInt(pill.dataset.day,10);
-        pill.classList.toggle("active", h.days.includes(d));
-      });
-    } else {
-      weeklyTargetInput.value = h.weeklyTarget || 3;
-    }
-  }
-
-  function renderSetup(withAnimation) {
-    document.querySelectorAll(".setup-dot").forEach((d,i) =>
-      d.classList.toggle("active", i <= currentStep)
-    );
-
-    const h = habits[currentStep];
-
-    setupTitle.value   = h.title || "";
-    setupType.value    = h.type || "standard";
-    setupMinutes.value = h.minutes || 5;
-    minutesWrapper.style.display = setupType.value === "timer" ? "flex" : "none";
-
-    subtasksToggle.checked = h.subtasksEnabled;
-    subtasksBuilder.style.display = h.subtasksEnabled ? "flex" : "none";
-
-    subtaskListSetup.innerHTML = "";
-    if (h.subtasksEnabled && h.subtasks.length) {
-      h.subtasks.forEach(st => {
-        const inp = document.createElement("input");
-        inp.type = "text";
-        inp.className = "setup-subtask-input";
-        inp.value = st.title;
-        subtaskListSetup.appendChild(inp);
-      });
-    }
-
-    const mode = h.scheduleMode || "days";
-    h.scheduleMode = mode;
-    updateScheduleUI(mode, h);
-
-    createIconPicker();
-
-    if (withAnimation) {
-      setupContainer.classList.remove("setup-animate");
-      void setupContainer.offsetWidth;
-      setupContainer.classList.add("setup-animate");
-    }
-  }
-
-  setupType.onchange = () => {
-    minutesWrapper.style.display = setupType.value === "timer" ? "flex" : "none";
+  btnRegister.onclick = () => {
+    loginForm.style.display = "flex";
+    loginForm.dataset.mode = "register";
+    loginButtonBar.style.bottom = "260px";
   };
 
-  scheduleModeButtons.forEach(btn => {
-    btn.onclick = () => {
-      const mode = btn.dataset.mode;
-      const h = habits[currentStep];
-      h.scheduleMode = mode;
-      updateScheduleUI(mode, h);
-    };
-  });
+  loginOkBtn.onclick = async () => {
+    const email = loginEmail.value;
+    const password = loginPassword.value;
+    const mode = loginForm.dataset.mode;
 
-  dayPills.forEach(pill => {
-    pill.onclick = () => {
-      pill.classList.toggle("active");
-    };
-  });
-
-  setupIconBtn.onclick = () => {
-    setupIconPicker.style.display =
-      setupIconPicker.style.display === "flex" ? "none" : "flex";
-    setupIconPicker.style.flexWrap = "wrap";
-    createIconPicker();
-  };
-
-  function createIconPicker() {
-    setupIconPicker.innerHTML = "";
-    icons.forEach(icon => {
-      const el = document.createElement("div");
-      el.className = "icon-choice";
-      if (habits[currentStep].icon === icon) el.classList.add("active");
-      el.innerHTML = `<i data-lucide="${icon}"></i>`;
-      el.onclick = () => {
-        habits[currentStep].icon = icon;
-        createIconPicker();
-        lucide.createIcons();
-      };
-      setupIconPicker.appendChild(el);
-    });
-    lucide.createIcons();
-  }
-
-  subtasksToggle.onchange = () => {
-    subtasksBuilder.style.display = subtasksToggle.checked ? "flex" : "none";
-  };
-
-  addSubtaskBtn.onclick = () => {
-    const inp = document.createElement("input");
-    inp.type = "text";
-    inp.placeholder = "Unteraufgabe";
-    inp.className = "setup-subtask-input";
-    subtaskListSetup.appendChild(inp);
-  };
-
-  setupNextBtn.onclick = () => {
-    const h = habits[currentStep];
-    h.title   = setupTitle.value.trim() || "Unbenannt";
-    h.type    = setupType.value;
-    h.minutes = h.type === "timer"
-      ? Math.max(1, parseInt(setupMinutes.value || "5", 10))
-      : null;
-    h.done            = false;
-    h.timerRunning    = false;
-    h.timerFinished   = false;
-    h.remainingSeconds= 0;
-    h.expanded        = false;
-    h.qrVerified      = false;
-
-    const mode = document.querySelector(".mode-btn.active")?.dataset.mode || "days";
-    h.scheduleMode = mode;
-
-    if (mode === "days") {
-      const selectedDays = [...document.querySelectorAll(".day-pill.active")]
-        .map(p => parseInt(p.dataset.day,10));
-      h.days = selectedDays.length ? selectedDays : [1,2,3,4,5];
-      h.weeklyTarget = h.days.length;
-      h.completedDays = [];
-      h.weeklyProgress = 0;
-    } else {
-      const target = Math.max(1, parseInt(weeklyTargetInput.value || "1",10));
-      h.weeklyTarget = target;
-      h.days = [];
-      h.completedDays = [];
-      h.weeklyProgress = 0;
-    }
-
-    h.subtasksEnabled = subtasksToggle.checked;
-    h.subtasks = h.subtasksEnabled
-      ? [...subtaskListSetup.querySelectorAll("input")].map(inp => ({
-          title: inp.value.trim() || "Teilaufgabe",
-          done: false
-        }))
-      : [];
-
-    h.weekId = getWeekId(new Date());
-
-    if (currentStep < 2) {
-      currentStep++;
-      renderSetup(true);
-    } else {
-      animateSetupToMain(() => {
-        setupView.classList.remove("active");
-        mainView.classList.add("active");
-        renderHabits(false);
-        lucide.createIcons();
-        updateProgressBars();
-      });
-    }
-  };
-
-  function formatSeconds(sec) {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return m.toString().padStart(2,"0") + ":" + s.toString().padStart(2,"0");
-  }
-
-  function renderHabits(animated) {
-    habitList.innerHTML = "";
-
-    habits.forEach(ensureWeekState);
-
-    const todayIdx = getTodayDayIndex();
-
-    let list = habits.filter(h => !isHabitDoneForWeek(h));
-
-    if (currentMode === "finish") {
-      list = list.filter(h => isHabitActionableToday(h, todayIdx));
-    }
-
-    if (list.length === 0) {
-      const msg = motivationMessages[Math.floor(Math.random() * motivationMessages.length)];
-      habitList.innerHTML = `
-        <div class="empty-state">
-          <i data-lucide="party-popper"></i>
-          <div class="empty-state-main">Alles geschafft für diese Woche!</div>
-          <div>${msg}</div>
-        </div>
-      `;
-      lucide.createIcons();
-      updateProgressBars();
-      animateEmptyState();
-      return;
-    }
-
-    list.forEach(h => {
-      const habitIndex = habits.indexOf(h);
-
-      const card = document.createElement("div");
-      card.className = "habit-card";
-
-      const row = document.createElement("div");
-      row.className = "habit-row";
-
-      const counterText =
-        h.scheduleMode === "days"
-          ? `${h.completedDays.length}/${h.days.length}`
-          : `${h.weeklyProgress}/${h.weeklyTarget}`;
-
-      row.innerHTML = `
-        <div style="display:flex; flex-direction:column; align-items:center;">
-          <div class="habit-icon"><i data-lucide="${h.icon}"></i></div>
-          <div class="habit-counter">${counterText}</div>
-        </div>
-        <div class="habit-content">
-          <div class="habit-title">${h.title}</div>
-        </div>
-      `;
-
-      const action = document.createElement("div");
-      action.className = "habit-action";
-
-      if (h.type === "timer") {
-        if (h.timerRunning) {
-          const t = document.createElement("div");
-          t.className = "habit-timer";
-          t.textContent = formatSeconds(h.remainingSeconds);
-          row.appendChild(t);
-        } else if (h.timerFinished) {
-          action.textContent = "✓";
-          action.onclick = (e) => {
-            e.stopPropagation();
-            completeHabit(h, card);
-          };
-          row.appendChild(action);
-        } else {
-          action.innerHTML = `<i data-lucide="play"></i>`;
-          action.onclick = (e) => {
-            e.stopPropagation();
-            animateTimerStart(card);
-            startTimer(habitIndex);
-          };
-          row.appendChild(action);
-        }
-
-      } else if (h.type === "standard") {
-        action.textContent = "✓";
-        action.onclick = (e) => {
-          e.stopPropagation();
-          completeHabit(h, card);
-        };
-        row.appendChild(action);
-
-      } else if (h.type === "qr") {
-        if (!h.qrVerified) {
-          action.innerHTML = `<i data-lucide="scan"></i>`;
-          action.onclick = (e) => {
-            e.stopPropagation();
-            simulateQRScan(h);
-          };
-          row.appendChild(action);
-        } else {
-          action.textContent = "✓";
-          action.onclick = (e) => {
-            e.stopPropagation();
-            completeHabit(h, card);
-          };
-          row.appendChild(action);
-        }
-
-      } else if (h.type === "location") {
-        action.textContent = "✓";
-        action.onclick = (e) => {
-          e.stopPropagation();
-          completeHabit(h, card);
-        };
-        row.appendChild(action);
-
+    if (mode === "login") {
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (!error) {
+        loginScreen.classList.remove("active");
+        mainScreen.classList.add("active");
+        await ensurePhysics();
+        loadHabits();
       } else {
-        action.textContent = "✓";
-        action.onclick = (e) => {
-          e.stopPropagation();
-          completeHabit(h, card);
-        };
-        row.appendChild(action);
+        alert("Login fehlgeschlagen");
       }
+    }
 
-      const expand = document.createElement("div");
-      expand.className = "habit-expand";
+    if (mode === "register") {
+      const { error } = await supabaseClient.auth.signUp({ email, password });
+      if (!error) alert("Registrierung erfolgreich – bitte E-Mail bestätigen.");
+      else alert("Registrierung fehlgeschlagen.");
+    }
+  };
 
-      if (h.subtasksEnabled && h.subtasks.length) {
-        expand.innerHTML = `
-          <div>Unteraufgaben:</div>
-          <div class="subtask-wrapper">
-            ${h.subtasks.map((st, si) => `
-              <div class="subtask-row" data-hi="${habitIndex}" data-si="${si}">
-                <span class="subtask-check">
-                  <i data-lucide="${st.done ? "circle-check" : "circle"}"></i>
-                </span>
-                <span class="subtask-title" style="opacity:${st.done ? 0.5 : 1};">
-                  ${st.title}
-                </span>
-              </div>
-            `).join("")}
-          </div>
-        `;
-      } else {
-        let infoText = "";
-        if (h.scheduleMode === "days") {
-          const map = ["Mo","Di","Mi","Do","Fr","Sa","So"];
-          const labels = (h.days || []).sort((a,b)=>a-b).map(d => map[d-1]).join(", ");
-          infoText = labels ? `Aktiv an: ${labels}` : "Tage der Woche nicht gesetzt";
-        } else {
-          infoText = `${h.weeklyTarget || 1}× pro Woche`;
+  /* Physik initialisieren */
+  async function ensurePhysics() {
+    if (physicsInitialized) return;
+    physicsInitialized = true;
+
+    engine = Engine.create();
+    world  = engine.world;
+    engine.gravity.x = 0;
+    engine.gravity.y = 0;
+
+    createBounds();
+
+    let lastTime = performance.now();
+    function tick(now) {
+      const delta = now - lastTime;
+      lastTime = now;
+      Engine.update(engine, delta);
+
+      updateDomFromPhysics();
+      checkOffscreenFlicks();
+
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    // Endloses Wanderverhalten
+    setInterval(() => {
+      habitBodies.forEach(({ body }) => {
+        if (!body) return;
+        const vx = body.velocity.x;
+        const vy = body.velocity.y;
+        const speed = Math.sqrt(vx*vx + vy*vy);
+
+        // zu langsam → neuer Impuls
+        if (speed < MIN_SPEED) {
+          const angle = Math.random() * Math.PI * 2;
+          Body.applyForce(body, body.position, {
+            x: Math.cos(angle) * WANDER_FORCE,
+            y: Math.sin(angle) * WANDER_FORCE
+          });
+          return;
         }
-        expand.innerHTML = `<div>${infoText}</div>`;
-      }
 
-      card.onclick = (e) => {
-        if (e.target === action || e.target.closest(".habit-action")) return;
+        // zu schnell → leicht bremsen
+        if (speed > MAX_SPEED) {
+          Body.setVelocity(body, {
+            x: vx * 0.9,
+            y: vy * 0.9
+          });
+          return;
+        }
 
-        const allExpands = document.querySelectorAll(".habit-expand");
-
-        habits.forEach((other, idx) => {
-          const expEl = allExpands[idx];
-          if (!expEl) return;
-          if (other !== h && other.expanded) {
-            other.expanded = false;
-            animateExpandClose(expEl);
-          }
+        // normal → kleiner wander-Impuls
+        const angle = Math.random() * Math.PI * 2;
+        Body.applyForce(body, body.position, {
+          x: Math.cos(angle) * WANDER_FORCE,
+          y: Math.sin(angle) * WANDER_FORCE
         });
-
-        const expandEl = card.querySelector(".habit-expand");
-        h.expanded = !h.expanded;
-        if (h.expanded) {
-          animateExpandOpen(expandEl);
-        } else {
-          animateExpandClose(expandEl);
-        }
-      };
-
-      card.appendChild(row);
-      card.appendChild(expand);
-      habitList.appendChild(card);
-    });
-
-    habitList.querySelectorAll(".subtask-row").forEach(row => {
-      row.onclick = (e) => {
-        e.stopPropagation();
-
-        const hi = parseInt(row.dataset.hi, 10);
-        const si = parseInt(row.dataset.si, 10);
-
-        const h = habits[hi];
-        const st = h.subtasks[si];
-
-        st.done = !st.done;
-
-        const iconWrap = row.querySelector(".subtask-check");
-        morphIconSimple(iconWrap);
-        iconWrap.innerHTML = `<i data-lucide="${st.done ? "circle-check" : "circle"}"></i>`;
-        animateSubtaskToggle(iconWrap);
-
-        const titleEl = row.querySelector(".subtask-title");
-        titleEl.style.opacity = st.done ? 0.5 : 1;
-
-        lucide.createIcons();
-        updateProgressBars();
-      };
-    });
-
-    lucide.createIcons();
-    updateProgressBars();
-    animateHabitCards();
-    animateCardSwipeIn();
-  }
-
-  function completeHabit(h, cardEl) {
-    const todayIdx = getTodayDayIndex();
-
-    if (h.scheduleMode === "days") {
-      if (!h.completedDays) h.completedDays = [];
-      if (!h.completedDays.includes(todayIdx)) {
-        h.completedDays.push(todayIdx);
-      }
-      h.weeklyProgress = h.completedDays.length;
-    } else {
-      const progress = h.weeklyProgress || 0;
-      h.weeklyProgress = progress + 1;
-    }
-
-    if (isHabitDoneForWeek(h)) {
-      cardEl.classList.add("pop-out");
-      setTimeout(() => {
-        renderHabits(true);
-      }, 220);
-    } else {
-      renderHabits(false);
-    }
-  }
-
-  function startTimer(index) {
-    const h = habits[index];
-    if (!h || h.timerRunning) return;
-
-    h.remainingSeconds = (h.minutes || 1) * 60;
-    h.timerRunning     = true;
-    h.timerFinished    = false;
-
-    if (timers[index]) clearInterval(timers[index]);
-
-    timers[index] = setInterval(() => {
-      if (h.remainingSeconds > 0) {
-        h.remainingSeconds--;
-        renderHabits(false);
-      } else {
-        clearInterval(timers[index]);
-        timers[index] = null;
-        h.timerRunning = false;
-        h.timerFinished = true;
-        renderHabits(false);
-      }
-    }, 1000);
-
-    renderHabits(false);
-  }
-
-  function simulateQRScan(h) {
-    h.qrVerified = true;
-    renderHabits(false);
-  }
-
-  document.querySelectorAll(".tab-btn").forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      currentMode = btn.dataset.tab;
-      animateTabSlide(() => renderHabits(false));
-    };
-  });
-
-  locationBtn.onclick = () => {
-    if (!("geolocation" in navigator)) {
-      locationOutput.textContent = "Geolocation wird nicht unterstützt.";
-      return;
-    }
-
-    locationOutput.textContent = "Standort wird abgefragt…";
-
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const { latitude, longitude, accuracy } = pos.coords;
-        locationOutput.textContent =
-          `Breite ${latitude.toFixed(5)}, Länge ${longitude.toFixed(5)} (±${Math.round(accuracy)} m)`;
-      },
-      () => {
-        locationOutput.textContent = "Standort konnte nicht ermittelt werden.";
-      }
-    );
-  };
-
-  document.addEventListener("DOMContentLoaded", () => {
-    lucide.createIcons();
-    updateProgressBars();
-  });
-  
-  function applyTestEffort() {
-  // Beispiel: Giulia bekommt 3 Effortpunkte
-  habits.push({
-    title: "Testhabit Giulia",
-    type: "standard",
-    icon: "map-pin",
-    scheduleMode: "count",
-    weeklyTarget: 3,
-    weeklyProgress: 2,
-    days: [],
-    completedDays: [],
-    subtasksEnabled: false,
-    subtasks: [],
-    timerRunning: false,
-    timerFinished: false,
-    qrVerified: false,
-    remainingSeconds: 0,
-    expanded: false,
-    user: "Giulia",
-    weekId: getWeekId(new Date())
-  });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  lucide.createIcons();
-
-  // Testdaten aktivieren
-  applyTestEffort();
-
-  updateProgressBars();
-});
-  
-  
-
-  // === Additional GSAP Animations (Package 2 + 3) ===
-
-  function animateCardSwipeIn() {
-    const cards = document.querySelectorAll(".habit-card");
-    if (!cards.length) return;
-    gsap.fromTo(cards,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.32, ease: "power3.out", stagger: 0.06 });
-  }
-
-  function animateEmptyState() {
-    const box = document.querySelector(".empty-state");
-    if (!box) return;
-    gsap.fromTo(box,{ scale: 0.9, opacity: 0 },{ scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.8)" });
-    const icon = box.querySelector("i");
-    if (icon) {
-      gsap.fromTo(icon,{ y: -10, rotate: -10 },{ y: 0, rotate: 0, duration: 0.6, ease: "elastic.out(1, 0.4)", delay: 0.1 });
-    }
-    for (let i = 0; i < 12; i++) {
-      const d = document.createElement("div");
-      d.classList.add("confetti-dot");
-      Object.assign(d.style,{ position: "absolute", width: "6px", height: "6px", borderRadius: "50%", background: `hsl(${Math.random()*360}, 80%, 60%)`, top: "50%", left: "50%", pointerEvents: "none" });
-      box.appendChild(d);
-      gsap.to(d,{ x: (Math.random()-0.5)*140, y: (Math.random()-1)*120, scale: Math.random()*0.7+0.7, opacity: 0, duration: 0.9 + Math.random()*0.4, ease: "power2.out", onComplete: () => d.remove() });
-    }
-  }
-
-  function animateTabSlide(renderCallback) {
-    const list = document.getElementById("habitList");
-    gsap.to(list,{ x: -20, opacity: 0, duration: 0.22, ease: "power2.in", onComplete: () => {
-      renderCallback();
-      gsap.fromTo(list,{ x: 20, opacity: 0 },{ x: 0, opacity: 1, duration: 0.25, ease: "power2.out" });
-    }});
-  }
-
-  function animateXPProgress(fillEl, iconEl, newPct) {
-    const oldPct = parseFloat(fillEl.style.width) || 0;
-    gsap.fromTo(fillEl,{ width: oldPct + "%" },{ width: newPct + "%", duration: 0.55, ease: "power3.out" });
-    gsap.fromTo(iconEl,{ xPercent: oldPct },{ xPercent: newPct, duration: 0.55, ease: "power3.out", delay: 0.05 });
-    gsap.fromTo(iconEl,{ scale: 1 },{ scale: 1.15, duration: 0.25, ease: "back.out(3)", yoyo: true, repeat: 1 });
-  }
-
-  function animateLevelUpFlash(cardEl) {
-    const overlay = document.createElement("div");
-    overlay.style = `position:absolute; inset:0; background:white; opacity:0; pointer-events:none; border-radius:1.4rem;`;
-    cardEl.appendChild(overlay);
-    gsap.fromTo(overlay,{ opacity: 0 },{ opacity: 1, duration: 0.08, yoyo: true, repeat: 1, onComplete: () => overlay.remove() });
-    gsap.to(cardEl,{ scale: 0.85, duration: 0.18, ease: "power1.in", onComplete: () => 
-      gsap.to(cardEl,{ scale: 1, opacity: 0, duration: 0.28, ease: "power2.out" })
-    });
-  }
-
-  function animateTimerStart(cardEl) {
-    gsap.fromTo(cardEl,{ scale: 0.96 },{ scale: 1, duration: 0.22, ease: "power2.out" });
-  }
-
-</script>
-<script>
-/* ============================================================
-   SUPABASE CLIENT
-============================================================ */
-const client = supabase.createClient(
-  "https://gglgenarpskajkaanknk.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4"
-);
-
-
-/* ============================================================
-   LOGIN / SIGNUP / CONFIRMATION
-============================================================ */
-document.addEventListener("DOMContentLoaded", () => {
-  const loginView = document.getElementById("loginView");
-  const setupView = document.getElementById("setupView");
-  const mainView  = document.getElementById("mainView");
-  const loginBtn  = document.getElementById("goSetup");
-
-  if (!loginBtn) return;
-  loginBtn.onclick = null;
-  loginBtn.textContent = "Login";
-
-  let step = 0;
-  let email = "";
-
-  // Wrapper für Inputs
-  const wrapper = document.createElement("div");
-  wrapper.style.display = "none";
-  wrapper.style.marginBottom = "12px";
-  loginBtn.parentNode.insertBefore(wrapper, loginBtn);
-
-  const status = document.createElement("p");
-  status.style.color = "red";
-  status.style.fontSize = "0.8rem";
-
-  function styleInput(el) {
-    el.style.width = "100%";
-    el.style.padding = "12px";
-    el.style.marginBottom = "10px";
-    el.style.borderRadius = "12px";
-    el.style.border = "1px solid #ccc";
-    el.style.background = "#f0f0f0";
-  }
-
-  const emailInput = document.createElement("input");
-  emailInput.type = "email";
-  emailInput.placeholder = "E-Mail";
-  styleInput(emailInput);
-
-  const passInput = document.createElement("input");
-  passInput.type = "password";
-  passInput.placeholder = "Passwort";
-  styleInput(passInput);
-
-  const registerBtn = document.createElement("button");
-  registerBtn.textContent = "Registrieren";
-  registerBtn.style.marginTop = "10px";
-  registerBtn.style.width = "100%";
-  registerBtn.style.padding = "12px";
-  registerBtn.style.borderRadius = "12px";
-  registerBtn.style.background = "#444";
-  registerBtn.style.color = "white";
-  registerBtn.style.display = "none";
-  loginBtn.parentNode.appendChild(registerBtn);
-
-
-  /* LOGIN BUTTON STEP LOGIK */
-  loginBtn.onclick = async () => {
-    status.textContent = "";
-
-    if (step === 0) {
-      wrapper.style.display = "block";
-      wrapper.innerHTML = "";
-      wrapper.appendChild(emailInput);
-      wrapper.appendChild(status);
-      loginBtn.textContent = "Weiter";
-      registerBtn.style.display = "none";
-      step = 1;
-      return;
-    }
-
-    if (step === 1) {
-      if (!emailInput.value.includes("@")) {
-        status.textContent = "Bitte gültige E-Mail.";
-        return;
-      }
-      email = emailInput.value;
-      wrapper.innerHTML = "";
-      wrapper.appendChild(passInput);
-      wrapper.appendChild(status);
-      loginBtn.textContent = "Einloggen";
-      registerBtn.style.display = "block";
-      step = 2;
-      return;
-    }
-
-    if (step === 2) {
-      status.textContent = "Wird geprüft…";
-
-      const { data, error } = await client.auth.signInWithPassword({
-        email,
-        password: passInput.value
       });
+    }, WANDER_INTERVAL);
+  }
 
-      if (error) {
-        status.textContent = error.message;
-        return;
-      }
+  /* Begrenzungen */
+  function createBounds() {
+    const rect = habitListEl.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+    const thickness = 80;
 
-      if (!data.user.email_confirmed_at) {
-        status.textContent = "Bitte E-Mail bestätigen.";
-        await client.auth.signOut();
-        return;
-      }
-
-      status.style.color = "green";
-      status.textContent = "Login erfolgreich!";
-
-      setTimeout(async () => {
-        loginView.classList.remove("active");
-        setupView.classList.add("active");
-        renderSetup(true);
-      }, 500);
+    if (walls.length) {
+      walls.forEach(wb => World.remove(world, wb));
+      walls = [];
     }
-  };
 
+    const left   = Bodies.rectangle(-thickness/2, h/2, thickness, h + thickness, { isStatic:true });
+    const right  = Bodies.rectangle(w + thickness/2, h/2, thickness, h + thickness, { isStatic:true });
+    const top    = Bodies.rectangle(w/2, -thickness/2, w + thickness, thickness, { isStatic:true });
+    const bottom = Bodies.rectangle(w/2, h + thickness/2, w + thickness, thickness, { isStatic:true });
 
-  /* REGISTRIEREN */
-  registerBtn.onclick = async () => {
-    status.textContent = "Registriere…";
+    walls.push(left, right, top, bottom);
+    World.add(world, walls);
+  }
 
-    const { error } = await client.auth.signUp({
-      email,
-      password: passInput.value
-    });
+  /* Progress */
+  function updateProgress(all) {
+    const total = all.length;
+    const done  = all.filter(h => h.zustand === "erledigt").length;
+    const pct   = total > 0 ? (done / total) * 100 : 0;
+    progressInner.style.width = pct + "%";
+    progressText.textContent = `${done} / ${total} erledigt`;
+  }
+
+  /* Habits laden */
+  async function loadHabits() {
+    const user = (await supabaseClient.auth.getUser()).data.user;
+    if (!user) return;
+
+    const { data, error } = await supabaseClient
+      .from("habits")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at");
 
     if (error) {
-      status.textContent = error.message;
+      console.error(error);
       return;
     }
 
-    status.style.color = "green";
-    status.textContent = "Bestätige deine E-Mail.";
-    loginBtn.textContent = "Einloggen";
-    registerBtn.style.display = "none";
-    step = 2;
-  };
-});
+    updateProgress(data || []);
 
+    const openHabits = (data || []).filter(h => h.zustand !== "erledigt");
 
-/* ============================================================
-   AUTOLOGIN (PWA)
-============================================================ */
-document.addEventListener("DOMContentLoaded", async () => {
-  const { data } = await client.auth.getSession();
-  if (!data.session) return;
-  const user = data.session.user;
+    // alte Bodies entfernen
+    habitBodies.forEach(({ body }) => World.remove(world, body));
+    habitBodies = [];
+    habitListEl.innerHTML = "";
 
-  if (!user.email_confirmed_at) return;
+    const rect = habitListEl.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
 
-  const habits = await loadHabitsFromSupabase();
-  const configs = await loadHabitConfigs();
+    openHabits.forEach(habit => {
+      const el = document.createElement("div");
+      el.className = "habitCard";
+      el.dataset.id = habit.id;
+      el.style.background = pastelColors[Math.floor(Math.random() * pastelColors.length)];
+      el.innerHTML = `<div class="habitCard-title">${habit.titel}</div>`;
+      habitListEl.appendChild(el);
 
-  // Views
-  document.getElementById("loginView").classList.remove("active");
+      const startX = CARD_HALF + Math.random() * (w - CARD_SIZE);
+      const startY = CARD_HALF + Math.random() * (h - CARD_SIZE);
 
-  if (habits.length > 0) {
-    document.getElementById("mainView").classList.add("active");
-    renderMainView(habits, configs);
-  } else {
-    document.getElementById("setupView").classList.add("active");
-    renderSetup(true);
-  }
-});
-
-
-/* ============================================================
-   HABITS LADEN
-============================================================ */
-async function loadHabitsFromSupabase() {
-  const { data: session } = await client.auth.getSession();
-  if (!session.session) return [];
-  const user_id = session.session.user.id;
-
-  const { data, error } = await client
-    .from("habits")
-    .select("*")
-    .eq("user_id", user_id)
-    .order("id");
-
-  return data || [];
-}
-
-
-/* ============================================================
-   HABITS SPEICHERN (SETUP)
-============================================================ */
-async function saveHabitsToSupabase() {
-  const { data: session } = await client.auth.getSession();
-  const user_id = session.session.user.id;
-
-  const h1 = document.getElementById("setup-habit-1").value.trim();
-  const h2 = document.getElementById("setup-habit-2").value.trim();
-  const h3 = document.getElementById("setup-habit-3").value.trim();
-
-  const habits = [h1, h2, h3].filter(h => h.length > 0);
-
-  await client.from("habits").delete().eq("user_id", user_id);
-
-  if (habits.length === 0) return;
-
-  const inserts = habits.map(h => ({ user_id, name: h }));
-  await client.from("habits").insert(inserts);
-}
-
-
-/* ============================================================
-   HABIT CONFIGS LADEN
-============================================================ */
-async function loadHabitConfigs() {
-  const { data: session } = await client.auth.getSession();
-  if (!session.session) return [];
-
-  const { data } = await client
-    .from("habit_configs")
-    .select("*")
-    .eq("user_id", session.session.user.id)
-    .order("order_position");
-
-  return data || [];
-}
-
-
-/* ============================================================
-   HABIT CONFIG SPEICHERN
-============================================================ */
-async function saveHabitConfig(habit_id, cfg) {
-  const { data: session } = await client.auth.getSession();
-  const user_id = session.session.user.id;
-
-  await client.from("habit_configs").delete().eq("habit_id", habit_id);
-
-  return client.from("habit_configs").insert({
-    user_id,
-    habit_id,
-    type: cfg.type,
-    weekly_goal: cfg.weekly_goal,
-    selected_weekdays: cfg.selected_weekdays,
-    icon: cfg.icon,
-    color: cfg.color,
-    order_position: cfg.order
-  });
-}
-</script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("setupNextBtn");
-  if (!btn) {
-    console.error("setupNextBtn NICHT gefunden!");
-    return;
-  }
-
-  btn.addEventListener("click", async () => {
-    console.log("[SETUP] Klick erkannt → speichere Habit…");
-
-    const { data: session } = await client.auth.getSession();
-    if (!session || !session.session) {
-      console.error("[SETUP] KEIN USER eingeloggt!");
-      return;
-    }
-
-    const user_id = session.session.user.id;
-
-    // Hole ALLE Habit-Felder, die gerade sichtbar sind
-    const fields = [
-      document.getElementById("setup-habit-1"),
-      document.getElementById("setup-habit-2"),
-      document.getElementById("setup-habit-3")
-    ];
-
-    for (let f of fields) {
-      if (!f) continue;
-      const value = f.value.trim();
-      if (value.length === 0) continue;
-
-      console.log("[SETUP] Speichere:", value);
-
-      await client.from("habits").insert({
-        user_id: user_id,
-        name: value
+      const body = Bodies.rectangle(startX, startY, CARD_SIZE, CARD_SIZE, {
+        frictionAir: 0.03,
+        restitution: 0.9
       });
-    }
+      body.habitId = habit.id;
+      body.domEl   = el;
+      body.armedForCompletion = false;
+      body.markedDone = false;
 
-    console.log("[SETUP] Klick-Speicherung abgeschlossen.");
-  });
-});
-</script>
-<script>
-function attachSetupButtonHandler() {
-  const btn = document.getElementById("setupNextBtn");
-  if (!btn) {
-    console.log("[SETUP] Button nicht da – retry in 200ms…");
-    setTimeout(attachSetupButtonHandler, 200);
-    return;
-  }
+      World.add(world, body);
+      habitBodies.push({ body, el });
 
-  console.log("[SETUP] Handler an Button gebunden.");
-
-  btn.addEventListener("click", async () => {
-    console.log("[SETUP] Klick erkannt → speichere Habit…");
-
-    const session = await client.auth.getSession();
-    const user_id = session.data.session.user.id;
-
-    // ALLE Setup-Felder holen
-    const fields = [
-      document.getElementById("setup-habit-1"),
-      document.getElementById("setup-habit-2"),
-      document.getElementById("setup-habit-3")
-    ];
-
-    for (let f of fields) {
-      if (!f) continue;
-
-      const value = f.value.trim();
-      if (!value) continue;
-
-      console.log("[SETUP] Speichere:", value);
-
-      await client.from("habits").insert({
-        user_id: user_id,
-        name: value
+      // zufälliger Startschubs
+      Body.setVelocity(body, {
+        x:(Math.random()*2 - 1) * 1.0,
+        y:(Math.random()*2 - 1) * 1.0
       });
-    }
 
-    console.log("[SETUP] Alle Habits gespeichert.");
-  });
-}
-
-// Starte Setup-Button-Bindung, sobald DOM steht
-document.addEventListener("DOMContentLoaded", attachSetupButtonHandler);
-</script>
-<script>
-/* ============================================================
-   GARANTIERTES HABIT-SPEICHERN + MAINVIEW WECHSEL
-   (funktioniert auch bei animierten Views & verzögertem DOM)
-============================================================ */
-function initSetupSaveSystem() {
-  console.log("[SETUP] Suche setupNextBtn…");
-
-  let btn = document.getElementById("setupNextBtn");
-  if (!btn) {
-    // Button noch nicht im DOM → später erneut versuchen
-    setTimeout(initSetupSaveSystem, 300);
-    return;
+      attachTouchHandlers(el, body);
+    });
   }
 
-  console.log("[SETUP] Button gefunden. Verbinde Handler…");
+  /* DOM-Positionen aus Physik */
+  function updateDomFromPhysics() {
+    const rect = habitListEl.getBoundingClientRect();
+    const offsetX = rect.left;
+    const offsetY = rect.top;
 
-  let clickCount = 0;
-
-  btn.addEventListener("click", async () => {
-    clickCount++;
-    console.log("[SETUP] Weiter-Klick:", clickCount);
-
-    // Erst beim dritten Klick speichern (dein Flow)
-    if (clickCount < 3) return;
-
-    console.log("[SETUP] Speichere Habits…");
-
-    // Session laden
-    const { data: sessionData } = await client.auth.getSession();
-    if (!sessionData.session) {
-      console.error("[SETUP] Kein User eingeloggt!");
-      return;
-    }
-
-    const user_id = sessionData.session.user.id;
-
-    // Habit-Felder holen
-    const fields = [
-      document.getElementById("setup-habit-1"),
-      document.getElementById("setup-habit-2"),
-      document.getElementById("setup-habit-3")
-    ];
-
-    // Bestehende Habits löschen (sauberer Reset)
-    await client.from("habits").delete().eq("user_id", user_id);
-
-    let toInsert = [];
-
-    for (let f of fields) {
-      if (!f) continue;
-      const value = f.value.trim();
-      if (!value) continue;
-
-      console.log("[SETUP] Gefundenes Habit:", value);
-      toInsert.push({ user_id, name: value });
-    }
-
-    if (toInsert.length === 0) {
-      console.warn("[SETUP] Keine Habits eingegeben.");
-    } else {
-      const { error } = await client.from("habits").insert(toInsert);
-      if (error) console.error("[SETUP] Fehler:", error);
-      else console.log("[SETUP] Gespeichert:", toInsert);
-    }
-
-    console.log("[SETUP] Wechsel zu mainView…");
-
-    // Views wechseln
-    const setupView = document.getElementById("setupView");
-    const mainView  = document.getElementById("mainView");
-
-    setupView.classList.remove("active");
-    mainView.classList.add("active");
-
-    // Daten laden und mainView rendern
-    const habits = await client.from("habits")
-      .select("*")
-      .eq("user_id", user_id)
-      .order("id");
-
-    if (typeof renderMainView === "function") {
-      renderMainView(habits.data || []);
-    }
-  });
-}
-
-// Starte Setup-System
-document.addEventListener("DOMContentLoaded", initSetupSaveSystem);
-</script>
-<script>
-function initSetupSaveSystem() {
-  const btn = document.getElementById("setupNextBtn");
-  if (!btn) {
-    setTimeout(initSetupSaveSystem, 300);
-    return;
+    habitBodies.forEach(({ body, el }) => {
+      const x = body.position.x;
+      const y = body.position.y;
+      el.style.transform = `translate(${x - CARD_HALF}px, ${y - CARD_HALF}px)`;
+    });
   }
 
-  let clickCount = 0;
+  /* Offscreen-Erkennung für Flick */
+  function checkOffscreenFlicks() {
+    const rect = habitListEl.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
 
-  btn.addEventListener("click", async () => {
-    clickCount++;
-    console.log("[SETUP] Klick:", clickCount);
+    habitBodies.slice().forEach(({ body, el }) => {
+      if (!body.armedForCompletion || body.markedDone) return;
+      const x = body.position.x;
+      const y = body.position.y;
 
-    if (clickCount < 3) return;
-
-    console.log("[SETUP] Suche Habit-Felder…");
-
-    const { data: session } = await client.auth.getSession();
-    const user_id = session.session.user.id;
-
-    // ALLE denkbaren Habit-Eingaben sammeln
-    const fields = [
-      "#setup-habit-1",
-      "#setup-habit-2",
-      "#setup-habit-3",
-      "#setupTitle",
-      ".setup-title-input",
-      ".habit-input",
-      "input[placeholder='Habit-Titel']"
-    ];
-
-    let values = [];
-
-    for (let selector of fields) {
-      const el = document.querySelector(selector);
-      if (el && el.value && el.value.trim().length > 0) {
-        values.push(el.value.trim());
-        console.log("[SETUP] Gefundenes Habit:", el.value.trim());
-      }
-    }
-
-    if (values.length === 0) {
-      console.warn("[SETUP] Keine Habits eingegeben.");
-    }
-
-    // alte Habits löschen
-    await client.from("habits").delete().eq("user_id", user_id);
-
-    // neue speichern
-    for (let v of values) {
-      await client.from("habits").insert({
-        user_id: user_id,
-        name: v
-      });
-    }
-
-    console.log("[SETUP] Speicher abgeschlossen.");
-
-    // Weiter zu mainView
-    document.getElementById("setupView").classList.remove("active");
-    document.getElementById("mainView").classList.add("active");
-
-    const loaded = await client.from("habits").select("*").eq("user_id", user_id);
-    if (typeof renderMainView === "function") {
-      renderMainView(loaded.data || []);
-    }
-  });
-}
-
-document.addEventListener("DOMContentLoaded", initSetupSaveSystem);
-</script>
-<script>
-function renderMainView(habits) {
-  console.log("[MAIN] Rendere Habits:", habits);
-
-  const list = document.getElementById("habitList");
-  if (!list) {
-    console.error("[MAIN] habitList NICHT gefunden!");
-    return;
-  }
-
-  // Container leeren
-  list.innerHTML = "";
-
-  if (!habits || habits.length === 0) {
-    list.innerHTML = `
-      <p style="opacity:0.7; text-align:center; margin-top:2rem;">
-        Noch keine Habits gespeichert.
-      </p>
-    `;
-    return;
-  }
-
-  // Für jeden Habit eine Karte erstellen
-  habits.forEach(habit => {
-    const card = document.createElement("div");
-    card.className = "habit-card";
-
-    card.innerHTML = `
-      <div class="habit-name">${habit.name}</div>
-      <div class="habit-progress-bar">
-        <div class="habit-progress-fill"></div>
-      </div>
-    `;
-
-    list.appendChild(card);
-  });
-
-  console.log("[MAIN] Rendering abgeschlossen.");
-}
-</script>
-<!-- === DEBUG SYSTEM === -->
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>
-  // Eruda starten
-  eruda.init();
-  console.log("DEBUG: Eruda Konsole aktiviert.");
-
-  // Globaler Fehlerfänger
-  window.onerror = function(msg, url, line, col, error) {
-    console.error("GLOBAL ERROR:", msg, "at", url, line + ":" + col, error);
-  };
-
-  // Promise-Fehler abfangen
-  window.addEventListener("unhandledrejection", (event) => {
-    console.error("UNHANDLED PROMISE REJECTION:", event.reason);
-  });
-
-  // Alle Clicks loggen
-  document.addEventListener("click", (e) => {
-    console.log("CLICK:", e.target);
-  });
-
-  // View-Wechsel loggen
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((m) => {
-      if (m.attributeName === "class") {
-        if (m.target.classList.contains("active")) {
-          console.log("VIEW AKTIV:", m.target.id);
-        }
+      if (x < -OFFSCREEN_MARGIN ||
+          x > w + OFFSCREEN_MARGIN ||
+          y < -OFFSCREEN_MARGIN ||
+          y > h + OFFSCREEN_MARGIN) {
+        body.markedDone = true;
+        completeHabit(body.habitId, body, el);
       }
     });
-  });
+  }
 
-  // Beobachte alle Views
-  window.onload = () => {
-    document.querySelectorAll("[id$='View'], .view, section").forEach((el) => {
-      observer.observe(el, { attributes: true });
-    });
-    console.log("DEBUG: MutationObserver aktiv.");
+  async function completeHabit(habitId, body, el) {
+    World.remove(world, body);
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+
+    await supabaseClient
+      .from("habits")
+      .update({ zustand: "erledigt" })
+      .eq("id", habitId);
+
+    loadHabits();
+  }
+
+  /* Drag / Flick */
+  function attachTouchHandlers(el, body) {
+    let dragging = false;
+    let lastPositions = []; // {x,y,time}
+
+    function containerRect() {
+      return habitListEl.getBoundingClientRect();
+    }
+
+    el.addEventListener("touchstart", e => {
+      if (addMode) return;
+      dragging = true;
+      lastPositions = [];
+      const t = e.touches[0];
+      const rect = containerRect();
+      const x = t.clientX - rect.left;
+      const y = t.clientY - rect.top;
+
+      Body.setVelocity(body, {x:0,y:0});
+      Body.setAngularVelocity(body, 0);
+
+      lastPositions.push({x,y,time:performance.now()});
+      e.preventDefault();
+    }, { passive:false });
+
+    el.addEventListener("touchmove", e => {
+      if (!dragging || addMode) return;
+      const t = e.touches[0];
+      const rect = containerRect();
+      const x = t.clientX - rect.left;
+      const y = t.clientY - rect.top;
+
+      Body.setPosition(body, {x,y});
+
+      const now = performance.now();
+      lastPositions.push({x,y,time:now});
+      if (lastPositions.length > 5) lastPositions.shift();
+
+      e.preventDefault();
+    }, { passive:false });
+
+    el.addEventListener("touchend", () => {
+      if (!dragging) return;
+      dragging = false;
+
+      if (lastPositions.length < 2) {
+        body.armedForCompletion = false;
+        return;
+      }
+
+      const first = lastPositions[0];
+      const last  = lastPositions[lastPositions.length - 1];
+      const dt = (last.time - first.time) / 1000;
+      const dx = last.x - first.x;
+      const dy = last.y - first.y;
+
+      if (dt <= 0) {
+        body.armedForCompletion = false;
+        return;
+      }
+
+      const vx = dx / dt;
+      const vy = dy / dt;
+      const speed = Math.sqrt(vx*vx + vy*vy);
+
+      if (Math.hypot(dx,dy) > FLICK_DISTANCE && speed > FLICK_SPEED) {
+        body.armedForCompletion = true;
+        Body.setVelocity(body, {x:vx * 0.02, y:vy * 0.02});
+      } else {
+        body.armedForCompletion = false;
+        Body.setVelocity(body, {x:vx * 0.01, y:vy * 0.01});
+      }
+    }, { passive:true });
+  }
+
+  /* Plus → Overlay */
+  bottomActionBar.onclick = () => {
+    if (addMode) return;
+    addMode = true;
+    newHabitOverlay.style.display = "flex";
+    newHabitTitle.value = "";
+    newHabitTitle.focus();
   };
 
-  // Supabase Debug Wrapper
-  function debugSupabaseCall(name, fn) {
-    console.log("SUPABASE CALL:", name);
-    return fn().then((res) => {
-      console.log("SUPABASE RESULT (" + name + "):", res);
-      return res;
-    });
-  }
+  newHabitOkBtn.onclick = async () => {
+    const title = newHabitTitle.value.trim();
+    if (!title) return;
+
+    const user = (await supabaseClient.auth.getUser()).data.user;
+    if (!user) return;
+
+    const { error } = await supabaseClient
+      .from("habits")
+      .insert({
+        user_id: user.id,
+        titel: title,
+        zustand: "offen"
+      });
+
+    if (error) {
+      alert("Fehler beim Speichern");
+      return;
+    }
+
+    newHabitOverlay.style.display = "none";
+    addMode = false;
+    loadHabits();
+  };
 </script>
-<!-- === END DEBUG SYSTEM === -->
 </body>
 </html>
