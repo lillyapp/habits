@@ -2193,7 +2193,78 @@ function initSetupSaveSystem() {
 // Starte Setup-System
 document.addEventListener("DOMContentLoaded", initSetupSaveSystem);
 </script>
+<script>
+function initSetupSaveSystem() {
+  const btn = document.getElementById("setupNextBtn");
+  if (!btn) {
+    setTimeout(initSetupSaveSystem, 300);
+    return;
+  }
 
+  let clickCount = 0;
+
+  btn.addEventListener("click", async () => {
+    clickCount++;
+    console.log("[SETUP] Klick:", clickCount);
+
+    if (clickCount < 3) return;
+
+    console.log("[SETUP] Suche Habit-Felder…");
+
+    const { data: session } = await client.auth.getSession();
+    const user_id = session.session.user.id;
+
+    // ALLE denkbaren Habit-Eingaben sammeln
+    const fields = [
+      "#setup-habit-1",
+      "#setup-habit-2",
+      "#setup-habit-3",
+      "#setupTitle",
+      ".setup-title-input",
+      ".habit-input",
+      "input[placeholder='Habit-Titel']"
+    ];
+
+    let values = [];
+
+    for (let selector of fields) {
+      const el = document.querySelector(selector);
+      if (el && el.value && el.value.trim().length > 0) {
+        values.push(el.value.trim());
+        console.log("[SETUP] Gefundenes Habit:", el.value.trim());
+      }
+    }
+
+    if (values.length === 0) {
+      console.warn("[SETUP] Keine Habits eingegeben.");
+    }
+
+    // alte Habits löschen
+    await client.from("habits").delete().eq("user_id", user_id);
+
+    // neue speichern
+    for (let v of values) {
+      await client.from("habits").insert({
+        user_id: user_id,
+        name: v
+      });
+    }
+
+    console.log("[SETUP] Speicher abgeschlossen.");
+
+    // Weiter zu mainView
+    document.getElementById("setupView").classList.remove("active");
+    document.getElementById("mainView").classList.add("active");
+
+    const loaded = await client.from("habits").select("*").eq("user_id", user_id);
+    if (typeof renderMainView === "function") {
+      renderMainView(loaded.data || []);
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", initSetupSaveSystem);
+</script>
 <!-- === DEBUG SYSTEM === -->
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <script>
