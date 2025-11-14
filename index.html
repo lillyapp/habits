@@ -2103,6 +2103,97 @@ function attachSetupButtonHandler() {
 // Starte Setup-Button-Bindung, sobald DOM steht
 document.addEventListener("DOMContentLoaded", attachSetupButtonHandler);
 </script>
+<script>
+/* ============================================================
+   GARANTIERTES HABIT-SPEICHERN + MAINVIEW WECHSEL
+   (funktioniert auch bei animierten Views & verzögertem DOM)
+============================================================ */
+function initSetupSaveSystem() {
+  console.log("[SETUP] Suche setupNextBtn…");
+
+  let btn = document.getElementById("setupNextBtn");
+  if (!btn) {
+    // Button noch nicht im DOM → später erneut versuchen
+    setTimeout(initSetupSaveSystem, 300);
+    return;
+  }
+
+  console.log("[SETUP] Button gefunden. Verbinde Handler…");
+
+  let clickCount = 0;
+
+  btn.addEventListener("click", async () => {
+    clickCount++;
+    console.log("[SETUP] Weiter-Klick:", clickCount);
+
+    // Erst beim dritten Klick speichern (dein Flow)
+    if (clickCount < 3) return;
+
+    console.log("[SETUP] Speichere Habits…");
+
+    // Session laden
+    const { data: sessionData } = await client.auth.getSession();
+    if (!sessionData.session) {
+      console.error("[SETUP] Kein User eingeloggt!");
+      return;
+    }
+
+    const user_id = sessionData.session.user.id;
+
+    // Habit-Felder holen
+    const fields = [
+      document.getElementById("setup-habit-1"),
+      document.getElementById("setup-habit-2"),
+      document.getElementById("setup-habit-3")
+    ];
+
+    // Bestehende Habits löschen (sauberer Reset)
+    await client.from("habits").delete().eq("user_id", user_id);
+
+    let toInsert = [];
+
+    for (let f of fields) {
+      if (!f) continue;
+      const value = f.value.trim();
+      if (!value) continue;
+
+      console.log("[SETUP] Gefundenes Habit:", value);
+      toInsert.push({ user_id, name: value });
+    }
+
+    if (toInsert.length === 0) {
+      console.warn("[SETUP] Keine Habits eingegeben.");
+    } else {
+      const { error } = await client.from("habits").insert(toInsert);
+      if (error) console.error("[SETUP] Fehler:", error);
+      else console.log("[SETUP] Gespeichert:", toInsert);
+    }
+
+    console.log("[SETUP] Wechsel zu mainView…");
+
+    // Views wechseln
+    const setupView = document.getElementById("setupView");
+    const mainView  = document.getElementById("mainView");
+
+    setupView.classList.remove("active");
+    mainView.classList.add("active");
+
+    // Daten laden und mainView rendern
+    const habits = await client.from("habits")
+      .select("*")
+      .eq("user_id", user_id)
+      .order("id");
+
+    if (typeof renderMainView === "function") {
+      renderMainView(habits.data || []);
+    }
+  });
+}
+
+// Starte Setup-System
+document.addEventListener("DOMContentLoaded", initSetupSaveSystem);
+</script>
+
 <!-- === DEBUG SYSTEM === -->
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <script>
