@@ -3,74 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Corbado Login (Working UMD)</title>
+  <title>Corbado Login Beispiel</title>
 
-  <!-- CORBADO OFFIZIELL: Web-JS v3 UMD (global Corbado object) -->
-  <link rel="stylesheet" href="https://cdn.corbado.com/web-js/v3/bundle/index.css">
-  <script src="https://cdn.corbado.com/web-js/v3/bundle/index.umd.js"></script>
+  <!-- Stylesheet laut Doc -->
+  <link 
+    rel="stylesheet" 
+    href="https://unpkg.com/@corbado/web-js@2/dist/bundle/index.css"
+  />
 
-  <!-- Debug Konsole -->
-  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>eruda.init();</script>
-
-  <style>
-    body {
-      font-family: system-ui;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background: #f5f5f5;
-    }
-    #box {
-      width: 100%;
-      max-width: 400px;
-      background: #fff;
-      padding: 20px;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-  </style>
+  <!-- Library laut Doc -->
+  <script 
+    src="https://unpkg.com/@corbado/web-js@2/dist/bundle/index.js"
+  ></script>
 </head>
-
 <body>
+  <div id="corbadoAuth"></div>
 
-<div id="box">
-  <h2 style="text-align:center;">Login</h2>
-  <div id="corbado-container"></div>
-</div>
+  <script type="module">
+    await Corbado.load({
+      projectId: "pro-1234567890"
+    });
 
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-
-  console.log("Global Corbado Objekt:", window.Corbado);
-
-  if (!window.Corbado) {
-    console.error("Corbado wurde nicht geladen!");
-    return;
-  }
-
-  // Neues Corbado-Objekt (UMD Build)
-  const cb = new Corbado({
-    projectId: "pro-8203476425584199588",
-    apiKey: "corbado1_GHlBk2HgxuV6dBaKT2QZTfJJFxdleU"
-  });
-
-  console.log("Corbado initialisiert:", cb);
-
-  cb.mountAuthUI(
-    document.getElementById("corbado-container"),
-    {
-      mode: "login",
-      onLoggedIn: (user) => {
-        console.log("Login erfolgreich:", user);
-        alert("Login erfolgreich: " + user.sub);
+    const element = document.getElementById("corbadoAuth");
+    Corbado.mountAuthUI(element, {
+      onLoggedIn: () => {
+        console.log("User logged in");
+        // Weiterleitung oder Logik hier
       }
-    }
-  );
-});
-</script>
-
+    });
+  </script>
 </body>
 </html>
