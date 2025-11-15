@@ -4,16 +4,16 @@
   <meta charset="UTF-8" />
   <title>Consistency</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/lillyapp/habits/refs/heads/main/3FC2E555-7142-43BE-83DE-E5ED7A123793.png">
+  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/lillyapp/habits/refs/heads/main/3FC2E555-7142-43BE-83DE-E5ED7A123793.png">
   <!-- Lucide -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- GSAP -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
   <style>
     :root {
       --page-padding: 16px;
@@ -329,7 +329,6 @@
 <script>
   lucide.createIcons();
 
-  // Supabase Init (wie in deiner Vorlage)
   const supabaseClient = supabase.createClient(
     "https://gglgenarpskajkaanknk.supabase.co",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4"
@@ -346,10 +345,10 @@
   const loginPassword = document.getElementById("loginPassword");
 
   const slotOrder = ["slot3","slot2","slot1"];
-  let habits = [];       // aktuell geladene Habits aus DB (max 3)
-  let cardsCount = 0;    // wie viele Karten derzeit angezeigt
+  let habits = [];
+  let cardsCount = 0;
   let currentUser = null;
-  let authMode = "login"; // "login" oder "register"
+  let authMode = "login";
 
   const cycleColors=[
     "#ef4444","#f97316","#f59e0b","#eab308","#84cc16","#22c55e",
@@ -364,6 +363,53 @@
     let g=parseInt(hex.slice(3,5),16)*f|0;
     let b=parseInt(hex.slice(5,7),16)*f|0;
     return `rgb(${r},${g},${b})`;
+  }
+
+  // ISO-Wochen-Key für Weekly Reset
+  function getCurrentWeekKey() {
+    const now = new Date();
+    const date = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+    const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+    return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2,"0")}`;
+  }
+
+  // Weekly Reset: setzt alle Habits einer neuen Woche auf progress=0 + grau
+  async function ensureWeeklyReset(rows) {
+    if (!currentUser || !rows || rows.length === 0) return rows;
+    const weekKey = getCurrentWeekKey();
+    const storageKey = `consistency_lastWeekReset_${currentUser.id}`;
+    const lastWeek = localStorage.getItem(storageKey);
+
+    if (lastWeek === weekKey) {
+      return rows;
+    }
+
+    const idsToReset = [];
+    rows.forEach(h => {
+      const p = h.progress || 0;
+      const c = h.color || "#e4e4e4";
+      if (p !== 0 || c !== "#e4e4e4") {
+        h.progress = 0;
+        h.color = "#e4e4e4";
+        idsToReset.push(h.id);
+      }
+    });
+
+    if (idsToReset.length > 0) {
+      const { error } = await supabaseClient
+        .from("habits")
+        .update({ progress: 0, color: "#e4e4e4" })
+        .in("id", idsToReset);
+      if (error) {
+        console.error("weekly reset error:", error);
+      }
+    }
+
+    localStorage.setItem(storageKey, weekKey);
+    return rows;
   }
 
   // LOGIN UI
@@ -429,7 +475,6 @@
       if (!currentUser) return;
     }
 
-    // habits_active View nutzen -> enthält nur, was diese Woche angezeigt werden soll
     const { data, error } = await supabaseClient
       .from("habits_active")
       .select("*")
@@ -442,11 +487,13 @@
       return;
     }
 
-    habits = data || [];
+    let rows = data || [];
+    rows = await ensureWeeklyReset(rows); // Weekly Reset einbauen
+    habits = rows;
+
     clearAllSlots();
     cardsCount = 0;
 
-    // von unten nach oben einplumpsen lassen
     const baseDelay = 0.0;
     habits.forEach((habit, i) => {
       const delay = baseDelay + (habits.length - 1 - i) * 0.15;
@@ -476,7 +523,6 @@
       return;
     }
 
-    // Hauptansicht:
     if (habits.length < 3) {
       addBtn.innerHTML = '<i data-lucide="plus"></i>';
       addBtn.classList.add("btn-plus");
@@ -548,17 +594,15 @@
       input.style.color = "#666";
     }
 
-    // Plumps-Animation
     gsap.fromTo(card, { y:-300, opacity:0 }, {
       y:0, opacity:1, duration:0.8, ease:"back.out(1.7)", delay
     });
 
     attachCardLogic(card, habit);
-
     cardsCount = habits.length;
   }
 
-  // KARTE + LOGIK
+  // KARTE + LOGIK (angepasste Klick-Logik)
   function attachCardLogic(card, habit) {
     const input   = card.querySelector(".card-input");
     const counter = card.querySelector(".counter");
@@ -625,7 +669,7 @@
       gsap.to(card,{rotationY:0,duration:0.4,ease:"power2.out"});
     });
 
-    // Long Press Color Cycling
+    // Long Press Color Cycling (nur wenn aktiv)
     let pressTimer=null;
     let pressInterval=null;
 
@@ -664,39 +708,65 @@
       }
     });
 
-    // Klick = aktiv/inaktiv + Zähler rauf/runter
+    // Klick-Logik: Inkrement bis goal, dann Reset (Variante B)
     card.addEventListener("click",()=>{
       if(card.style.transform.includes("180deg")) return;
-
       if(!input.value.trim()){ return; }
 
-      let activeBefore = card.dataset.active === "true";
-      let x = parseInt(card.dataset.progress);
-      let y = parseInt(card.dataset.goal);
+      let x = parseInt(card.dataset.progress) || 0;
+      let y = parseInt(card.dataset.goal) || 0;
+      let active = card.dataset.active === "true";
+      const idx = parseInt(card.dataset.index);
 
-      if (y > 0) counter.style.display = "block";
-
-      if(!activeBefore){
-        if(y>0 && x<y) x++;
+      if (y === 0) {
+        // goal=0: einfaches Toggle mit progress 0/1
+        if (!active) {
+          x = 1;
+          active = true;
+          const col = cycleColors[idx];
+          card.style.background = col;
+          card.dataset.color = col;
+          input.style.color = darken(col);
+        } else {
+          x = 0;
+          active = false;
+          card.style.background = "#e4e4e4";
+          card.dataset.color = "#e4e4e4";
+          input.style.color = "#666";
+        }
       } else {
-        if(y>0 && x>0) x--;
+        // goal >= 1: bis goal hochzählen, dann vollständiger Reset (B)
+        if (!active) {
+          active = true;
+          if (x === 0 && x < y) {
+            x = 1;
+          }
+          const col = cycleColors[idx];
+          card.style.background = col;
+          card.dataset.color = col;
+          input.style.color = darken(col);
+        } else {
+          if (x < y) {
+            x += 1;
+          } else {
+            // voll erfüllt -> Reset
+            x = 0;
+            active = false;
+            card.style.background = "#e4e4e4";
+            card.dataset.color = "#e4e4e4";
+            input.style.color = "#666";
+          }
+        }
       }
 
       card.dataset.progress = x;
-      counter.textContent = x + "/" + y;
+      card.dataset.active = active ? "true" : "false";
 
-      const idx = parseInt(card.dataset.index);
-      if(activeBefore){
-        card.dataset.active="false";
-        card.style.background="#e4e4e4";
-        card.dataset.color="#e4e4e4";
-        input.style.color="#666";
+      if (y > 0) {
+        counter.style.display = "block";
+        counter.textContent = x + "/" + y;
       } else {
-        const col=cycleColors[idx];
-        card.dataset.active="true";
-        card.style.background=col;
-        card.dataset.color=col;
-        input.style.color=darken(col);
+        counter.style.display = "none";
       }
 
       saveHabit(card);
@@ -736,7 +806,6 @@
   const statsBtnEl = document.getElementById("statsBtn");
 
   addBtnEl.addEventListener("click", async () => {
-    // In Stats-Mode: zurück zur Hauptansicht
     if (addBtnEl.dataset.mode === "stats") {
       addBtnEl.dataset.mode = "main";
       gsap.to("#statsView",{top:"100svh",duration:0.6,ease:"power3.in"});
@@ -744,9 +813,7 @@
       return;
     }
 
-    // Hauptansicht:
     if (habits.length >= 3) {
-      // Haus-Icon → nichts tun, schon "Home"
       return;
     }
 
@@ -756,7 +823,6 @@
       if (!currentUser) return;
     }
 
-    // Neuen Habit in DB anlegen
     const { data, error } = await supabaseClient
       .from("habits")
       .insert({
