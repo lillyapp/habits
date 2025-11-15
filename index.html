@@ -272,6 +272,9 @@
       font-weight:700;
       border-radius:16px;
       color:#000;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
   </style>
 </head>
@@ -288,6 +291,7 @@
   </div>
 
   <div id="loginForm">
+    <input id="loginName" class="login-input" placeholder="Name" type="text" style="display:none;" />
     <input id="loginEmail" class="login-input" placeholder="E-Mail" type="email" />
     <input id="loginPassword" class="login-input" placeholder="Passwort" type="password" />
     <button class="btn" id="loginOkBtn">OK</button>
@@ -315,19 +319,7 @@
     </button>
   </div>
 
-  <div id="statsView">
-    <div class="stats-name">Kevin</div>
-    <div class="stat-bar"><div class="stat-fill" id="k1"></div></div>
-    <div class="stat-bar"><div class="stat-fill" id="k2"></div></div>
-    <div class="stat-bar"><div class="stat-fill" id="k3"></div></div>
-
-    <div style="height:40px"></div>
-
-    <div class="stats-name">Hannah</div>
-    <div class="stat-bar"><div class="stat-fill" id="h1"></div></div>
-    <div class="stat-bar"><div class="stat-fill" id="h2"></div></div>
-    <div class="stat-bar"><div class="stat-fill" id="h3"></div></div>
-  </div>
+  <div id="statsView"></div>
 </div>
 
 <script>
@@ -345,16 +337,20 @@
   const btnLogin      = document.getElementById("btnLogin");
   const btnRegister   = document.getElementById("btnRegister");
   const loginOkBtn    = document.getElementById("loginOkBtn");
+  const loginName     = document.getElementById("loginName");
   const loginEmail    = document.getElementById("loginEmail");
   const loginPassword = document.getElementById("loginPassword");
   const addBtnEl      = document.getElementById("addBtn");
   const statsBtnEl    = document.getElementById("statsBtn");
+  const statsViewEl   = document.getElementById("statsView");
 
   const slotOrder = ["slot3","slot2","slot1"];
 
   let habits      = [];
   let currentUser = null;
   let authMode    = "login";
+  let statsOpen   = false;
+  let otherUser   = null;
 
   const cycleColors = [
     "#ef4444","#f97316","#f59e0b","#eab308","#84cc16","#22c55e",
@@ -417,32 +413,52 @@
   // LOGIN UI
   btnLogin.onclick = () => {
     authMode = "login";
-    loginForm.style.display = "flex";
-    loginError.style.display = "none";
+    btnLogin.style.display    = "none";
+    btnRegister.style.display = "none";
+    loginName.style.display   = "none";   // kein Name beim Login
+    loginForm.style.display   = "flex";
+    loginError.style.display  = "none";
   };
 
   btnRegister.onclick = () => {
     authMode = "register";
-    loginForm.style.display = "flex";
-    loginError.style.display = "none";
+    btnLogin.style.display    = "none";
+    btnRegister.style.display = "none";
+    loginName.style.display   = "block";  // Name bei Registrierung
+    loginForm.style.display   = "flex";
+    loginError.style.display  = "none";
   };
 
   loginOkBtn.onclick = async () => {
     loginError.style.display = "none";
     const email    = loginEmail.value.trim();
     const password = loginPassword.value.trim();
+    const name     = loginName.value.trim();
 
-    if (!email || !password) {
+    if (!email || !password || (authMode === "register" && !name)) {
       loginError.textContent = "Bitte alles ausfüllen.";
       loginError.style.display = "block";
       return;
     }
 
     let error;
+
     if (authMode === "login") {
-      ({ error } = await supabaseClient.auth.signInWithPassword({ email, password }));
+      ({ error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      }));
     } else {
-      ({ error } = await supabaseClient.auth.signUp({ email, password }));
+      const { error: signUpError } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            display_name: name
+          }
+        }
+      });
+      error = signUpError;
     }
 
     if (error) {
@@ -456,18 +472,37 @@
 
     loginScreen.style.display = "none";
     appPage.style.display     = "block";
+
+    setupRealtime();
+
     await loadHabitsFromDB();
   };
 
+  // Autologin
   (async () => {
     const { data } = await supabaseClient.auth.getUser();
     if (data.user) {
       currentUser = data.user;
       loginScreen.style.display = "none";
       appPage.style.display     = "block";
+      setupRealtime();
       await loadHabitsFromDB();
     }
   })();
+
+  function setupRealtime() {
+    supabaseClient.channel('habits-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'habits' },
+        async payload => {
+          if (statsOpen) {
+            await refreshStatsLive();
+          }
+        }
+      )
+      .subscribe();
+  }
 
   async function loadHabitsFromDB() {
     if (!currentUser) {
@@ -734,7 +769,7 @@
           input.style.color     = darken(col);
         }
       } else {
-        // Multi-Goal (>=2): von 0 bis goal hochzählen, danach nichts mehr ändern
+        // Multi-Goal (>=2): von 0 bis goal hochzählen
         if (progress < goal) {
           progress += 1;
           active = true;
@@ -743,7 +778,7 @@
           card.dataset.color    = col;
           input.style.color     = darken(col);
         } else {
-          // Bereits voll -> keine Änderung
+          // bereits voll -> keine Änderung mehr
           return;
         }
       }
@@ -792,6 +827,7 @@
   addBtnEl.addEventListener("click", async () => {
     if (addBtnEl.dataset.mode === "stats") {
       addBtnEl.dataset.mode = "main";
+      statsOpen = false;
       gsap.to("#statsView",{top:"100svh",duration:0.6,ease:"power3.in"});
       refreshAddButtonIcon();
       return;
@@ -831,24 +867,54 @@
     refreshAddButtonIcon();
   });
 
-  function renderStats() {
-    const statIds = ["k1","k2","k3"];
+  async function loadOtherUser() {
+    if (!currentUser) return null;
 
-    statIds.forEach((id, i) => {
-      const bar = document.getElementById(id);
+    const { data, error } = await supabaseClient
+      .from("users_public")
+      .select("id, display_name")
+      .neq("id", currentUser.id)
+      .limit(1);
 
-      if (!habits[i]) {
-        bar.style.width      = "0%";
-        bar.style.background = "#e5e7eb";
-        bar.textContent      = "";
-        return;
+    if (error) {
+      console.error("loadOtherUser error:", error);
+      return null;
+    }
+
+    return data && data.length > 0 ? data[0] : null;
+  }
+
+  async function loadHabitsForUser(userId) {
+    const { data, error } = await supabaseClient
+      .from("habits_active")
+      .select("*")
+      .eq("user_id", userId)
+      .order("inserted_at", { ascending: true })
+      .limit(3);
+
+    if (error) {
+      console.error("loadHabitsForUser error:", error);
+      return [];
+    }
+    return data || [];
+  }
+
+  function barsHtml(habits) {
+    let html = "";
+    for (let i=0;i<3;i++) {
+      const h = habits[i];
+      if (!h) {
+        html += `
+          <div class="stat-bar">
+            <div class="stat-fill" style="width:0%"></div>
+          </div>`;
+        continue;
       }
 
-      const h = habits[i];
-      const title = h.title || "—";
-      const color = h.color || "#e5e7eb";
       const x = h.progress || 0;
       const y = h.goal     || 0;
+      const title = h.title || "—";
+      const color = h.color || "#e5e7eb";
 
       let percent = 0;
       if (y > 0) {
@@ -859,28 +925,55 @@
         }
       }
 
-      bar.textContent      = title;
-      bar.style.background = color;
-
-      gsap.fromTo(bar, { width:"0%" }, {
-        width: percent + "%",
-        duration: 1.2,
-        ease: "power3.out"
-      });
-    });
-
-    ["h1","h2","h3"].forEach(id=>{
-      const bar = document.getElementById(id);
-      gsap.fromTo(bar,{width:"0%"},{
-        width:(40+Math.random()*60)+"%",
-        duration:1.2,
-        ease:"power3.out"
-      });
-    });
+      html += `
+        <div class="stat-bar">
+          <div class="stat-fill" style="background:${color}; width:${percent}%">
+            ${title}
+          </div>
+        </div>`;
+    }
+    return html;
   }
 
-  statsBtnEl.addEventListener("click", () => {
-    renderStats();
+  function renderStats(myHabits, otherHabits, otherUserData) {
+    const myName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.display_name)
+      ? currentUser.user_metadata.display_name
+      : (currentUser && currentUser.email ? currentUser.email.split("@")[0] : "Du");
+
+    let html = "";
+
+    html += `<div class="stats-name">${myName}</div>`;
+    html += barsHtml(myHabits);
+    if (otherUserData) {
+      const otherName = otherUserData.display_name || "Freund:in";
+      html += `<div style="height:40px"></div>`;
+      html += `<div class="stats-name">${otherName}</div>`;
+      html += barsHtml(otherHabits);
+    }
+
+    statsViewEl.innerHTML = html;
+  }
+
+  async function refreshStatsLive() {
+    if (!currentUser) return;
+
+    const myHabits    = await loadHabitsForUser(currentUser.id);
+    const otherHabits = otherUser ? await loadHabitsForUser(otherUser.id) : [];
+    renderStats(myHabits, otherHabits, otherUser);
+  }
+
+  statsBtnEl.addEventListener("click", async () => {
+    if (!currentUser) return;
+
+    otherUser = await loadOtherUser();
+    const [myHabits, otherHabits] = await Promise.all([
+      loadHabitsForUser(currentUser.id),
+      otherUser ? loadHabitsForUser(otherUser.id) : Promise.resolve([])
+    ]);
+
+    renderStats(myHabits, otherHabits, otherUser);
+
+    statsOpen = true;
     addBtnEl.dataset.mode = "stats";
     refreshAddButtonIcon();
     gsap.to("#statsView",{top:0,duration:0.6,ease:"power3.out"});
