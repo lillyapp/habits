@@ -5,15 +5,19 @@
   <title>Consistency</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/lillyapp/habits/refs/heads/main/3FC2E555-7142-43BE-83DE-E5ED7A123793.png">
+
   <!-- Lucide -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- GSAP -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
   <style>
     :root {
       --page-padding: 16px;
@@ -327,30 +331,35 @@
 </div>
 
 <script>
+  // Icons initialisieren
   lucide.createIcons();
 
+  // Supabase Init
   const supabaseClient = supabase.createClient(
     "https://gglgenarpskajkaanknk.supabase.co",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4"
   );
 
-  const loginScreen = document.getElementById("loginScreen");
-  const loginForm   = document.getElementById("loginForm");
-  const loginError  = document.getElementById("loginError");
-  const appPage     = document.getElementById("appPage");
-  const btnLogin    = document.getElementById("btnLogin");
-  const btnRegister = document.getElementById("btnRegister");
-  const loginOkBtn  = document.getElementById("loginOkBtn");
-  const loginEmail  = document.getElementById("loginEmail");
+  // DOM-Referenzen
+  const loginScreen   = document.getElementById("loginScreen");
+  const loginForm     = document.getElementById("loginForm");
+  const loginError    = document.getElementById("loginError");
+  const appPage       = document.getElementById("appPage");
+  const btnLogin      = document.getElementById("btnLogin");
+  const btnRegister   = document.getElementById("btnRegister");
+  const loginOkBtn    = document.getElementById("loginOkBtn");
+  const loginEmail    = document.getElementById("loginEmail");
   const loginPassword = document.getElementById("loginPassword");
+  const addBtnEl      = document.getElementById("addBtn");
+  const statsBtnEl    = document.getElementById("statsBtn");
 
   const slotOrder = ["slot3","slot2","slot1"];
-  let habits = [];
-  let cardsCount = 0;
-  let currentUser = null;
-  let authMode = "login";
 
-  const cycleColors=[
+  let habits      = [];
+  let currentUser = null;
+  let authMode    = "login";
+
+  const cycleColors = [
     "#ef4444","#f97316","#f59e0b","#eab308","#84cc16","#22c55e",
     "#10b981","#14b8a6","#06b6d4","#0ea5e9","#3b82f6","#6366f1",
     "#8b5cf6","#a855f7","#d946ef","#ec4899","#f43f5e","#dc2626",
@@ -358,34 +367,32 @@
     "#0369a1","#1d4ed8","#4338ca","#6d28d9","#7e22ce","#be185d"
   ];
 
-  function darken(hex,f=0.55){
-    let r=parseInt(hex.slice(1,3),16)*f|0;
-    let g=parseInt(hex.slice(3,5),16)*f|0;
-    let b=parseInt(hex.slice(5,7),16)*f|0;
+  function darken(hex, f=0.55) {
+    let r = parseInt(hex.slice(1,3),16)*f|0;
+    let g = parseInt(hex.slice(3,5),16)*f|0;
+    let b = parseInt(hex.slice(5,7),16)*f|0;
     return `rgb(${r},${g},${b})`;
   }
 
-  // ISO-Wochen-Key für Weekly Reset
+  // ISO-Wochen-Key für Weekly Reset (Client-seitig)
   function getCurrentWeekKey() {
-    const now = new Date();
+    const now  = new Date();
     const date = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-    const dayNum = date.getUTCDay() || 7;
+    const dayNum = date.getUTCDay() || 7; // Montag=1..Sonntag=7
     date.setUTCDate(date.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
     const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
     return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2,"0")}`;
   }
 
-  // Weekly Reset: setzt alle Habits einer neuen Woche auf progress=0 + grau
   async function ensureWeeklyReset(rows) {
     if (!currentUser || !rows || rows.length === 0) return rows;
-    const weekKey = getCurrentWeekKey();
-    const storageKey = `consistency_lastWeekReset_${currentUser.id}`;
-    const lastWeek = localStorage.getItem(storageKey);
 
-    if (lastWeek === weekKey) {
-      return rows;
-    }
+    const weekKey    = getCurrentWeekKey();
+    const storageKey = `consistency_lastWeekReset_${currentUser.id}`;
+    const lastWeek   = localStorage.getItem(storageKey);
+
+    if (lastWeek === weekKey) return rows;
 
     const idsToReset = [];
     rows.forEach(h => {
@@ -393,7 +400,7 @@
       const c = h.color || "#e4e4e4";
       if (p !== 0 || c !== "#e4e4e4") {
         h.progress = 0;
-        h.color = "#e4e4e4";
+        h.color    = "#e4e4e4";
         idsToReset.push(h.id);
       }
     });
@@ -403,16 +410,18 @@
         .from("habits")
         .update({ progress: 0, color: "#e4e4e4" })
         .in("id", idsToReset);
-      if (error) {
-        console.error("weekly reset error:", error);
-      }
+
+      if (error) console.error("weekly reset error:", error);
     }
 
     localStorage.setItem(storageKey, weekKey);
     return rows;
   }
 
-  // LOGIN UI
+  /* -------------------------
+     AUTH / LOGIN
+  ------------------------- */
+
   btnLogin.onclick = () => {
     authMode = "login";
     loginForm.style.display = "flex";
@@ -427,7 +436,7 @@
 
   loginOkBtn.onclick = async () => {
     loginError.style.display = "none";
-    const email = loginEmail.value.trim();
+    const email    = loginEmail.value.trim();
     const password = loginPassword.value.trim();
 
     if (!email || !password) {
@@ -451,8 +460,9 @@
 
     const { data } = await supabaseClient.auth.getUser();
     currentUser = data.user;
+
     loginScreen.style.display = "none";
-    appPage.style.display = "block";
+    appPage.style.display     = "block";
     await loadHabitsFromDB();
   };
 
@@ -462,12 +472,15 @@
     if (data.user) {
       currentUser = data.user;
       loginScreen.style.display = "none";
-      appPage.style.display = "block";
+      appPage.style.display     = "block";
       await loadHabitsFromDB();
     }
   })();
 
-  // HABIT-DB LOAD
+  /* -------------------------
+     HABITS LADEN & DARSTELLEN
+  ------------------------- */
+
   async function loadHabitsFromDB() {
     if (!currentUser) {
       const { data } = await supabaseClient.auth.getUser();
@@ -488,11 +501,10 @@
     }
 
     let rows = data || [];
-    rows = await ensureWeeklyReset(rows); // Weekly Reset einbauen
+    rows = await ensureWeeklyReset(rows);
     habits = rows;
 
     clearAllSlots();
-    cardsCount = 0;
 
     const baseDelay = 0.0;
     habits.forEach((habit, i) => {
@@ -511,14 +523,14 @@
   }
 
   function refreshAddButtonIcon() {
-    const addBtn = document.getElementById("addBtn");
+    const addBtn = addBtnEl;
 
     if (addBtn.dataset.mode === "stats") {
       addBtn.innerHTML = '<i data-lucide="house"></i>';
       addBtn.classList.remove("btn-plus");
-      addBtn.style.background="#f3f3f3";
-      addBtn.style.color="#333";
-      addBtn.style.border="2px solid #ccc";
+      addBtn.style.background = "#f3f3f3";
+      addBtn.style.color      = "#333";
+      addBtn.style.border     = "2px solid #ccc";
       lucide.createIcons();
       return;
     }
@@ -526,30 +538,29 @@
     if (habits.length < 3) {
       addBtn.innerHTML = '<i data-lucide="plus"></i>';
       addBtn.classList.add("btn-plus");
-      addBtn.style.background="#000";
-      addBtn.style.color="#fff";
-      addBtn.style.border="none";
+      addBtn.style.background = "#000";
+      addBtn.style.color      = "#fff";
+      addBtn.style.border     = "none";
     } else {
       addBtn.innerHTML = '<i data-lucide="home"></i>';
       addBtn.classList.remove("btn-plus");
-      addBtn.style.background="#f3f3f3";
-      addBtn.style.color="#333";
-      addBtn.style.border="2px solid #ccc";
+      addBtn.style.background = "#f3f3f3";
+      addBtn.style.color      = "#333";
+      addBtn.style.border     = "2px solid #ccc";
     }
     lucide.createIcons();
   }
 
-  // NEUE KARTE AUS DB-HABIT
   function createCardFromHabit(habit, index, delay=0) {
     const slot = document.getElementById(slotOrder[index]);
     const card = document.createElement("div");
     card.className = "card";
 
-    card.dataset.index = index;
-    card.dataset.habitId = habit.id;
-    card.dataset.goal = habit.goal || 0;
+    card.dataset.index    = index;
+    card.dataset.habitId  = habit.id;
+    card.dataset.goal     = habit.goal     || 0;
     card.dataset.progress = habit.progress || 0;
-    card.dataset.color = habit.color || "#e4e4e4";
+    card.dataset.color    = habit.color    || "#e4e4e4";
 
     const isActive = (habit.color && habit.color !== "#e4e4e4");
     card.dataset.active = isActive ? "true" : "false";
@@ -577,43 +588,49 @@
 
     input.value = habit.title || "";
 
-    const y = parseInt(card.dataset.goal);
-    const x = parseInt(card.dataset.progress);
+    const goal = parseInt(card.dataset.goal);
+    const prog = parseInt(card.dataset.progress);
 
-    numArea.textContent = y;
-    if (y > 0) {
+    numArea.textContent = goal;
+    if (goal > 0) {
       counter.style.display = "block";
-      counter.textContent = x + "/" + y;
+      counter.textContent   = prog + "/" + goal;
     }
 
     if (isActive) {
       card.style.background = habit.color;
-      input.style.color = darken(habit.color);
+      input.style.color     = darken(habit.color);
     } else {
       card.style.background = "#e4e4e4";
-      input.style.color = "#666";
+      input.style.color     = "#666";
     }
 
     gsap.fromTo(card, { y:-300, opacity:0 }, {
-      y:0, opacity:1, duration:0.8, ease:"back.out(1.7)", delay
+      y:0,
+      opacity:1,
+      duration:0.8,
+      ease:"back.out(1.7)",
+      delay
     });
 
-    attachCardLogic(card, habit);
-    cardsCount = habits.length;
+    attachCardLogic(card);
   }
 
-  // KARTE + LOGIK (angepasste Klick-Logik)
-  function attachCardLogic(card, habit) {
+  /* -------------------------
+     CARD-LOGIK
+  ------------------------- */
+
+  function attachCardLogic(card) {
     const input   = card.querySelector(".card-input");
     const counter = card.querySelector(".counter");
     const gpsArea = card.querySelector("#gpsArea");
     const numArea = card.querySelector("#numArea");
 
-    let swipeStartX=0;
-    let swipeEndX=0;
-    let autoFlipTimer=null;
+    let swipeStartX = 0;
+    let swipeEndX   = 0;
+    let autoFlipTimer = null;
 
-    // Swipe Flip
+    // Flip per Swipe
     card.addEventListener("touchstart",(e)=>{
       swipeStartX = e.touches[0].clientX;
       clearTimeout(autoFlipTimer);
@@ -626,21 +643,21 @@
     card.addEventListener("touchend",()=>{
       const dx = swipeEndX - swipeStartX;
 
-      if(dx < -40 && !card.style.transform.includes("180deg")){
+      if (dx < -40 && !card.style.transform.includes("180deg")){
         gsap.to(card,{rotationY:180,duration:0.4,ease:"power2.out"});
       }
-      if(dx > 40 && card.style.transform.includes("180deg")){
+      if (dx > 40 && card.style.transform.includes("180deg")){
         gsap.to(card,{rotationY:0,duration:0.4,ease:"power2.out"});
       }
 
-      autoFlipTimer=setTimeout(()=>{
+      autoFlipTimer = setTimeout(()=>{
         if(card.style.transform.includes("180deg")){
           gsap.to(card,{rotationY:0,duration:0.5,ease:"power2.out"});
         }
       },3000);
     });
 
-    // Y einstellen (0–7)
+    // Goal (Y) einstellen (0–7)
     numArea.addEventListener("click",(e)=>{
       e.stopPropagation();
       let y = parseInt(card.dataset.goal);
@@ -656,7 +673,7 @@
 
       if (y > 0) {
         counter.style.display = "block";
-        counter.textContent = x + "/" + y;
+        counter.textContent   = x + "/" + y;
       } else {
         counter.style.display = "none";
       }
@@ -669,22 +686,22 @@
       gsap.to(card,{rotationY:0,duration:0.4,ease:"power2.out"});
     });
 
-    // Long Press Color Cycling (nur wenn aktiv)
-    let pressTimer=null;
-    let pressInterval=null;
+    // Long Press Color Cycling (nur aktiv)
+    let pressTimer = null;
+    let pressInterval = null;
 
-    card.addEventListener("touchstart",(e)=>{
+    card.addEventListener("touchstart",()=>{
       clearTimeout(pressTimer);
       clearInterval(pressInterval);
 
-      pressTimer=setTimeout(()=>{
-        if(card.dataset.active==="true"){
-          let i=0;
-          pressInterval=setInterval(()=>{
-            const col=cycleColors[i%cycleColors.length];
-            card.style.background=col;
-            card.dataset.color=col;
-            input.style.color=darken(col);
+      pressTimer = setTimeout(()=>{
+        if (card.dataset.active === "true") {
+          let i = 0;
+          pressInterval = setInterval(()=>{
+            const col = cycleColors[i % cycleColors.length];
+            card.style.background = col;
+            card.dataset.color    = col;
+            input.style.color     = darken(col);
             i++;
             saveHabit(card);
           },900);
@@ -697,7 +714,7 @@
       clearInterval(pressInterval);
     });
 
-    // Titel speichern (Blur/Enter)
+    // Titel speichern
     input.addEventListener("blur", ()=> {
       saveHabit(card);
     });
@@ -708,34 +725,34 @@
       }
     });
 
-    // Klick-Logik: Inkrement bis goal, dann Reset (Variante B)
+    // Klick-Logik: bis goal hochzählen, dann Reset (Variante B)
     card.addEventListener("click",()=>{
       if(card.style.transform.includes("180deg")) return;
-      if(!input.value.trim()){ return; }
+      if(!input.value.trim()) return;
 
-      let x = parseInt(card.dataset.progress) || 0;
-      let y = parseInt(card.dataset.goal) || 0;
+      let x      = parseInt(card.dataset.progress) || 0;
+      let y      = parseInt(card.dataset.goal)     || 0;
       let active = card.dataset.active === "true";
-      const idx = parseInt(card.dataset.index);
+      const idx  = parseInt(card.dataset.index);
 
       if (y === 0) {
-        // goal=0: einfaches Toggle mit progress 0/1
+        // goal=0: reiner Toggle mit progress 0/1
         if (!active) {
           x = 1;
           active = true;
           const col = cycleColors[idx];
           card.style.background = col;
-          card.dataset.color = col;
-          input.style.color = darken(col);
+          card.dataset.color    = col;
+          input.style.color     = darken(col);
         } else {
           x = 0;
           active = false;
           card.style.background = "#e4e4e4";
-          card.dataset.color = "#e4e4e4";
-          input.style.color = "#666";
+          card.dataset.color    = "#e4e4e4";
+          input.style.color     = "#666";
         }
       } else {
-        // goal >= 1: bis goal hochzählen, dann vollständiger Reset (B)
+        // goal >= 1: bis goal hochzählen, dann kompletter Reset
         if (!active) {
           active = true;
           if (x === 0 && x < y) {
@@ -743,28 +760,28 @@
           }
           const col = cycleColors[idx];
           card.style.background = col;
-          card.dataset.color = col;
-          input.style.color = darken(col);
+          card.dataset.color    = col;
+          input.style.color     = darken(col);
         } else {
           if (x < y) {
             x += 1;
           } else {
-            // voll erfüllt -> Reset
+            // Voll erfüllt -> Reset
             x = 0;
             active = false;
             card.style.background = "#e4e4e4";
-            card.dataset.color = "#e4e4e4";
-            input.style.color = "#666";
+            card.dataset.color    = "#e4e4e4";
+            input.style.color     = "#666";
           }
         }
       }
 
       card.dataset.progress = x;
-      card.dataset.active = active ? "true" : "false";
+      card.dataset.active   = active ? "true" : "false";
 
       if (y > 0) {
         counter.style.display = "block";
-        counter.textContent = x + "/" + y;
+        counter.textContent   = x + "/" + y;
       } else {
         counter.style.display = "none";
       }
@@ -773,7 +790,10 @@
     });
   }
 
-  // SPEICHERN IN DB
+  /* -------------------------
+     SPEICHERN IN DB
+  ------------------------- */
+
   async function saveHabit(card) {
     if (!currentUser) return;
 
@@ -782,7 +802,7 @@
     const title   = input.value.trim();
     const color   = card.dataset.color || "#e4e4e4";
     const progress = parseInt(card.dataset.progress) || 0;
-    const goal     = parseInt(card.dataset.goal) || 0;
+    const goal     = parseInt(card.dataset.goal)     || 0;
 
     if (!habitId) return;
 
@@ -801,9 +821,9 @@
     }
   }
 
-  // PLUS / HAUS Button
-  const addBtnEl   = document.getElementById("addBtn");
-  const statsBtnEl = document.getElementById("statsBtn");
+  /* -------------------------
+     PLUS / HAUS BUTTON
+  ------------------------- */
 
   addBtnEl.addEventListener("click", async () => {
     if (addBtnEl.dataset.mode === "stats") {
@@ -847,16 +867,21 @@
     refreshAddButtonIcon();
   });
 
-  // STATS BUTTON
+  /* -------------------------
+     STATS
+  ------------------------- */
+
   function renderStats() {
     const statIds = ["k1","k2","k3"];
+
+    // Für Kevin: echte Habits
     statIds.forEach((id, i) => {
       const bar = document.getElementById(id);
 
       if (!habits[i]) {
-        bar.style.width = "0%";
+        bar.style.width      = "0%";
         bar.style.background = "#e5e7eb";
-        bar.textContent = "";
+        bar.textContent      = "";
         return;
       }
 
@@ -864,18 +889,19 @@
       const title = h.title || "—";
       const color = h.color || "#e5e7eb";
       const x = h.progress || 0;
-      const y = h.goal || 0;
+      const y = h.goal     || 0;
 
       let percent = 0;
       if (y > 0) {
         if (y === 1) {
+          // 1x Aufgaben: erledigt = 100%
           percent = x >= 1 ? 100 : 0;
         } else {
           percent = Math.round((x / y) * 100);
         }
       }
 
-      bar.textContent = title;
+      bar.textContent      = title;
       bar.style.background = color;
 
       gsap.fromTo(bar, { width:"0%" }, {
@@ -885,15 +911,23 @@
       });
     });
 
-    // HANNAH bleibt Demo
+    // Für Hannah: Demo-Balken mit Zufallsbreite
     ["h1","h2","h3"].forEach(id=>{
-      const bar=document.getElementById(id);
+      const bar = document.getElementById(id);
       gsap.fromTo(bar,{width:"0%"},{
         width:(40+Math.random()*60)+"%",
-        duration:1.2
+        duration:1.2,
+        ease:"power3.out"
       });
     });
-}
+  }
+
+  statsBtnEl.addEventListener("click", () => {
+    renderStats();
+    addBtnEl.dataset.mode = "stats";
+    refreshAddButtonIcon();
+    gsap.to("#statsView",{top:0,duration:0.6,ease:"power3.out"});
+  });
 </script>
 </body>
 </html>
