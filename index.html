@@ -331,16 +331,13 @@
 </div>
 
 <script>
-  // Icons initialisieren
   lucide.createIcons();
 
-  // Supabase Init
   const supabaseClient = supabase.createClient(
     "https://gglgenarpskajkaanknk.supabase.co",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnbGdlbmFycHNrYWprYWFua25rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwODA2NzAsImV4cCI6MjA3ODY1NjY3MH0.phVPaPpkiXJ0ncbRiBChpVBtY8gv0sm_MjlCJJnaSt4"
   );
 
-  // DOM-Referenzen
   const loginScreen   = document.getElementById("loginScreen");
   const loginForm     = document.getElementById("loginForm");
   const loginError    = document.getElementById("loginError");
@@ -374,11 +371,10 @@
     return `rgb(${r},${g},${b})`;
   }
 
-  // ISO-Wochen-Key für Weekly Reset (Client-seitig)
   function getCurrentWeekKey() {
     const now  = new Date();
     const date = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-    const dayNum = date.getUTCDay() || 7; // Montag=1..Sonntag=7
+    const dayNum = date.getUTCDay() || 7;
     date.setUTCDate(date.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
     const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
@@ -418,10 +414,7 @@
     return rows;
   }
 
-  /* -------------------------
-     AUTH / LOGIN
-  ------------------------- */
-
+  // LOGIN UI
   btnLogin.onclick = () => {
     authMode = "login";
     loginForm.style.display = "flex";
@@ -466,7 +459,6 @@
     await loadHabitsFromDB();
   };
 
-  // Session-Autologin
   (async () => {
     const { data } = await supabaseClient.auth.getUser();
     if (data.user) {
@@ -476,10 +468,6 @@
       await loadHabitsFromDB();
     }
   })();
-
-  /* -------------------------
-     HABITS LADEN & DARSTELLEN
-  ------------------------- */
 
   async function loadHabitsFromDB() {
     if (!currentUser) {
@@ -556,11 +544,15 @@
     const card = document.createElement("div");
     card.className = "card";
 
+    const rawGoal = habit.goal;
+    const goal    = (rawGoal === null || rawGoal === undefined) ? 1 : rawGoal;
+    const progress = habit.progress || 0;
+
     card.dataset.index    = index;
     card.dataset.habitId  = habit.id;
-    card.dataset.goal     = habit.goal     || 0;
-    card.dataset.progress = habit.progress || 0;
-    card.dataset.color    = habit.color    || "#e4e4e4";
+    card.dataset.goal     = goal;
+    card.dataset.progress = progress;
+    card.dataset.color    = habit.color || "#e4e4e4";
 
     const isActive = (habit.color && habit.color !== "#e4e4e4");
     card.dataset.active = isActive ? "true" : "false";
@@ -588,13 +580,12 @@
 
     input.value = habit.title || "";
 
-    const goal = parseInt(card.dataset.goal);
-    const prog = parseInt(card.dataset.progress);
-
     numArea.textContent = goal;
-    if (goal > 0) {
+    if (goal >= 2) {
       counter.style.display = "block";
-      counter.textContent   = prog + "/" + goal;
+      counter.textContent   = progress + "/" + goal;
+    } else {
+      counter.style.display = "none";
     }
 
     if (isActive) {
@@ -616,10 +607,6 @@
     attachCardLogic(card);
   }
 
-  /* -------------------------
-     CARD-LOGIK
-  ------------------------- */
-
   function attachCardLogic(card) {
     const input   = card.querySelector(".card-input");
     const counter = card.querySelector(".counter");
@@ -630,7 +617,6 @@
     let swipeEndX   = 0;
     let autoFlipTimer = null;
 
-    // Flip per Swipe
     card.addEventListener("touchstart",(e)=>{
       swipeStartX = e.touches[0].clientX;
       clearTimeout(autoFlipTimer);
@@ -657,21 +643,20 @@
       },3000);
     });
 
-    // Goal (Y) einstellen (0–7)
     numArea.addEventListener("click",(e)=>{
       e.stopPropagation();
-      let y = parseInt(card.dataset.goal);
+      let y = parseInt(card.dataset.goal) || 0;
       y = (y + 1) % 8;
       card.dataset.goal = y;
       numArea.textContent = y;
 
-      let x = parseInt(card.dataset.progress);
+      let x = parseInt(card.dataset.progress) || 0;
       if (x > y) {
         x = y;
         card.dataset.progress = x;
       }
 
-      if (y > 0) {
+      if (y >= 2) {
         counter.style.display = "block";
         counter.textContent   = x + "/" + y;
       } else {
@@ -686,7 +671,6 @@
       gsap.to(card,{rotationY:0,duration:0.4,ease:"power2.out"});
     });
 
-    // Long Press Color Cycling (nur aktiv)
     let pressTimer = null;
     let pressInterval = null;
 
@@ -714,7 +698,6 @@
       clearInterval(pressInterval);
     });
 
-    // Titel speichern
     input.addEventListener("blur", ()=> {
       saveHabit(card);
     });
@@ -725,63 +708,52 @@
       }
     });
 
-    // Klick-Logik: bis goal hochzählen, dann Reset (Variante B)
     card.addEventListener("click",()=>{
       if(card.style.transform.includes("180deg")) return;
       if(!input.value.trim()) return;
 
-      let x      = parseInt(card.dataset.progress) || 0;
-      let y      = parseInt(card.dataset.goal)     || 0;
-      let active = card.dataset.active === "true";
-      const idx  = parseInt(card.dataset.index);
+      let goal     = parseInt(card.dataset.goal) || 0;
+      let progress = parseInt(card.dataset.progress) || 0;
+      let active   = card.dataset.active === "true";
+      const idx    = parseInt(card.dataset.index);
 
-      if (y === 0) {
-        // goal=0: reiner Toggle mit progress 0/1
-        if (!active) {
-          x = 1;
-          active = true;
-          const col = cycleColors[idx];
-          card.style.background = col;
-          card.dataset.color    = col;
-          input.style.color     = darken(col);
-        } else {
-          x = 0;
-          active = false;
+      if (goal <= 1) {
+        // 1x- oder 0x-Aufgaben: Toggle
+        if (active) {
+          active   = false;
+          progress = 0;
           card.style.background = "#e4e4e4";
           card.dataset.color    = "#e4e4e4";
           input.style.color     = "#666";
+        } else {
+          active   = true;
+          progress = 1;
+          const col = cycleColors[idx % cycleColors.length];
+          card.style.background = col;
+          card.dataset.color    = col;
+          input.style.color     = darken(col);
         }
       } else {
-        // goal >= 1: bis goal hochzählen, dann kompletter Reset
-        if (!active) {
+        // Multi-Goal (>=2): von 0 bis goal hochzählen, danach nichts mehr ändern
+        if (progress < goal) {
+          progress += 1;
           active = true;
-          if (x === 0 && x < y) {
-            x = 1;
-          }
-          const col = cycleColors[idx];
+          const col = cycleColors[idx % cycleColors.length];
           card.style.background = col;
           card.dataset.color    = col;
           input.style.color     = darken(col);
         } else {
-          if (x < y) {
-            x += 1;
-          } else {
-            // Voll erfüllt -> Reset
-            x = 0;
-            active = false;
-            card.style.background = "#e4e4e4";
-            card.dataset.color    = "#e4e4e4";
-            input.style.color     = "#666";
-          }
+          // Bereits voll -> keine Änderung
+          return;
         }
       }
 
-      card.dataset.progress = x;
+      card.dataset.progress = progress;
       card.dataset.active   = active ? "true" : "false";
 
-      if (y > 0) {
+      if (goal >= 2) {
         counter.style.display = "block";
-        counter.textContent   = x + "/" + y;
+        counter.textContent   = progress + "/" + goal;
       } else {
         counter.style.display = "none";
       }
@@ -789,10 +761,6 @@
       saveHabit(card);
     });
   }
-
-  /* -------------------------
-     SPEICHERN IN DB
-  ------------------------- */
 
   async function saveHabit(card) {
     if (!currentUser) return;
@@ -821,10 +789,6 @@
     }
   }
 
-  /* -------------------------
-     PLUS / HAUS BUTTON
-  ------------------------- */
-
   addBtnEl.addEventListener("click", async () => {
     if (addBtnEl.dataset.mode === "stats") {
       addBtnEl.dataset.mode = "main";
@@ -850,7 +814,7 @@
         title: "",
         color: "#e4e4e4",
         progress: 0,
-        goal: 0,
+        goal: 1,          // Standard: 1x-Aufgabe
         appear_once: false
       })
       .select()
@@ -867,14 +831,9 @@
     refreshAddButtonIcon();
   });
 
-  /* -------------------------
-     STATS
-  ------------------------- */
-
   function renderStats() {
     const statIds = ["k1","k2","k3"];
 
-    // Für Kevin: echte Habits
     statIds.forEach((id, i) => {
       const bar = document.getElementById(id);
 
@@ -894,7 +853,6 @@
       let percent = 0;
       if (y > 0) {
         if (y === 1) {
-          // 1x Aufgaben: erledigt = 100%
           percent = x >= 1 ? 100 : 0;
         } else {
           percent = Math.round((x / y) * 100);
@@ -911,7 +869,6 @@
       });
     });
 
-    // Für Hannah: Demo-Balken mit Zufallsbreite
     ["h1","h2","h3"].forEach(id=>{
       const bar = document.getElementById(id);
       gsap.fromTo(bar,{width:"0%"},{
