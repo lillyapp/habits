@@ -865,8 +865,15 @@
       const color = h.color || "#e5e7eb";
       const x = h.progress || 0;
       const y = h.goal || 0;
+
       let percent = 0;
-      if (y > 0) percent = Math.round((x / y) * 100);
+      if (y > 0) {
+        if (y === 1) {
+          percent = x >= 1 ? 100 : 0;
+        } else {
+          percent = Math.round((x / y) * 100);
+        }
+      }
 
       bar.textContent = title;
       bar.style.background = color;
@@ -878,6 +885,7 @@
       });
     });
 
+    // HANNAH bleibt Demo
     ["h1","h2","h3"].forEach(id=>{
       const bar=document.getElementById(id);
       gsap.fromTo(bar,{width:"0%"},{
@@ -885,14 +893,7 @@
         duration:1.2
       });
     });
-  }
-
-  statsBtnEl.addEventListener("click", () => {
-    renderStats();
-    addBtnEl.dataset.mode = "stats";
-    refreshAddButtonIcon();
-    gsap.to("#statsView",{top:0,duration:0.6,ease:"power3.out"});
-  });
+}
 </script>
 </body>
 </html>
