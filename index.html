@@ -1003,3 +1003,261 @@
     return data || [];
   }
   
+    function barsHtml(habits) {
+    let html = "";
+    for (let i=0;i<3;i++) {
+      const h = habits[i];
+      if (!h) {
+        html += `
+          <div class="stat-bar">
+            <div class="stat-fill" style="width:0%"></div>
+          </div>`;
+        continue;
+      }
+
+      const x = h.progress || 0;
+      const y = h.goal     || 0;
+      const title = h.title || "—";
+      const color = h.color || "#e5e7eb";
+
+      let percent = 0;
+      if (y > 0) {
+        if (y === 1) {
+          percent = x >= 1 ? 100 : 0;
+        } else {
+          percent = Math.round((x / y) * 100);
+        }
+      }
+
+      html += `
+        <div class="stat-bar">
+          <div class="stat-fill" style="background:${color}; width:${percent}%">
+            ${title}
+          </div>
+        </div>`;
+    }
+    return html;
+  }
+
+  function renderStats(myHabits, otherHabits, otherUserData) {
+    const myName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.display_name)
+      ? currentUser.user_metadata.display_name
+      : (currentUser && currentUser.email ? currentUser.email.split("@")[0] : "Du");
+
+    let html = "";
+
+    html += `<div class="stats-name">${myName}</div>`;
+    html += barsHtml(myHabits);
+    if (otherUserData) {
+      const otherName = otherUserData.display_name || "Freund:in";
+      html += `<div style="height:40px"></div>`;
+      html += `<div class="stats-name">${otherName}</div>`;
+      html += barsHtml(otherHabits);
+    }
+
+    statsViewEl.innerHTML = html;
+  }
+
+  async function refreshStatsLive() {
+    if (!currentUser) return;
+
+    const myHabits    = await loadHabitsForUser(currentUser.id);
+    const otherHabits = otherUser ? await loadHabitsForUser(otherUser.id) : [];
+    renderStats(myHabits, otherHabits, otherUser);
+  }
+
+  statsBtnEl.addEventListener("click", async () => {
+    if (!currentUser) return;
+
+    otherUser = await loadOtherUser();
+    const [myHabits, otherHabits] = await Promise.all([
+      loadHabitsForUser(currentUser.id),
+      otherUser ? loadHabitsForUser(otherUser.id) : Promise.resolve([])
+    ]);
+
+    renderStats(myHabits, otherHabits, otherUser);
+
+    statsOpen = true;
+    addBtnEl.dataset.mode = "stats";
+    refreshAddButtonIcon();
+    gsap.to("#statsView",{top:0,duration:0.45,ease:"power1.out"});
+  });
+
+  // === Shake Detection + UNO-Wiggle/Hide ===
+
+  let lastShakeTime = 0;
+  const SHAKE_THRESHOLD = 18; // ggf. anpassen
+
+  function setupShakeDetection() {
+    if (typeof window === "undefined") return;
+    if (!("DeviceMotionEvent" in window)) return;
+
+    if (typeof DeviceMotionEvent !== "undefined" &&
+        typeof DeviceMotionEvent.requestPermission === "function") {
+      document.body.addEventListener("click", function reqOnce() {
+        DeviceMotionEvent.requestPermission().catch(()=>{}).finally(()=>{
+          document.body.removeEventListener("click", reqOnce);
+        });
+      });
+    }
+
+    window.addEventListener("devicemotion", handleDeviceMotion, false);
+  }
+
+  function handleDeviceMotion(event) {
+    const acc = event.accelerationIncludingGravity || event.acceleration;
+    if (!acc) return;
+
+    const x = acc.x || 0;
+    const y = acc.y || 0;
+    const z = acc.z || 0;
+    const magnitude = Math.sqrt(x*x + y*y + z*z);
+
+    const now = Date.now();
+    if (magnitude > SHAKE_THRESHOLD && now - lastShakeTime > 1200) {
+      lastShakeTime = now;
+      onShakeDetected();
+    }
+  }
+
+  function onShakeDetected() {
+    if (!habits || habits.length === 0) return;
+    if (deletePanelVisible) return;
+
+    showDeletePanelAndAnimateCards();
+  }
+
+  function showDeletePanelAndAnimateCards() {
+    deletePanelVisible = true;
+    clearTimeout(deleteTimeout);
+
+    const cards = document.querySelectorAll(".card");
+    const buttonsRow = document.querySelector(".buttons-row");
+    if (!buttonsRow || cards.length === 0) return;
+
+    const buttonsRect = buttonsRow.getBoundingClientRect();
+    let panelTopBase = null;
+
+    cards.forEach((card, idx) => {
+      const rect = card.getBoundingClientRect();
+      const targetTop = buttonsRect.top - rect.height / 2; // Karte halb hinter Buttons
+      const dy = targetTop - rect.top;
+
+      if (idx === 0) {
+        panelTopBase = targetTop;
+      }
+
+      const tl = gsap.timeline();
+      tl.to(card, { rotation:-2, duration:0.08, ease:"power1.out" })
+        .to(card, { rotation:2, repeat:4, yoyo:true, duration:0.08, ease:"sine.inOut" })
+        .to(card, { rotation:0, y:dy, duration:0.38, ease:"power2.out" }, "-=0.08");
+    });
+
+    // Panel anzeigen und direkt oberhalb der obersten Karte positionieren
+    deletePanel.style.display = "flex";
+    deletePanel.style.opacity = "0";
+
+    requestAnimationFrame(() => {
+      const panelHeight = deletePanel.offsetHeight || 24;
+      let panelTop = 12;
+      if (panelTopBase !== null) {
+        panelTop = panelTopBase - panelHeight - 8;
+        if (panelTop < 8) panelTop = 8;
+      }
+      deletePanel.style.top = panelTop + "px";
+
+      gsap.to(deletePanel, {
+        opacity:1,
+        y:0,
+        duration:0.25,
+        ease:"power1.out"
+      });
+    });
+
+    // nach 5 Sekunden Inaktivität wieder zurück animieren (ohne Löschen)
+    deleteTimeout = setTimeout(() => {
+      reverseShakeAnimation();
+    }, 5000);
+  }
+
+  function reverseShakeAnimation() {
+    if (!deletePanelVisible) return;
+    deletePanelVisible = false;
+    clearTimeout(deleteTimeout);
+
+    const cards = document.querySelectorAll(".card");
+
+    cards.forEach(card => {
+      const tl = gsap.timeline();
+      tl.to(card, {
+          y: "-10",
+          rotation: -2,
+          duration: 0.12,
+          ease: "power1.out"
+        })
+        .to(card, {
+          y: 0,
+          rotation: 0,
+          duration: 0.28,
+          ease: "power2.inOut"
+        });
+    });
+
+    gsap.to(deletePanel, {
+      opacity:0,
+      y:4,
+      duration:0.22,
+      ease:"power1.in",
+      onComplete: () => {
+        deletePanel.style.display = "none";
+        deletePanel.style.y = 0;
+      }
+    });
+  }
+
+  async function deleteAllHabits() {
+    clearTimeout(deleteTimeout);
+
+    if (currentUser && habits && habits.length > 0) {
+      const ids = habits.map(h => h.id);
+      const { error } = await supabaseClient
+        .from("habits")
+        .delete()
+        .in("id", ids);
+
+      if (error) {
+        console.error("deleteAllHabits error:", error);
+      }
+    }
+
+    habits = [];
+    clearAllSlots();
+    refreshAddButtonIcon();
+    reverseShakeAnimation();
+  }
+
+  deleteAllBtn.addEventListener("click", () => {
+    deleteAllHabits();
+  });
+
+  deletePanel.addEventListener("click", () => {
+    // Optional: hier könnte man das Timeout abbrechen etc.
+  });
+
+  // Login-Kreis schwebend animieren
+  startLoginCircleFloat();
+
+  /*
+    SQL zum Sicherstellen, dass die Spalte "color" existiert:
+
+    ALTER TABLE public.habits
+    ADD COLUMN IF NOT EXISTS color text DEFAULT '#e4e4e4';
+
+    Aktiv-Status wird logisch abgeleitet über:
+      progress > 0  => aktiv
+      progress = 0  => inaktiv
+  */
+</script>
+</body>
+</html>
+  
