@@ -16,7 +16,7 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -410,6 +410,39 @@
     return rows;
   }
 
+  // Debounced Save-Queue für stabile Updates
+  let saveQueue = {};
+  let saveTimer = null;
+
+  function queuedSave(habitId, payload) {
+    if (!habitId) return;
+    saveQueue[habitId] = payload;
+
+    if (saveTimer) clearTimeout(saveTimer);
+
+    saveTimer = setTimeout(async () => {
+      const entries = Object.entries(saveQueue);
+      saveQueue = {};
+
+      for (const [id, data] of entries) {
+        const { error } = await supabaseClient
+          .from("habits")
+          .update(data)
+          .eq("id", id);
+
+        if (error) {
+          console.error("queuedSave error:", error);
+        } else {
+          console.log("Habit saved:", id, data);
+        }
+      }
+    }, 400);
+  }
+
+  function feedback(card) {
+    gsap.fromTo(card, { opacity: 0.7 }, { opacity: 1, duration: 0.25 });
+  }
+
   // LOGIN UI
   btnLogin.onclick = () => {
     authMode = "login";
@@ -718,6 +751,7 @@
           let i = 0;
           pressInterval = setInterval(()=>{
             const col = cycleColors[i % cycleColors.length];
+            card.dataset.active = "true";
             card.style.background = col;
             card.dataset.color    = col;
             input.style.color     = darken(col);
@@ -797,7 +831,7 @@
     });
   }
 
-  async function saveHabit(card) {
+  function saveHabit(card) {
     if (!currentUser) return;
 
     const habitId = card.dataset.habitId;
@@ -806,22 +840,18 @@
     const color   = card.dataset.color || "#e4e4e4";
     const progress = parseInt(card.dataset.progress) || 0;
     const goal     = parseInt(card.dataset.goal)     || 0;
+    const active   = card.dataset.active === "true";
 
-    if (!habitId) return;
+    const payload = {
+      title,
+      color,
+      progress,
+      goal,
+      active
+    };
 
-    const { error } = await supabaseClient
-      .from("habits")
-      .update({
-        title,
-        color,
-        progress,
-        goal
-      })
-      .eq("id", habitId);
-
-    if (error) {
-      console.error("saveHabit error:", error);
-    }
+    queuedSave(habitId, payload);
+    feedback(card);
   }
 
   addBtnEl.addEventListener("click", async () => {
