@@ -1984,6 +1984,29 @@ if ("serviceWorker" in navigator) {
       .catch(err => console.error("SW registration failed:", err));
   });
 }
+    
+    function setupPushRealtime() {
+      if (!currentUser) return;
+
+      supabaseClient
+        .channel('push-info-channel')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'push_info', filter: `user_id=eq.${currentUser.id}` },
+          payload => {
+            const data = payload.new;
+
+            // Lokale Browser-Pushnachricht erzeugen
+            new Notification(data.title, {
+              body: data.body
+            });
+          }
+        )
+        .subscribe();
+    }
+
+    // Nach Login starten:
+    setupPushRealtime();
 </script>
 
 </body>
