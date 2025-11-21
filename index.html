@@ -1090,6 +1090,65 @@
       }
 
       statsViewEl.innerHTML = html;
+      // --- NAME-EDITIERUNG AKTIVIEREN ---
+      const editableName = document.getElementById("editableName");
+
+      editableName.addEventListener("click", () => {
+        const current = editableName.textContent.trim();
+
+        // Input erzeugen
+        editableName.innerHTML = `
+          <input id="nameEditInput"
+                 type="text"
+                 value="${current}"
+                 style="
+                   font-size:2rem;
+                   font-weight:700;
+                   border:none;
+                   outline:none;
+                   background:transparent;
+                   border-bottom:2px solid #ccc;
+                   width:100%;
+                 "
+          />
+        `;
+
+        const input = document.getElementById("nameEditInput");
+        input.focus();
+        input.setSelectionRange(current.length, current.length);
+
+        async function save() {
+          const newName = input.value.trim();
+          if (!newName || newName === current) {
+            editableName.textContent = current;
+            return;
+          }
+
+          const { error } = await supabaseClient.auth.updateUser({
+            data: { display_name: newName }
+          });
+
+          if (error) {
+            console.error("Name update error:", error);
+            editableName.textContent = current;
+            return;
+          }
+
+          // UI aktualisieren
+          editableName.textContent = newName;
+
+          // Stats aktualisieren (optional)
+          await refreshStatsLive();
+        }
+
+        input.addEventListener("blur", save);
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            save();
+          }
+        });
+      });
       lucide.createIcons();
     }
 
