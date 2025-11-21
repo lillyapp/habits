@@ -1801,25 +1801,44 @@ forgotPw.onclick = () => {
       return params.get("qr"); // z.B. ?qr=ABC123
     }
     
-    // === QR CONFIRMATION HANDLER ===
-    function askQRPermission(kcal) {
+
+    // === QR Info Modal Handler ===
+    function showQRInfo(title, kcal, d1, d2, d3) {
       return new Promise(resolve => {
-        const overlay = document.getElementById("qrConfirmOverlay");
-        const text    = document.getElementById("qrConfirmText");
-        const yesBtn  = document.getElementById("qrConfirmYes");
-        const noBtn   = document.getElementById("qrConfirmNo");
+          document.getElementById("qrInfoTitle").textContent = title || "";
+        document.getElementById("qrInfoKcal").textContent = `${kcal} KCAL`;
 
-        text.textContent = `Soll der Wert "${kcal}" KCAL zu deiner QR-Karte hinzugefügt werden?`;
+        document.getElementById("qrInfoDate1").innerHTML =
+          `<i data-lucide="hand-helping" style="width:20px;height:20px;"></i> ${d1 || "-"}`;
 
-        overlay.style.display = "flex";
+        document.getElementById("qrInfoDate2").innerHTML =
+          `<i data-lucide="snowflake" style="width:20px;height:20px;"></i> ${d2 || "-"}`;
 
-        yesBtn.onclick = () => {
-          overlay.style.display = "none";
+        document.getElementById("qrInfoDate3").innerHTML =
+          `<i data-lucide="calendar-clock" style="width:20px;height:20px;"></i> ${d3 || "-"}`;
+
+        lucide.createIcons();
+
+        const scr = document.getElementById("qrInfoScreen");
+        scr.style.display = "flex";
+
+        const cards = document.querySelectorAll(".card");
+        cards.forEach(card => {
+          gsap.to(card, { y: 150, duration:0.35, ease:"power1.out" });
+        });
+
+        const okBtn = document.getElementById("qrInfoOK");
+        const cancelBtn = document.getElementById("qrInfoCancel");
+
+        okBtn.onclick = () => {
+          scr.style.display = "none";
+          cards.forEach(card => gsap.to(card, { y:0, duration:0.35 }));
           resolve(true);
         };
 
-        noBtn.onclick = () => {
-          overlay.style.display = "none";
+        cancelBtn.onclick = () => {
+          scr.style.display = "none";
+          cards.forEach(card => gsap.to(card, { y:0, duration:0.35 }));
           resolve(false);
         };
       });
@@ -1883,7 +1902,13 @@ async function processQRFlow(qrId) {
     if (hErr || !habit) return;
 
     // Confirmation dialog
-    const ok = await askQRPermission(kcal);
+    const ok = await showQRInfo(
+      qrRow.internal_note,
+      kcal,
+      qrRow.date_manufactured,
+      qrRow.date_cooled,
+      qrRow.date_planned
+    );
     if (!ok) return;
 
     // Add kcal
@@ -1917,6 +1942,62 @@ async function processQRFlow(qrId) {
   
     
 </script>
+
+<!-- QR INFO SCREEN (Text, no modal look) -->
+<div id="qrInfoScreen" style="
+  position:fixed;
+  inset:0;
+  background:transparent;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:999998;
+  pointer-events:none;
+">
+  <div id="qrInfoBox" style="
+    pointer-events:auto;
+    text-align:center;
+    font-size:22px;
+    font-weight:700;
+    color:#000;
+    line-height:1.4;
+  ">
+  <div id="qrInfoTitle" style="
+    font-size:20px;
+    font-weight:700;
+    margin-bottom:10px;
+  "></div>
+    <div id="qrInfoKcal"></div>
+
+    <div style="margin-top:12px; font-size:18px; font-weight:600;">
+      <div id="qrInfoDate1" style="display:flex; align-items:center; gap:8px; justify-content:center;"></div>
+      <div id="qrInfoDate2" style="display:flex; align-items:center; gap:8px; justify-content:center; margin-top:6px;"></div>
+      <div id="qrInfoDate3" style="display:flex; align-items:center; gap:8px; justify-content:center; margin-top:6px;"></div>
+    </div>
+
+    <div style="display:flex; justify-content:center; gap:16px; margin-top:24px;">
+      <button id="qrInfoOK" style="
+        padding:12px 22px;
+        border-radius:12px;
+        border:none;
+        background:#000;
+        color:white;
+        font-size:16px;
+        font-weight:600;
+      ">OK</button>
+
+      <button id="qrInfoCancel" style="
+        padding:12px 22px;
+        border-radius:12px;
+        border:none;
+        background:#ef4444;
+        color:white;
+        font-size:16px;
+        font-weight:600;
+      ">Abbrechen</button>
+    </div>
+  </div>
+</div>
 
 <!-- QR CONFIRMATION MODAL -->
 <div id="qrConfirmOverlay" style="
