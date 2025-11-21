@@ -2079,18 +2079,37 @@ if ("serviceWorker" in navigator) {
     function setupPushRealtime() {
       if (!currentUser) return;
 
+      // Ensure permission
+      if (Notification.permission !== "granted") {
+        Notification.requestPermission().then(res => {
+          if (res !== "granted") {
+            console.warn("Notifications not granted");
+            return;
+          }
+        });
+      }
+
       supabaseClient
         .channel('push-info-channel')
         .on(
           'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'push_info', filter: `user_id=eq.${currentUser.id}` },
-          payload => {
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'push_info',
+            filter: `user_id=eq.${currentUser.id}`
+          },
+          (payload) => {
             const data = payload.new;
+            if (!data) return;
 
-            // Lokale Browser-Pushnachricht erzeugen
-            new Notification(data.title, {
-              body: data.body
-            });
+            try {
+              new Notification(data.title || "Neue Nachricht", {
+                body: data.body || ""
+              });
+            } catch (e) {
+              console.error("Notification error:", e);
+            }
           }
         )
         .subscribe();
