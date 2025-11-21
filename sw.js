@@ -1,18 +1,34 @@
-self.addEventListener("push", event => {
-  const data = event.data.json();
+const CACHE_NAME = "consistency-cache-v1";
 
+const ASSETS = [
+  "./",
+  "./index.html",
+  "./manifest.json"
+];
+
+// Install
+self.addEventListener("install", (event) => {
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: "https://github.com/lillyapp/habits/blob/main/3FC2E555-7142-43BE-83DE-E5ED7A123793.png",
-      badge: "https://github.com/lillyapp/habits/blob/main/3FC2E555-7142-43BE-83DE-E5ED7A123793.png"
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
 });
 
-self.addEventListener("notificationclick", event => {
-  event.notification.close();
+// Activate
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    clients.openWindow("/")
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      }))
+    )
+  );
+});
+
+// Fetch (Cache-first)
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      return cached || fetch(event.request);
+    })
   );
 });
