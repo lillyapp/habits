@@ -18,6 +18,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
 
+      <link rel="manifest" href="manifest.json">
+
+      <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js");
+      }
+      </script>
   <style>
     :root {
       --page-padding: 16px;
@@ -536,6 +543,7 @@
 
       await safeLoadHabits();
       showAppAfterDataLoaded();
+      initPushAfterLogin();
 
       // ⭐ WICHTIG: QR-Processing NACH Login
       const qr = getQRParam();
@@ -553,6 +561,7 @@
 
         await safeLoadHabits();
         showAppAfterDataLoaded();
+        initPushAfterLogin();
 
         // QR verarbeiten, falls beim Start vorhanden
         const qr = getQRParam();
@@ -561,7 +570,6 @@
     })();
     
 
-    
     
 
     function setupRealtime() {
@@ -739,7 +747,7 @@
             <div id="numArea">0</div>
 
             <input 
-              id="gpsInput"
+              class="gpsInput"
               type="text"
               placeholder="Adresse eingeben..."
               style="
@@ -857,7 +865,7 @@
       const counter   = card.querySelector(".counter");
       const gpsArea   = card.querySelector("#gpsArea");
       const numArea   = card.querySelector("#numArea");
-      const gpsInput  = card.querySelector("#gpsInput");
+      const gpsInput  = card.querySelector(".gpsInput");
       const qrArea    = card.querySelector("#qrArea");
       const qrStatus  = card.querySelector(".qr-status-text");
 
@@ -1735,10 +1743,10 @@
       if (error) console.error("push subscribe error", error);
     }
     
-    (async () => {
-       await requestAllPermissions();
-       await subscribeUserToPush();
-    })();
+    async function initPushAfterLogin() {
+      await requestAllPermissions();
+      await subscribeUserToPush();
+    }
     
     function getQRParam() {
       const params = new URLSearchParams(window.location.search);
@@ -1785,14 +1793,27 @@
       try {
         if (!qrId) return;
 
-        // User sicherstellen
+        // ---------------------------------------------------
+        // 0. QR Parameter nach dem ersten Lesen entfernen
+        //    → verhindert doppelten Trigger nach Login
+        // ---------------------------------------------------
+        if (window.history && window.history.replaceState) {
+          const cleanUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, "", cleanUrl);
+        }
+
+        // ---------------------------------------------------
+        // 1. User sicherstellen
+        // ---------------------------------------------------
         if (!currentUser) {
           const { data } = await supabaseClient.auth.getUser();
           currentUser = data?.user || null;
           if (!currentUser) return;
         }
 
-        // QR-Datensatz laden
+        // ---------------------------------------------------
+        // 2. QR-Code laden
+        // ---------------------------------------------------
         const { data: qrRow, error: qrErr } = await supabaseClient
           .from("qr_codes")
           .select("*")
@@ -1804,14 +1825,16 @@
         const kcal = parseInt(qrRow.kcal_value) || 0;
         if (kcal <= 0) return;
 
-        // --- NEU: Check, ob heute schon gescannt ---
+        // ---------------------------------------------------
+        // 3. Daily-Limit: nur 1x pro Tag
+        // ---------------------------------------------------
         if (isToday(qrRow.last_scanned)) {
-          // Keine Alerts → Modal bleibt aus
-          // einfach nicht verarbeiten
-          return;
+          return; // keine Meldung, einfach ignorieren
         }
 
-        // Habit mit QR-Tracking holen
+        // ---------------------------------------------------
+        // 4. Habit mit aktivem QR-Tracking holen
+        // ---------------------------------------------------
         const { data: habit, error: hErr } = await supabaseClient
           .from("habits")
           .select("*")
@@ -1822,11 +1845,15 @@
 
         if (hErr || !habit) return;
 
-        // Bestätigung über Modal
+        // ---------------------------------------------------
+        // 5. Bestätigungsmodal anzeigen
+        // ---------------------------------------------------
         const ok = await askQRPermission(kcal);
         if (!ok) return;
 
-        // KCAL addieren
+        // ---------------------------------------------------
+        // 6. KCAL addieren
+        // ---------------------------------------------------
         const newProgress = (parseInt(habit.progress) || 0) + kcal;
 
         const { error: updErr } = await supabaseClient
@@ -1836,7 +1863,9 @@
 
         if (updErr) return;
 
-        // --- NEU: Heute als last_scanned speichern ---
+        // ---------------------------------------------------
+        // 7. Heute in QR-Code speichern
+        // ---------------------------------------------------
         const today = new Date().toISOString().substring(0, 10);
 
         await supabaseClient
@@ -1844,15 +1873,13 @@
           .update({ last_scanned: today })
           .eq("id", qrRow.id);
 
-        // UI aktualisieren
+        // ---------------------------------------------------
+        // 8. UI aktualisieren (aber NICHT erneut processQRFlow aufrufen)
+        // ---------------------------------------------------
         await safeLoadHabits();
         showAppAfterDataLoaded();
 
-        // QR nach Login verarbeiten
-        const qr = getQRParam();
-        if (qr) await processQRFlow(qr);
-      }
-      catch (err) {
+      } catch (err) {
         console.error("processQRFlow fatal error:", err);
       }
     }
