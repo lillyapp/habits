@@ -334,6 +334,17 @@
     <input id="loginName" class="login-input" placeholder="Name" type="text" style="display:none;" />
     <input id="loginEmail" class="login-input" placeholder="E-Mail" type="email" />
     <input id="loginPassword" class="login-input" placeholder="Passwort" type="password" />
+    <div id="forgotPw" style="
+      display:none;
+      text-align:center;
+      margin-top:-6px;
+      font-size:14px;
+      color:#555;
+      text-decoration:underline;
+      cursor:pointer;
+    ">
+      Passwort vergessen?
+    </div>
     <button class="btn" id="loginOkBtn">OK</button>
   </div>
 
@@ -386,6 +397,7 @@
     const loginName     = document.getElementById("loginName");
     const loginEmail    = document.getElementById("loginEmail");
     const loginPassword = document.getElementById("loginPassword");
+    const forgotPw = document.getElementById("forgotPw");
     const addBtnEl      = document.getElementById("addBtn");
     const statsBtnEl    = document.getElementById("statsBtn");
     const statsViewEl   = document.getElementById("statsView");
@@ -445,7 +457,17 @@
       });
     }
 
-    // LOGIN UI
+    // === Passwort-Reset-Funktionen (müssen VOR dem Login-Block stehen) ===
+    function showPasswordResetLink() {
+      forgotPw.style.display = "block";
+    }
+
+    function hidePasswordResetLink() {
+      forgotPw.style.display = "none";
+    }
+
+
+    // === LOGIN UI ===
     btnLogin.onclick = () => {
       authMode = "login";
       btnLogin.style.display    = "none";
@@ -453,6 +475,8 @@
       loginName.style.display   = "none";
       loginForm.style.display   = "flex";
       loginError.style.display  = "none";
+
+      showPasswordResetLink();
     };
 
     btnRegister.onclick = () => {
@@ -462,15 +486,28 @@
       loginName.style.display   = "block";
       loginForm.style.display   = "flex";
       loginError.style.display  = "none";
+
+      hidePasswordResetLink();
+    };
+
+    forgotPw.onclick = () => {
+      authMode = "reset";
+      loginPassword.style.display = "none";
+      loginName.style.display     = "none";
+      forgotPw.style.display      = "none";
+
+      loginOkBtn.textContent = "Link senden";
+      loginError.style.display = "none";
     };
 
     loginOkBtn.onclick = async () => {
       loginError.style.display = "none";
+
       const email    = loginEmail.value.trim();
       const password = loginPassword.value.trim();
       const name     = loginName.value.trim();
 
-      if (!email || !password || (authMode === "register" && !name)) {
+      if (!email || (!password && authMode !== "reset") || (authMode === "register" && !name)) {
         loginError.textContent = "Bitte alles ausfüllen.";
         loginError.style.display = "block";
         return;
@@ -480,13 +517,30 @@
 
       if (authMode === "login") {
         ({ error } = await supabaseClient.auth.signInWithPassword({ email, password }));
-      } else {
-        const { error: signUpError } = await supabaseClient.auth.signUp({
+      }
+
+      else if (authMode === "register") {
+        const { error: signUpErr } = await supabaseClient.auth.signUp({
           email,
           password,
           options: { data: { display_name: name } }
         });
-        error = signUpError;
+        error = signUpErr;
+      }
+
+      else if (authMode === "reset") {
+        const { error: resetErr } = await supabaseClient.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.href
+        });
+
+        if (resetErr) {
+          loginError.textContent = resetErr.message;
+          loginError.style.display = "block";
+        } else {
+          loginError.textContent = "E-Mail zum Zurücksetzen gesendet.";
+          loginError.style.display = "block";
+        }
+        return;
       }
 
       if (error) {
@@ -500,22 +554,24 @@
 
       setupRealtime();
       setupShakeDetection();
-
-      await safeLoadHabits();   // ← nur serverseitig laden, ggf. initial anlegen
+      await safeLoadHabits();
       showAppAfterDataLoaded();
     };
 
-    // Autologin
+
+    // === AUTOLOGIN ===
     (async () => {
       const { data } = await supabaseClient.auth.getUser();
       if (data.user) {
         currentUser = data.user;
         setupRealtime();
         setupShakeDetection();
-        await safeLoadHabits(); // ← nur serverseitig laden, ggf. initial anlegen
+        await safeLoadHabits();
         showAppAfterDataLoaded();
       }
     })();
+    
+    
 
     function setupRealtime() {
       supabaseClient.channel('habits-realtime')
@@ -622,34 +678,38 @@
       const card = document.createElement("div");
       card.className = "card";
 
-      const rawGoal  = habit.goal;
-      const goal     = (rawGoal === null || rawGoal === undefined) ? 1 : rawGoal;
-      const progress = habit.progress || 0;
-      const dbColor  = habit.color || "#e4e4e4";
-      const addr     = habit.location_address || "";
+      const rawGoal   = habit.goal;
+      const goal      = (rawGoal === null || rawGoal === undefined) ? 1 : rawGoal;
+      const progress  = habit.progress || 0;
+      const dbColor   = habit.color || "#e4e4e4";
+      const addr      = habit.location_address || "";
+      const qrEnabled = habit.qr_enabled || false;
 
       card.dataset.index    = index;
       card.dataset.habitId  = habit.id;
       card.dataset.goal     = goal;
       card.dataset.progress = progress;
       card.dataset.color    = dbColor;
-      card.dataset.location = addr;          // ← Wichtig
+      card.dataset.location = addr;
+      card.dataset.qr       = qrEnabled ? "true" : "false";
 
       const isActive = progress > 0;
       card.dataset.active = isActive ? "true" : "false";
 
+      // --- HTML ---
       card.innerHTML = `
         <div class="card-face front">
           <input class="card-input" placeholder="Titel eingeben..." />
-          <div class="counter"></div>
+          <div class="counter counter-kcal" style="display:none;"></div>
         </div>
 
         <div class="card-face back">
+
+          <!-- GPS AREA -->
           <div class="half" id="gpsArea">
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
               <i data-lucide="map-pin" style="width:32px;height:32px;color:#777;"></i>
 
-              <!-- Adresse klein -->
               <div class="gps-address-line1" style="
                 font-size:0.75rem;
                 color:#555;
@@ -668,10 +728,25 @@
             </div>
           </div>
 
+          <!-- QR AREA -->
+          <div class="half" id="qrArea">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+              <i data-lucide="qr-code" style="width:32px;height:32px;color:#777;"></i>
+
+              <div class="qr-status-text" style="
+                font-size:0.75rem;
+                color:#555;
+                text-align:center;
+                line-height:1;
+                display:none;
+              ">Aktiv</div>
+            </div>
+          </div>
+
+          <!-- Counter & GPS Input -->
           <div class="half" id="numAreaWrapper">
             <div id="numArea">0</div>
 
-            <!-- Adresseingabe -->
             <input 
               id="gpsInput"
               type="text"
@@ -692,19 +767,39 @@
       slot.appendChild(card);
       lucide.createIcons();
 
-      const input     = card.querySelector(".card-input");
-      const counter   = card.querySelector(".counter");
-      const numArea   = card.querySelector("#numArea");
-      const line1     = card.querySelector(".gps-address-line1");
-      const line2     = card.querySelector(".gps-address-line2");
+      // --- DOM REFS ---
+      const input   = card.querySelector(".card-input");
+      const counter = card.querySelector(".counter");
+      const isQR = qrEnabled;
+      const kcalTarget = 21000;
 
+      if (isQR) {
+        counter.style.display = "block";
+        counter.textContent = `${progress} KCAL`;
+      } else {
+        // normales Verhalten
+        if (goal >= 2) {
+          counter.style.display = "block";
+          counter.textContent = progress + "/" + goal;
+        } else {
+          counter.style.display = "none";
+        }
+      }
+      const numArea = card.querySelector("#numArea");
+
+      const line1 = card.querySelector(".gps-address-line1");
+      const line2 = card.querySelector(".gps-address-line2");
+
+      const qrStatus = card.querySelector(".qr-status-text");
+
+      // === Titel ===
       input.value = habit.title || "";
 
-      // === Adresse korrekt anzeigen ===
+      // === Adresse anzeigen ===
       if (addr) {
         const parts = addr.split(",");
-        line1.textContent = (parts[0] || "").trim();   // Straße + Hausnummer
-        line2.textContent = (parts[1] || "").trim();   // PLZ + Ort
+        line1.textContent = (parts[0] || "").trim();
+        line2.textContent = (parts[1] || "").trim();
         line1.style.display = "block";
         line2.style.display = "block";
       } else {
@@ -712,15 +807,24 @@
         line2.style.display = "none";
       }
 
-      // Counter / Farbe
+      // === QR-Status setzen ===
+      if (qrEnabled) {
+        qrStatus.style.display = "block";
+        qrStatus.textContent = "Aktiv";
+      } else {
+        qrStatus.style.display = "none";
+      }
+
+      // === Counter ===
       numArea.textContent = goal;
       if (goal >= 2) {
         counter.style.display = "block";
-        counter.textContent   = progress + "/" + goal;
+        counter.textContent = progress + "/" + goal;
       } else {
         counter.style.display = "none";
       }
 
+      // === Farben ===
       if (isActive) {
         card.style.background = dbColor;
         input.style.color     = darken(dbColor);
@@ -730,6 +834,7 @@
         input.style.color     = "#666";
       }
 
+      // === Animation ===
       gsap.fromTo(card, { y:-80, opacity:0 }, {
         y:0,
         opacity:1,
@@ -751,16 +856,20 @@
     }
     
     function attachCardLogic(card) {
-      const input   = card.querySelector(".card-input");
-      const counter = card.querySelector(".counter");
-      const gpsArea = card.querySelector("#gpsArea");
-      const numArea = card.querySelector("#numArea");
-      const gpsInput = card.querySelector("#gpsInput");
+      const input     = card.querySelector(".card-input");
+      const counter   = card.querySelector(".counter");
+      const gpsArea   = card.querySelector("#gpsArea");
+      const numArea   = card.querySelector("#numArea");
+      const gpsInput  = card.querySelector("#gpsInput");
+      const qrArea    = card.querySelector("#qrArea");
+      const qrStatus  = card.querySelector(".qr-status-text");
 
       let swipeStartX = 0;
       let swipeEndX   = 0;
 
-      // --- SWIPE FRONT/BACK ---
+      // ======================================
+      // SWIPE FRONT/BACK
+      // ======================================
       card.addEventListener("touchstart",(e)=>{
         swipeStartX = e.touches[0].clientX;
         swipeEndX   = swipeStartX;
@@ -781,11 +890,18 @@
         }
       });
 
-      // --- GOAL-ÄNDERUNG ---
+      // ======================================
+      // NUMMER / GOAL ÄNDERN (NICHT BEI QR)
+      // ======================================
       numArea.addEventListener("click",(e)=>{
         e.stopPropagation();
+
+        // QR-Mode deaktiviert die Goal-Änderung
+        if (card.dataset.qr === "true") return;
+
         let y = parseInt(card.dataset.goal) || 0;
         y = (y + 1) % 8;
+
         card.dataset.goal = y;
         numArea.textContent = y;
 
@@ -805,7 +921,9 @@
         saveHabit(card);
       });
 
-      // --- GPS EINGABE ---
+      // ======================================
+      // GPS EINGABE
+      // ======================================
       gpsArea.addEventListener("click", (e) => {
         e.stopPropagation();
 
@@ -826,7 +944,6 @@
         numArea.style.display = "flex";
 
         const habitId = card.dataset.habitId;
-
         if (habitId) {
           const { error } = await supabaseClient
             .from("habits")
@@ -836,6 +953,129 @@
           if (error) console.error("GPS address save error:", error);
         }
       });
+
+      // ======================================
+      // QR ENABLE / DISABLE
+      // ======================================
+      qrArea.addEventListener("click", async (e) => {
+        e.stopPropagation();
+
+        const enabled = card.dataset.qr === "true";
+        const newVal  = !enabled;
+
+        // Toggle setzen
+        card.dataset.qr = newVal ? "true" : "false";
+
+        // UI
+        qrStatus.style.display = newVal ? "block" : "none";
+        qrStatus.textContent   = newVal ? "Aktiv" : "";
+
+        // Counter vorne → KCAL anzeigen
+        if (newVal) {
+          const kcal = parseInt(card.dataset.progress) || 0;
+          counter.style.display = "block";
+          counter.textContent = `${kcal} KCAL`;
+        } else {
+          const goal = parseInt(card.dataset.goal) || 1;
+          const prog = parseInt(card.dataset.progress) || 0;
+
+          if (goal >= 2) {
+            counter.style.display = "block";
+            counter.textContent   = `${prog}/${goal}`;
+          } else {
+            counter.style.display = "none";
+          }
+        }
+
+        // In DB speichern
+        const habitId = card.dataset.habitId;
+
+        const { error } = await supabaseClient
+          .from("habits")
+          .update({ qr_enabled: newVal })
+          .eq("id", habitId);
+
+        if (error) console.error("QR update error:", error);
+      });
+
+      // ======================================
+      // LONG-PRESS FARBE
+      // ======================================
+      let pressTimer = null;
+      let pressInterval = null;
+      let lastColor = null;
+
+      card.addEventListener("touchstart",()=>{
+        clearTimeout(pressTimer);
+        clearInterval(pressInterval);
+        lastColor = null;
+
+        pressTimer = setTimeout(()=>{
+          if (card.dataset.active === "true") {
+            let i = 0;
+            pressInterval = setInterval(()=>{
+              const col = cycleColors[i % cycleColors.length];
+              card.style.background = col;
+              card.dataset.color    = col;
+              input.style.color     = darken(col);
+              lastColor = col;
+              i++;
+            },900);
+          }
+        },300);
+      });
+
+      card.addEventListener("touchend",()=>{
+        clearTimeout(pressTimer);
+        clearInterval(pressInterval);
+        if (lastColor) saveHabit(card);
+      });
+
+      // ======================================
+      // TITLE SAVE
+      // ======================================
+      input.addEventListener("blur", ()=> { saveHabit(card); });
+      input.addEventListener("keydown", (e)=>{
+        if(e.key==="Enter"){ e.preventDefault(); input.blur(); }
+      });
+
+      // ======================================
+      // TOGGLE HABIT ODER GPS-CHECK
+      // ======================================
+      card.addEventListener("click", async (e) => {
+
+        // QR-Mode → keine Toggles, Progress muss über QR kommen
+        if (card.dataset.qr === "true") return;
+
+        // GPS Check
+        const requiredAddress = card.dataset.location;
+        if (requiredAddress && requiredAddress.length > 0) {
+
+          e.stopPropagation();
+
+          navigator.geolocation.getCurrentPosition(async (pos) => {
+            const userLat = pos.coords.latitude;
+            const userLon = pos.coords.longitude;
+
+            const geo = await geocodeAddress(requiredAddress);
+            if (!geo) { shake(card); return; }
+
+            const dist = haversine(userLat, userLon, geo.lat, geo.lon);
+
+            if (dist > 100) { shake(card); return; }
+
+            // OK → Toggle
+            proceedHabitToggle(card);
+
+          }, () => shake(card));
+
+          return;
+        }
+
+        // Normaler Toggle
+        proceedHabitToggle(card);
+      });
+    }
 
       // --- LONG PRESS FARBE ---
       let pressTimer = null;
@@ -1576,6 +1816,71 @@
        await requestAllPermissions();
        await subscribeUserToPush();
     })();
+    
+    function getQRParam() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("qr"); // z.B. ?qr=ABC123
+    }
+    
+    async function processQRFlow(qrId) {
+      if (!qrId || !currentUser) return;
+
+      // 1. QR-Daten laden
+      const { data: qrRow, error } = await supabaseClient
+        .from("qr_codes")
+        .select("*")
+        .eq("id", qrId)
+        .single();
+
+      if (error || !qrRow) {
+        console.error("QR not found");
+        alert("Dieser QR-Code ist ungültig.");
+        return;
+      }
+
+      const kcal = qrRow.kcal_value;
+
+      // 2. Habit finden, das QR erlaubt
+      const { data: habit, error: hErr } = await supabaseClient
+        .from("habits")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("qr_enabled", true)
+        .single();
+
+      if (hErr || !habit) {
+        alert("Kein QR-Habit aktiviert.");
+        return;
+      }
+
+      // 3. KCAL addieren
+      const newProgress = (habit.progress || 0) + kcal;
+
+      const { error: updErr } = await supabaseClient
+        .from("habits")
+        .update({ progress: newProgress })
+        .eq("id", habit.id);
+
+      if (updErr) {
+        console.error("QR update error:", updErr);
+        return;
+      }
+
+      alert("+" + kcal + " kcal hinzugefügt!");
+
+      await safeLoadHabits(); // UI aktualisiert
+    }
+    
+    // UI aktualisieren
+    const habitCard = document.querySelector(`[data-habit-id="${habit.id}"]`);
+    if (habitCard) {
+      const counter = habitCard.querySelector(".counter");
+      if (counter) {
+        counter.style.display = "block";
+        counter.textContent = `${newProgress} KCAL`;
+      }
+    }
+    
 </script>
 </body>
 </html>
