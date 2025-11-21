@@ -717,6 +717,8 @@ forgotPw.onclick = () => {
       const dbColor   = habit.color || "#e4e4e4";
       const addr      = habit.location_address || "";
       const qrEnabled = habit.qr_enabled || false;
+      const lastScanned = habit.last_scanned || null;
+      const scannedToday = isToday(lastScanned);
 
       card.dataset.index    = index;
       card.dataset.habitId  = habit.id;
@@ -858,13 +860,25 @@ forgotPw.onclick = () => {
       }
 
       // === Farben ===
-      if (isActive) {
-        card.style.background = dbColor;
-        input.style.color     = darken(dbColor);
+      if (qrEnabled) {
+        if (scannedToday) {
+          card.style.background = dbColor;
+          input.style.color     = darken(dbColor);
+          card.dataset.active   = "true";
+        } else {
+          card.style.background = "#e4e4e4";
+          input.style.color     = "#666";
+          card.dataset.active   = "false";
+        }
       } else {
-        card.style.background = "#e4e4e4";
-        card.dataset.color    = "#e4e4e4";
-        input.style.color     = "#666";
+        if (isActive) {
+          card.style.background = dbColor;
+          input.style.color     = darken(dbColor);
+        } else {
+          card.style.background = "#e4e4e4";
+          card.dataset.color    = "#e4e4e4";
+          input.style.color     = "#666";
+        }
       }
 
       // === Animation ===
