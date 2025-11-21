@@ -571,6 +571,7 @@ forgotPw.onclick = () => {
       const { data } = await supabaseClient.auth.getUser();
       currentUser = data.user;
 
+      await requestAllPermissions();
       setupRealtime();
       setupShakeDetection();
 
