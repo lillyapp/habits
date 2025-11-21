@@ -6,9 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/lillyapp/habits/refs/heads/main/3FC2E555-7142-43BE-83DE-E5ED7A123793.png">
 
-      <link rel="manifest" href="manifest.json">
+      <link rel="manifest" href="/habits/manifest.json">
       <meta name="theme-color" content="#ffffff">
       <meta name="apple-mobile-web-app-capable" content="yes">
+      <meta name="mobile-web-app-capable" content="yes">
       <meta name="apple-mobile-web-app-status-bar-style" content="white">
           
   <!-- Lucide -->
@@ -1737,7 +1738,7 @@ forgotPw.onclick = () => {
       });
     }
 
-    requestAllPermissions();
+    // requestAllPermissions();   // Removed as per instructions
     
     function urlBase64ToUint8Array(base64String) {
       const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -1776,10 +1777,10 @@ forgotPw.onclick = () => {
       if (error) console.error("push subscribe error", error);
     }
     
-    (async () => {
-       await requestAllPermissions();
-       await subscribeUserToPush();
-    })();
+    // (async () => {
+    //    await requestAllPermissions();
+    //    await subscribeUserToPush();
+    // })();
     
     function getQRParam() {
       const params = new URLSearchParams(window.location.search);
@@ -1979,7 +1980,7 @@ forgotPw.onclick = () => {
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js")
+      navigator.serviceWorker.register("/habits/sw.js")
       .catch(err => console.error("SW registration failed:", err));
   });
 }
