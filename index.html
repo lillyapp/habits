@@ -1026,12 +1026,15 @@
           align-items:flex-end;
           margin-bottom:20px;
         ">
-          <div class="stats-name" style="
-            line-height:1;
-            margin:0;
-            padding:0;
-          ">${myName}</div>
 
+          <!-- Name: klickbar / editierbar -->
+          <div id="editableNameWrapper" style="display:flex; align-items:flex-end; gap:6px;">
+            <div id="editableName" class="stats-name" style="line-height:1; margin:0; padding:0; cursor:pointer;">
+              ${myName}
+            </div>
+          </div>
+
+          <!-- Streak -->
           <div style="
             display:flex;
             align-items:flex-end;
@@ -1043,6 +1046,7 @@
             <i data-lucide="medal" style="width:22px; height:22px;"></i>
             <span>${myStreak}</span>
           </div>
+
         </div>
       `;
 
