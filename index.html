@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Consistency</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <link rel="apple-touch-icon" href="./icon.png">
+  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/lillyapp/habits/refs/heads/main/3FC2E555-7142-43BE-83DE-E5ED7A123793.png">
 
   <!-- Lucide -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -18,13 +18,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
 
-      <link rel="manifest" href="./manifest.json">
-
-          <script>
-          if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("./sw.js", { scope: "./" });
-          }
-          </script>
   <style>
     :root {
       --page-padding: 16px;
@@ -349,7 +342,7 @@
     <button class="btn" id="btnRegister">Registrieren</button>
   </div>
 
-  <form id="loginForm">
+  <div id="loginForm">
     <input id="loginName" class="login-input" placeholder="Name" type="text" style="display:none;" />
     <input id="loginEmail" class="login-input" placeholder="E-Mail" type="email" />
     <input id="loginPassword" class="login-input" placeholder="Passwort" type="password" />
@@ -365,7 +358,7 @@
       Passwort vergessen?
     </div>
     <button class="btn" id="loginOkBtn">OK</button>
-  </form>
+  </div>
 
   <div id="loginError"></div>
 </div>
@@ -543,7 +536,6 @@
 
       await safeLoadHabits();
       showAppAfterDataLoaded();
-      initPushAfterLogin();
 
       // ⭐ WICHTIG: QR-Processing NACH Login
       const qr = getQRParam();
@@ -561,7 +553,6 @@
 
         await safeLoadHabits();
         showAppAfterDataLoaded();
-        initPushAfterLogin();
 
         // QR verarbeiten, falls beim Start vorhanden
         const qr = getQRParam();
@@ -570,6 +561,7 @@
     })();
     
 
+    
     
 
     function setupRealtime() {
@@ -747,7 +739,7 @@
             <div id="numArea">0</div>
 
             <input 
-              class="gpsInput"
+              id="gpsInput"
               type="text"
               placeholder="Adresse eingeben..."
               style="
@@ -865,7 +857,7 @@
       const counter   = card.querySelector(".counter");
       const gpsArea   = card.querySelector("#gpsArea");
       const numArea   = card.querySelector("#numArea");
-      const gpsInput  = card.querySelector(".gpsInput");
+      const gpsInput  = card.querySelector("#gpsInput");
       const qrArea    = card.querySelector("#qrArea");
       const qrStatus  = card.querySelector(".qr-status-text");
 
@@ -1743,10 +1735,10 @@
       if (error) console.error("push subscribe error", error);
     }
     
-    async function initPushAfterLogin() {
-      await requestAllPermissions();
-      await subscribeUserToPush();
-    }
+    (async () => {
+       await requestAllPermissions();
+       await subscribeUserToPush();
+    })();
     
     function getQRParam() {
       const params = new URLSearchParams(window.location.search);
