@@ -1128,7 +1128,7 @@ forgotPw.onclick = () => {
       const input   = card.querySelector(".card-input");
       const counter = card.querySelector(".counter");
 
-      if(!input.value.trim()) return;
+      if (!input.textContent.trim()) return;
 
       let goal     = parseInt(card.dataset.goal) || 0;
       let progress = parseInt(card.dataset.progress) || 0;
@@ -2117,6 +2117,37 @@ if ("serviceWorker" in navigator) {
 
     // Nach Login starten:
     setupPushRealtime();
+    
+    
+    supabaseClient
+      .channel('push-info-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'push_info',
+          filter: `user_id=eq.${currentUser.id}`
+        },
+        (payload) => {
+          console.log("📨 PUSH via Realtime empfangen:", payload);
+
+          const data = payload.new;
+          if (!data) return;
+
+          try {
+            new Notification(data.title || "Neue Nachricht", {
+              body: data.body || ""
+            });
+            console.log("🔔 Notification erzeugt:", data.title, data.body);
+
+          } catch (e) {
+            console.error("❌ Notification error:", e);
+          }
+        }
+      )
+      .subscribe();
+      
 </script>
 
 </body>
