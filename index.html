@@ -7,10 +7,10 @@
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/lillyapp/habits/refs/heads/main/3FC2E555-7142-43BE-83DE-E5ED7A123793.png">
 
       <link rel="manifest" href="/habits/manifest.json">
-      <meta name="theme-color" content="#ffffff">
+      
       <meta name="apple-mobile-web-app-capable" content="yes">
       <meta name="mobile-web-app-capable" content="yes">
-      <meta name="apple-mobile-web-app-status-bar-style" content="white">
+      
           
   <!-- Lucide -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -427,6 +427,13 @@
       flex-shrink:0;
     }
   </style>
+  <!-- Dynamic theme-color for Safari, PWA, Chrome -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <!-- Safari PWA status bar -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" media="(prefers-color-scheme: light)">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" media="(prefers-color-scheme: dark)">
 </head>
 <body>
 
@@ -2234,7 +2241,7 @@ if ("serviceWorker" in navigator) {
       .subscribe();
       
 </script>
- 
+
 </body>
 </html>
   
