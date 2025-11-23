@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Consistency</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/lillyapp/habits/refs/heads/main/iconApp.png">
+  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/lillyapp/habits/refs/heads/main/3FC2E555-7142-43BE-83DE-E5ED7A123793.png">
 
       <link rel="manifest" href="/habits/manifest.json">
       <meta name="theme-color" content="#ffffff">
@@ -29,6 +29,20 @@
       --page-padding: 16px;
       --card-height: calc((100svh - 16px*5 - 60px - env(safe-area-inset-bottom)) / 3);
     }
+      
+      :root {
+        --c-bg: #ffffff;
+        --c-text: #000000;
+        --c-card: #e4e4e4;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --c-bg: #000000;
+          --c-text: #e4e4e4;
+          --c-card: #1a1a1a;
+        }
+      }
 
     * {
       margin:0;
@@ -42,10 +56,65 @@
       margin:0;
       padding:0;
       font-family: "Poppins", sans-serif;
-      background:#fff;
-      color:#000;
+      background: var(--c-bg);
+        color: var(--c-text);
       height:100svh;
       overflow:hidden;
+    }
+    /* Dark Mode Enhancements */
+    .card {
+      background: var(--c-card);
+      color: var(--c-text);
+    }
+
+    .card-face.back {
+      background: var(--c-card);
+      color: var(--c-text);
+    }
+
+    .login-input {
+      background: var(--c-card);
+      color: var(--c-text);
+    }
+
+    #loginScreen {
+      background: var(--c-bg);
+      color: var(--c-text);
+    }
+
+    #statsView {
+      background: var(--c-bg);
+      color: var(--c-text);
+    }
+
+    .stat-bar {
+      background: var(--c-card);
+    }
+
+    .stat-fill {
+      color: var(--c-text);
+    }
+
+    #deletePanel {
+      background: var(--c-card);
+      color: var(--c-text);
+    }
+
+    .btn-plus {
+      background: none !important;
+      border: none !important;
+      color: var(--c-text) !important;
+    }
+
+    .btn-stats {
+      background: none !important;
+      border: none !important;
+      color: var(--c-text) !important;
+    }
+
+    #qrInfoBox {
+      color: var(--c-text);
+      background: var(--c-card);
     }
 
     /* LOGIN */
@@ -58,7 +127,8 @@
       align-items:center;
       padding:20px;
       z-index:20;
-      background:#fff;
+      background: var(--c-bg);
+      color: var(--c-text);
       opacity:1;
       transition:opacity 0.4s ease;
     }
@@ -82,6 +152,7 @@
       font-size:26px;
       font-weight:600;
       text-align:center;
+      color: var(--c-text);
     }
 
     #loginButtonBar {
@@ -101,8 +172,14 @@
       cursor:pointer;
     }
 
-    #btnLogin    {background:#000; color:#fff;}
-    #btnRegister {background:#e5e5e5; color:#000;}
+    #btnLogin    {
+      background: var(--c-text);
+      color: var(--c-bg);
+    }
+    #btnRegister {
+      background: var(--c-card);
+      color: var(--c-text);
+    }
 
     #loginForm {
       width:100%;
@@ -117,12 +194,13 @@
       padding:12px;
       border:none;
       border-radius:12px;
-      background:#e5e5e5;
+      background: var(--c-card);
+      color: var(--c-text);
     }
 
     #loginError {
       margin-top:12px;
-      color:#ef4444;
+      color: var(--c-text);
       font-size:14px;
       display:none;
       text-align:center;
@@ -162,7 +240,7 @@
       position:absolute;
       inset:0;
       border-radius:24px;
-      background:#e4e4e4;
+      background: var(--c-card);
       padding:24px;
       transform-style:preserve-3d;
       cursor:pointer;
@@ -186,7 +264,7 @@
       }
 
     .back {
-      background:#e4e4e4;
+      background: var(--c-card);
       transform:rotateY(180deg);
       display:flex;
       flex-direction:row;
@@ -212,7 +290,7 @@
         border: none;
         background: transparent;
         outline: none;
-        color: #666;
+        color: var(--c-text);
         margin-top: 6px;
         margin-bottom: 0;
         line-height: 1.1;
@@ -223,20 +301,31 @@
 
       .card-input:empty::before {
         content: attr(data-placeholder);
-        color: #999;
+        color: var(--c-text);
       }
 
     .counter {
-      position:absolute;
-      bottom:24px;
-      right:24px;
-      background:#fff;
-      padding:4px 12px;
-      border-radius:999px;
-      border:2px solid #000;
-      font-size:1.2rem;
-      font-weight:700;
-      display:none;
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      display: none;
+
+      /* Light Mode */
+      background: #ffffff;
+      color: #000000;
+      border: 2px solid #000000;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .counter {
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 2px solid #000000 !important;
+      }
     }
 
     /* Bottom Buttons (Plus/Haus + Stats) */
@@ -262,13 +351,15 @@
       align-items:center;
       justify-content:center;
       font-size:1.5rem;
-      border:none;
+      border:none !important;
+      background:none !important;
+      box-shadow:none !important;
+      outline:none !important;
       cursor:pointer;
       pointer-events:auto;
+      color: var(--c-text) !important;
     }
 
-    .btn-plus { background:#000; color:#fff; }
-    .btn-stats { background:#f3f3f3; border:2px solid #ccc; color:#333; }
 
     /* Stats View */
     #statsView {
@@ -277,7 +368,7 @@
       right:0;
       top:100svh;
       bottom:0;
-      background:#fff;
+      background: var(--c-bg);
       padding:24px;
       padding-bottom:140px;
       overflow-y:auto;
@@ -285,7 +376,7 @@
     }
 
     .stats-name { font-size:2rem; font-weight:700; margin-bottom:20px; }
-    .stat-bar { width:100%; height:48px; background:#e5e7eb; border-radius:16px; margin-bottom:18px; overflow:hidden; }
+    .stat-bar { width:100%; height:48px; background: var(--c-card); border-radius:16px; margin-bottom:18px; overflow:hidden; }
     .stat-fill {
       height:100%;
       width:0;
@@ -294,7 +385,8 @@
       align-items:center;
       font-weight:700;
       border-radius:16px;
-      color:#000;
+      background: var(--c-card);
+      color: var(--c-text);
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
@@ -306,7 +398,7 @@
       left:16px;
       right:16px;
       top:12px; /* wird per JS genauer über der obersten Karte platziert */
-      background:#ffffff;
+      background: var(--c-card);
       border-radius:999px;
       box-shadow:0 8px 20px rgba(0,0,0,0.12);
       padding:6px 12px;
@@ -683,9 +775,6 @@ forgotPw.onclick = () => {
       if (addBtn.dataset.mode === "stats") {
         addBtn.innerHTML = '<i data-lucide="house"></i>';
         addBtn.classList.remove("btn-plus");
-        addBtn.style.background = "#f3f3f3";
-        addBtn.style.color      = "#333";
-        addBtn.style.border     = "2px solid #ccc";
         lucide.createIcons();
         return;
       }
@@ -693,15 +782,9 @@ forgotPw.onclick = () => {
       if (habits.length < 3) {
         addBtn.innerHTML = '<i data-lucide="plus"></i>';
         addBtn.classList.add("btn-plus");
-        addBtn.style.background = "#000";
-        addBtn.style.color      = "#fff";
-        addBtn.style.border     = "none";
       } else {
         addBtn.innerHTML = '<i data-lucide="home"></i>';
         addBtn.classList.remove("btn-plus");
-        addBtn.style.background = "#f3f3f3";
-        addBtn.style.color      = "#333";
-        addBtn.style.border     = "2px solid #ccc";
       }
       lucide.createIcons();
     }
@@ -1310,10 +1393,10 @@ forgotPw.onclick = () => {
       const h = habits[i];
 
       if (!h) {
-        html += `
-          <div class="stat-bar" style="position:relative;">
-            <div class="stat-fill" style="width:0%"></div>
-          </div>`;
+      html += `
+        <div class="stat-bar" style="position:relative;">
+          <div class="stat-fill" style="width:0%"></div>
+        </div>`;
         continue;
       }
 
@@ -1361,7 +1444,7 @@ forgotPw.onclick = () => {
             align-items:center;
             padding-left:12px;
             font-weight:700;
-            color:#000;
+            color:var(--c-text);
             white-space:nowrap;
             overflow:hidden;
             text-overflow:ellipsis;
@@ -1974,7 +2057,8 @@ async function processQRFlow(qrId) {
     text-align:center;
     font-size:22px;
     font-weight:700;
-    color:#000;
+    color:var(--c-text);
+    background:var(--c-card);
     line-height:1.4;
   ">
   <div id="qrInfoTitle" style="
@@ -2026,7 +2110,8 @@ async function processQRFlow(qrId) {
   z-index:999999;
 ">
   <div id="qrConfirmBox" style="
-    background:white;
+    background:var(--c-card);
+    color:var(--c-text);
     padding:24px;
     border-radius:20px;
     width:80%;
@@ -2060,7 +2145,7 @@ async function processQRFlow(qrId) {
         border-radius:12px;
         border:none;
         background:#ef4444;
-        color:white;
+        color:#ffffff;
         font-size:16px;
         font-weight:600;
       ">Nein</button>
