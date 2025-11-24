@@ -1210,6 +1210,47 @@ forgotPw.onclick = () => {
         // Normaler Toggle
         proceedHabitToggle(card);
       });
+
+      // ======================================
+      // DOUBLE TAP → Progress Reset (wie Shake)
+      // ======================================
+      let lastTap = 0;
+      card.addEventListener("touchend", async () => {
+        const now = Date.now();
+        if (now - lastTap < 300) {
+          // Double Tap erkannt
+          const habitId = card.dataset.habitId;
+
+          // DB Reset
+          const { error } = await supabaseClient
+            .from("habits")
+            .update({ progress: 0 })
+            .eq("id", habitId);
+
+          if (error) {
+            console.error("doubleTap reset error:", error);
+            return;
+          }
+
+          // Lokales Update
+          card.dataset.progress = 0;
+          card.dataset.active = "false";
+
+          const input = card.querySelector(".card-input");
+          card.style.background = "#e4e4e4";
+          input.style.color = "#666";
+
+          const counter = card.querySelector(".counter");
+          const goal = parseInt(card.dataset.goal) || 1;
+          if (goal >= 2) {
+            counter.style.display = "block";
+            counter.textContent = "0/" + goal;
+          } else {
+            counter.style.display = "none";
+          }
+        }
+        lastTap = now;
+      });
     }
 
 
