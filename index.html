@@ -950,18 +950,10 @@ forgotPw.onclick = () => {
             </div>
           </div>
 
-          <!-- QR AREA -->
-          <div class="half" id="qrArea">
+          <!-- UNDO / DECREMENT AREA -->
+          <div class="half" id="undoArea">
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-              <i data-lucide="qr-code" style="width:32px;height:32px;color:#777;"></i>
-
-              <div class="qr-status-text" style="
-                font-size:0.75rem;
-                color:#555;
-                text-align:center;
-                line-height:1;
-                display:none;
-              ">Aktiv</div>
+              <i data-lucide="timer-reset" style="width:32px;height:32px;color:#777;"></i>
             </div>
           </div>
 
@@ -1012,7 +1004,6 @@ forgotPw.onclick = () => {
       const line1 = card.querySelector(".gps-address-line1");
       const line2 = card.querySelector(".gps-address-line2");
 
-      const qrStatus = card.querySelector(".qr-status-text");
 
       // === Titel ===
       input.textContent = habit.title || "";
@@ -1029,13 +1020,6 @@ forgotPw.onclick = () => {
         line2.style.display = "none";
       }
 
-      // === QR-Status setzen ===
-      if (qrEnabled) {
-        qrStatus.style.display = "block";
-        qrStatus.textContent = "Aktiv";
-      } else {
-        qrStatus.style.display = "none";
-      }
 
       // === Counter ===
       numArea.textContent = goal;
@@ -1093,8 +1077,7 @@ forgotPw.onclick = () => {
       const gpsArea   = card.querySelector("#gpsArea");
       const numArea   = card.querySelector("#numArea");
       const gpsInput  = card.querySelector("#gpsInput");
-      const qrArea    = card.querySelector("#qrArea");
-      const qrStatus  = card.querySelector(".qr-status-text");
+      const undoArea = card.querySelector("#undoArea");
 
       let swipeStartX = 0;
       let swipeEndX   = 0;
@@ -1187,48 +1170,47 @@ forgotPw.onclick = () => {
       });
 
       // ======================================
-      // QR ENABLE / DISABLE
+      // UNDO / DECREMENT PROGRESS BY 1
       // ======================================
-      qrArea.addEventListener("click", async (e) => {
-        e.stopPropagation();
+      if (undoArea) {
+        undoArea.addEventListener("click", async (e) => {
+          e.stopPropagation();
 
-        const enabled = card.dataset.qr === "true";
-        const newVal  = !enabled;
+          let progress = parseInt(card.dataset.progress) || 0;
+          if (progress <= 0) return;
 
-        // Toggle setzen
-        card.dataset.qr = newVal ? "true" : "false";
+          progress -= 1;
+          card.dataset.progress = progress;
 
-        // UI
-        qrStatus.style.display = newVal ? "block" : "none";
-        qrStatus.textContent   = newVal ? "Aktiv" : "";
-
-        // Counter vorne → KCAL anzeigen
-        if (newVal) {
-          const kcal = parseInt(card.dataset.progress) || 0;
-          counter.style.display = "block";
-          counter.textContent = `${kcal} KCAL`;
-        } else {
           const goal = parseInt(card.dataset.goal) || 1;
-          const prog = parseInt(card.dataset.progress) || 0;
+          const counter = card.querySelector(".counter");
 
           if (goal >= 2) {
             counter.style.display = "block";
-            counter.textContent   = `${prog}/${goal}`;
+            counter.textContent = progress + "/" + goal;
           } else {
-            counter.style.display = "none";
+            if (progress <= 0) counter.style.display = "none";
           }
-        }
 
-        // In DB speichern
-        const habitId = card.dataset.habitId;
+          if (progress <= 0) {
+            card.dataset.active = "false";
+            card.style.background = "#e4e4e4";
+            const input = card.querySelector(".card-input");
+            input.style.color = "#666";
+            card.dataset.color = "#e4e4e4";
+          }
 
-        const { error } = await supabaseClient
-          .from("habits")
-          .update({ qr_enabled: newVal })
-          .eq("id", habitId);
+          const habitId = card.dataset.habitId;
+          if (!habitId) return;
 
-        if (error) console.error("QR update error:", error);
-      });
+          const { error } = await supabaseClient
+            .from("habits")
+            .update({ progress })
+            .eq("id", habitId);
+
+          if (error) console.error("decrement progress error:", error);
+        });
+      }
 
       // ======================================
       // LONG-PRESS FARBE
