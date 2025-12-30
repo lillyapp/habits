@@ -3023,9 +3023,51 @@ async function processQRFlow(qrId) {
 if ("serviceWorker" in navigator) {
   // Only register service worker on secure origins or localhost
   if (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/habits/sw.js")
-        .catch(err => console.error("SW registration failed:", err));
+    window.addEventListener("load", async () => {
+      try {
+        // dev override: if URL contains ?sw=0 or localStorage swDisabled, unregister existing SWs
+        const urlParams = new URLSearchParams(window.location.search);
+        const swDisabled = urlParams.get('sw') === '0' || localStorage.getItem('swDisabled') === '1';
+        if (swDisabled && navigator.serviceWorker) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const r of regs) await r.unregister();
+          console.info('Service workers unregistered (dev override)');
+          return;
+        }
+
+        const reg = await navigator.serviceWorker.register('/habits/sw.js');
+        // immediately check for updates
+        try { await reg.update(); } catch(e) { /* ignore */ }
+
+        // If a new SW is waiting, tell it to skipWaiting so it activates immediately
+        if (reg.waiting) {
+          try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch(e){}
+        }
+
+        // Listen for updates found and when installed -> trigger skipWaiting
+        reg.addEventListener('updatefound', () => {
+          const installing = reg.installing;
+          if (!installing) return;
+          installing.addEventListener('statechange', () => {
+            if (installing.state === 'installed' && reg.waiting) {
+              try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch(e){}
+            }
+          });
+        });
+
+        // When the controlling worker changes (new SW activated), reload the page to get fresh assets
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          try {
+            if (!window.__swReloading) {
+              window.__swReloading = true;
+              window.location.reload();
+            }
+          } catch (e) {}
+        });
+
+      } catch (err) {
+        console.error('SW registration failed:', err);
+      }
     });
   } else {
     console.info('Service worker not registered: insecure origin', location.protocol);
