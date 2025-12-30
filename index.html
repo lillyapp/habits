@@ -232,7 +232,7 @@
 
     .slot {
       position:relative;
-      height:var(--card-height);
+      min-height:var(--card-height);
       perspective:1200px;
     }
 
@@ -246,6 +246,7 @@
       cursor:pointer;
       opacity:0;
       transition:transform 0.25s linear;
+      height:100%;
     }
 
     .card-face {
@@ -259,7 +260,7 @@
       .card-face.front {
         background:transparent;
         display:flex;
-        flex-direction:column-reverse;  /* wichtig */
+        flex-direction:column;
         justify-content:flex-start;
       }
 
@@ -278,6 +279,15 @@
       justify-content:center;
       align-items:center;
       font-size:2rem;
+      font-weight:800;
+      color:#777;
+    }
+    .quarter {
+      width:25%;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-size:1.6rem;
       font-weight:800;
       color:#777;
     }
@@ -478,7 +488,84 @@
       cursor:pointer;
       flex-shrink:0;
     }
+      
+      .front-header {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .expand-area {
+        margin-top: 12px;
+      }
+
+      .expand-divider {
+        width: 100%;
+        height: 2px;
+        margin: 12px 0;
+        opacity: 0.35;
+      }
+
+      .subtask {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .subtask i {
+        width: 22px;
+        height: 22px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      .subtask i {
+        color: inherit;
+      }
+
+      .subtask-title {
+        font-size: 1.05rem;
+        font-weight: 600;
+        background: transparent;
+        border: none;
+        outline: none;
+        flex: 1;
+        user-select: text;
+        -webkit-user-select: text;
+        cursor: text;
+      }
+
+      /* Make the placeholder inherit a CSS variable set on the input by JS */
+      .subtask-title::placeholder {
+        color: var(--ph, #666);
+        opacity: 0.85;
+      }
+
+      .add-subtask {
+        margin-top: 8px;
+        opacity: 0.6;
+        cursor: pointer;
+      }
+
+      /* --- Clickable subtask icons fix --- */
+      /* --- Clickable subtask icons fix --- */
+      /* Ensure the icon element and all nested SVG parts accept pointer events,
+         including on touch devices. Use !important to override any inline
+         attributes lucide might add. */
+      .subtask i,
+      .subtask i svg,
+      .subtask i * {
+        pointer-events: auto !important;
+        touch-action: manipulation;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        cursor: pointer;
+      }
   </style>
+  <!-- Counter positioning fix for expanded/front mode -->
+  <!-- (removed previous override, see below for new state-based CSS) -->
   <!-- Dynamic theme-color for Safari, PWA, Chrome -->
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
@@ -823,8 +910,8 @@ forgotPw.onclick = () => {
       }
 
       const { data, error } = await supabaseClient
-        .from("habits_active")
-        .select("*")
+        .from("habits")
+        .select(`id, user_id, title, color, progress, goal, location_address, qr_enabled, sub1_title, sub1_progress, sub2_title, sub2_progress, sub3_title, sub3_progress, inserted_at`)
         .eq("user_id", currentUser.id)
         .order("inserted_at", { ascending: true })
         .limit(3);
@@ -914,26 +1001,43 @@ forgotPw.onclick = () => {
       card.dataset.color    = dbColor;
       card.dataset.location = addr;
       card.dataset.qr       = qrEnabled ? "true" : "false";
+      // subtask data (persisted columns)
+      card.dataset.sub1_title = habit.sub1_title || "";
+      card.dataset.sub1_progress = habit.sub1_progress || 0;
+      card.dataset.sub2_title = habit.sub2_title || "";
+      card.dataset.sub2_progress = habit.sub2_progress || 0;
+      card.dataset.sub3_title = habit.sub3_title || "";
+      card.dataset.sub3_progress = habit.sub3_progress || 0;
 
       const isActive = progress > 0;
       card.dataset.active = isActive ? "true" : "false";
 
       // --- HTML ---
       card.innerHTML = `
-        <div class="card-face front">
+      <div class="card-face front">
+        <div class="front-header">
           <div class="card-input" contenteditable="true" data-placeholder="Titel eingeben..."></div>
           <div class="counter counter-kcal" style="display:none;"></div>
         </div>
 
+        <div class="expand-area" style="display:none;">
+          <div class="expand-divider"></div>
+          <div class="subtasks"></div>
+          <div class="add-subtask">
+            <i data-lucide="plus-circle"></i>
+          </div>
+        </div>
+      </div>
+
         <div class="card-face back">
 
           <!-- GPS AREA -->
-          <div class="half" id="gpsArea">
+          <div class="quarter" id="gpsArea">
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-              <i data-lucide="map-pin" style="width:32px;height:32px;color:#777;"></i>
+              <i data-lucide="map-pin" style="width:28px;height:28px;color:#777;"></i>
 
               <div class="gps-address-line1" style="
-                font-size:0.75rem;
+                font-size:0.7rem;
                 color:#555;
                 text-align:center;
                 line-height:1;
@@ -941,7 +1045,7 @@ forgotPw.onclick = () => {
               "></div>
 
               <div class="gps-address-line2" style="
-                font-size:0.75rem;
+                font-size:0.7rem;
                 color:#555;
                 text-align:center;
                 line-height:1;
@@ -951,14 +1055,21 @@ forgotPw.onclick = () => {
           </div>
 
           <!-- UNDO / DECREMENT AREA -->
-          <div class="half" id="undoArea">
+          <div class="quarter" id="undoArea">
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-              <i data-lucide="timer-reset" style="width:32px;height:32px;color:#777;"></i>
+              <i data-lucide="timer-reset" style="width:28px;height:28px;color:#777;"></i>
+            </div>
+          </div>
+
+          <!-- SQUARES-SUBTRACT AREA -->
+          <div class="quarter" id="collapseArea">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+              <i data-lucide="squares-subtract" style="width:28px;height:28px;color:#777;"></i>
             </div>
           </div>
 
           <!-- Counter & GPS Input -->
-          <div class="half" id="numAreaWrapper">
+          <div class="quarter" id="numAreaWrapper">
             <div id="numArea">0</div>
 
             <input 
@@ -971,10 +1082,11 @@ forgotPw.onclick = () => {
                 padding:6px;
                 border-radius:12px;
                 border:1px solid #ccc;
-                font-size:1rem;
+                font-size:0.9rem;
               "
             />
           </div>
+
         </div>
       `;
 
@@ -1077,7 +1189,8 @@ forgotPw.onclick = () => {
       const gpsArea   = card.querySelector("#gpsArea");
       const numArea   = card.querySelector("#numArea");
       const gpsInput  = card.querySelector("#gpsInput");
-      const undoArea = card.querySelector("#undoArea");
+      const undoArea  = card.querySelector("#undoArea");
+      const collapseArea = card.querySelector("#collapseArea");
 
       let swipeStartX = 0;
       let swipeEndX   = 0;
@@ -1213,6 +1326,313 @@ forgotPw.onclick = () => {
       }
 
       // ======================================
+      // EXPAND CARD (SQUARES-SUBTRACT)
+      // ======================================
+      if (collapseArea) {
+        collapseArea.addEventListener("click", (e) => {
+          e.stopPropagation();
+
+            // rotate to front then delegate to expandCard which handles minimize/button behavior
+            gsap.to(card, { rotationY: 0, duration: 0.45, ease: "sine.inOut", onComplete: () => {
+              expandCard(card);
+            }});
+        });
+      }
+
+      // ======================================
+      // SUBTASKS (refactored, delegation-based)
+      // ======================================
+      const subtasksWrap = card.querySelector(".subtasks");
+      const addSubtaskBtn = card.querySelector(".add-subtask");
+
+      function recalcFromSubtasks() {
+        const rows = subtasksWrap.querySelectorAll(".subtask");
+        if (rows.length === 0) { card.dataset.subtasksComplete = "false"; return; }
+
+        const allDone = Array.from(rows).every(r => r.dataset.done === "true");
+        card.dataset.subtasksComplete = allDone ? "true" : "false";
+      }
+
+      function createSubtask(title = "") {
+        const existingCount = subtasksWrap.querySelectorAll('.subtask').length;
+        if (existingCount >= 3) return null;
+
+        const row = document.createElement("div");
+        row.className = "subtask";
+        row.dataset.done = "false";
+
+        row.innerHTML = `
+          <button class="subtask-toggle" aria-pressed="false" style="background:transparent;border:none;padding:0;margin-right:8px;display:flex;align-items:center;">
+            <i data-lucide="circle"></i>
+          </button>
+          <input class="subtask-title" placeholder="Unteraufgabe..." value="${title}">
+        `;
+
+        const inputEl = row.querySelector(".subtask-title");
+
+        inputEl.addEventListener("click", e => e.stopPropagation());
+        inputEl.addEventListener("pointerdown", e => e.stopPropagation());
+        inputEl.addEventListener("touchstart", e => e.stopPropagation());
+        inputEl.addEventListener("blur", (e) => { recalcFromSubtasks(); saveHabit(card); });
+
+        subtasksWrap.appendChild(row);
+        syncSubtaskColors();
+        lucide.createIcons({ scope: row });
+        recalcFromSubtasks();
+        return row;
+      }
+
+      // Delegated handlers: stop pointerdown/touchstart to prevent card handlers
+      // (long-press / touchstart on the card) and handle pointerup to toggle.
+      subtasksWrap.addEventListener('pointerdown', (e) => {
+        const btn = e.target.closest('.subtask-toggle');
+        if (!btn) return;
+        e.stopPropagation();
+        e.preventDefault && e.preventDefault();
+      });
+      subtasksWrap.addEventListener('touchstart', (e) => {
+        const btn = e.target.closest('.subtask-toggle');
+        if (!btn) return;
+        e.stopPropagation();
+      });
+
+      // Delegated handler: handle pointerup on container so rendered SVGs are caught
+      subtasksWrap.addEventListener('pointerup', (e) => {
+        const btn = e.target.closest('.subtask-toggle');
+        if (!btn) return;
+        e.stopPropagation();
+        e.preventDefault && e.preventDefault();
+
+        const row = btn.closest('.subtask');
+        if (!row) return;
+
+        const allRows = Array.from(subtasksWrap.querySelectorAll('.subtask'));
+        const allDoneBefore = allRows.length > 0 && allRows.every(r => r.dataset.done === 'true');
+
+        // Toggle this row
+        const wasDone = row.dataset.done === 'true';
+        row.dataset.done = wasDone ? 'false' : 'true';
+
+        // Update icon visual
+        const newIconName = wasDone ? 'circle' : 'circle-check';
+        btn.innerHTML = `<i data-lucide="${newIconName}"></i>`;
+        btn.setAttribute('aria-pressed', row.dataset.done === 'true' ? 'true' : 'false');
+        lucide.createIcons({ scope: btn });
+
+        // color the newly rendered icon to match the card title color
+        try {
+          const titleColor = card.querySelector('.card-input')?.style.color || darken(card.dataset.color || '#e4e4e4');
+          const sv = btn.querySelector('svg');
+          if (sv) {
+            sv.style.color = titleColor;
+            sv.setAttribute('stroke', titleColor);
+            sv.setAttribute('fill', 'none');
+            sv.querySelectorAll('*').forEach(el => { try { el.setAttribute('stroke', titleColor); if (!el.getAttribute('fill') || el.getAttribute('fill') === 'none') el.setAttribute('fill','none'); } catch(e){} });
+          }
+        } catch(e){}
+
+        // Recompute after toggle
+        const allDoneAfter = allRows.every(r => (r === row ? row.dataset.done === 'true' : r.dataset.done === 'true'));
+
+        // If subtasks exist, only change main progress when full completion state changes
+        try {
+          const cardEl = card;
+          const goal = parseInt(cardEl.dataset.goal) || 1;
+          let progress = parseInt(cardEl.dataset.progress) || 0;
+          let active = cardEl.dataset.active === 'true';
+
+          if (!allDoneBefore && allDoneAfter) {
+            // became fully completed -> increment progress by one step
+            if (goal <= 1) {
+              if (!active) {
+                progress = 1;
+                active = true;
+                const idx = parseInt(cardEl.dataset.index);
+                let col = cardEl.dataset.color;
+                if (!col || col === '#e4e4e4') col = cycleColors[idx % cycleColors.length];
+                cardEl.style.background = col;
+                cardEl.dataset.color = col;
+                const inputElTitle = cardEl.querySelector('.card-input');
+                if (inputElTitle) inputElTitle.style.color = darken(col);
+              }
+            } else {
+              if (progress < goal) {
+                progress += 1;
+                active = true;
+                const idx = parseInt(cardEl.dataset.index);
+                let col = cardEl.dataset.color;
+                if (!col || col === '#e4e4e4') col = cycleColors[idx % cycleColors.length];
+                cardEl.style.background = col;
+                cardEl.dataset.color = col;
+                const inputElTitle = cardEl.querySelector('.card-input');
+                if (inputElTitle) inputElTitle.style.color = darken(col);
+              }
+            }
+          }
+
+          if (allDoneBefore && !allDoneAfter) {
+            // became not fully completed -> decrement progress by one step
+            if (goal <= 1) {
+              if (active) {
+                progress = 0;
+                active = false;
+                cardEl.style.background = '#e4e4e4';
+                cardEl.dataset.color = '#e4e4e4';
+                const inputElTitle = cardEl.querySelector('.card-input');
+                if (inputElTitle) inputElTitle.style.color = '#666';
+              }
+            } else {
+              if (progress > 0) {
+                progress = Math.max(0, progress - 1);
+                if (progress === 0) {
+                  active = false;
+                  cardEl.style.background = '#e4e4e4';
+                  cardEl.dataset.color = '#e4e4e4';
+                  const inputElTitle = cardEl.querySelector('.card-input');
+                  if (inputElTitle) inputElTitle.style.color = '#666';
+                }
+              }
+            }
+          }
+
+          cardEl.dataset.progress = progress;
+          cardEl.dataset.active = active ? 'true' : 'false';
+
+          // Update counter UI
+          const counterEl = cardEl.querySelector('.counter');
+          if (counterEl) {
+            if (parseInt(cardEl.dataset.goal) >= 2) {
+              counterEl.style.display = 'block';
+              counterEl.textContent = progress + '/' + (parseInt(cardEl.dataset.goal) || 1);
+            } else {
+              counterEl.style.display = (progress > 0) ? 'block' : 'none';
+              if (progress > 0) counterEl.textContent = progress;
+            }
+          }
+
+          // Persist both subtask states and main progress
+          saveHabit(cardEl);
+        } catch (err) {
+          console.error('subtask progress sync error', err);
+        }
+
+        recalcFromSubtasks();
+      });
+
+      if (addSubtaskBtn) {
+        addSubtaskBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          // enforce max 3 subtasks
+          const count = subtasksWrap.querySelectorAll('.subtask').length;
+          if (count >= 3) return;
+          const r = createSubtask("");
+          if (r) {
+            // immediately focus the input for quick editing
+            const inp = r.querySelector('.subtask-title');
+            if (inp) inp.focus();
+          }
+        });
+      }
+
+      // Load persisted subtasks from dataset (if any)
+      (function loadSubtasksFromDataset(){
+        const subs = [
+          { title: card.dataset.sub1_title || '', prog: parseInt(card.dataset.sub1_progress) || 0 },
+          { title: card.dataset.sub2_title || '', prog: parseInt(card.dataset.sub2_progress) || 0 },
+          { title: card.dataset.sub3_title || '', prog: parseInt(card.dataset.sub3_progress) || 0 }
+        ];
+
+        subs.forEach(s => {
+          if (s.title && s.title.trim().length > 0) {
+            const row = createSubtask(s.title);
+            if (row && s.prog > 0) {
+              row.dataset.done = 'true';
+              const btn = row.querySelector('.subtask-toggle');
+              if (btn) {
+                  btn.innerHTML = `<i data-lucide="circle-check"></i>`;
+                  btn.setAttribute('aria-pressed','true');
+                  lucide.createIcons({ scope: btn });
+                  try {
+                    const titleColor = card.querySelector('.card-input')?.style.color || darken(card.dataset.color || '#e4e4e4');
+                    const sv = btn.querySelector('svg');
+                    if (sv) { sv.style.color = titleColor; sv.setAttribute('stroke', titleColor); sv.setAttribute('fill','none'); sv.querySelectorAll('*').forEach(el=>{ try{ el.setAttribute('stroke', titleColor); if(!el.getAttribute('fill')||el.getAttribute('fill')==='none') el.setAttribute('fill','none'); }catch(e){} }); }
+                  } catch(e){}
+                }
+            }
+          }
+        });
+        recalcFromSubtasks();
+
+        // If no persisted subtasks, leave the UI available so users can add new ones.
+        // Previously we hid the entire subtask UI when columns were empty — that prevented
+        // creating new subtasks. Keep expand-area/add-subtask visible on expand, but
+        // do not auto-create rows here.
+      })();
+
+      function syncSubtaskColors() {
+        // Use the actual title color (it may be a darkened variant of the
+        // background color or a fallback like "#666"). This ensures subtitles
+        // match the visible title color exactly.
+        const titleEl = card.querySelector('.card-input');
+        const titleColor = (titleEl && titleEl.style && titleEl.style.color)
+          ? titleEl.style.color
+          : darken(card.dataset.color || '#e4e4e4');
+
+        card.querySelectorAll('.subtask-title').forEach(el => {
+          el.style.color = titleColor;
+          // also set placeholder color via CSS variable so ::placeholder matches
+          el.style.setProperty('--ph', titleColor);
+        });
+
+        card.querySelectorAll('.subtask i').forEach(icon => {
+          icon.style.color = titleColor;
+        });
+
+        // Ensure rendered SVGs use the same stroke/fill color as the title
+        card.querySelectorAll('.subtask i svg').forEach(svg => {
+          try {
+            svg.style.color = titleColor;
+            svg.setAttribute('stroke', titleColor);
+            // keep fill none for outline icons; checked icons will still show stroke color
+            svg.setAttribute('fill', 'none');
+            // also update nested paths if lucide inserted them
+            svg.querySelectorAll('*').forEach(el => {
+              if (el.setAttribute) {
+                el.setAttribute('stroke', titleColor);
+                // avoid forcing fill on shapes that might be intended to be filled
+                if (!el.getAttribute('fill') || el.getAttribute('fill') === 'none') {
+                  el.setAttribute('fill', 'none');
+                }
+              }
+            });
+          } catch (e) {}
+        });
+
+        const divider = card.querySelector('.expand-divider');
+        if (divider) divider.style.background = titleColor;
+
+        // Color the add-subtask plus icon to match title color as well
+        const addIconWrap = card.querySelector('.add-subtask i');
+        if (addIconWrap) {
+          try {
+            addIconWrap.style.color = titleColor;
+            const sv = addIconWrap.querySelector('svg');
+            if (sv) {
+              sv.style.color = titleColor;
+              sv.setAttribute('stroke', titleColor);
+              sv.setAttribute('fill', 'none');
+              sv.querySelectorAll('*').forEach(el => { try { el.setAttribute('stroke', titleColor); if (!el.getAttribute('fill') || el.getAttribute('fill') === 'none') el.setAttribute('fill','none'); } catch(e){} });
+            }
+          } catch (e) {}
+        }
+      }
+
+      // apply colors immediately so icons (plus-circle etc.) match the title on first render
+      try { syncSubtaskColors(); } catch (e) { /* ignore */ }
+
+      input.addEventListener("blur", syncSubtaskColors);
+
+      // ======================================
       // LONG-PRESS FARBE
       // ======================================
       let pressTimer = null;
@@ -1232,6 +1652,7 @@ forgotPw.onclick = () => {
               card.style.background = col;
               card.dataset.color    = col;
               input.style.color     = darken(col);
+              syncSubtaskColors();
               lastColor = col;
               i++;
             },900);
@@ -1253,48 +1674,210 @@ forgotPw.onclick = () => {
         if(e.key==="Enter"){ e.preventDefault(); input.blur(); }
       });
 
+      // CARD EXPAND: helper to expand a card based on its vertical position
+      function expandCard(cardEl) {
+        if (!cardEl) return;
+        if (cardEl.classList.contains('expanded')) return;
+
+        const allCards = Array.from(document.querySelectorAll('.card'));
+        if (allCards.length === 0) return;
+
+        const rects = allCards.map(c => ({ c, rect: c.getBoundingClientRect(), top: c.getBoundingClientRect().top }));
+        const sorted = rects.slice().sort((a,b) => a.top - b.top);
+        const topRect = sorted[0].rect;
+        const bottomRect = sorted[sorted.length - 1].rect;
+        const cardRect = cardEl.getBoundingClientRect();
+
+        const isTop = Math.abs(cardRect.top - topRect.top) < 4;
+        const isBottom = Math.abs(cardRect.top - bottomRect.top) < 4;
+
+        let targetTop = cardRect.top;
+        let targetHeight = bottomRect.bottom - cardRect.top;
+
+        if (isTop) {
+          // top card: expand down to bottom of bottom card
+          targetTop = cardRect.top;
+          targetHeight = bottomRect.bottom - cardRect.top;
+        } else if (!isTop && !isBottom) {
+          // middle card: expand from top of top card to bottom of bottom card
+          targetTop = topRect.top;
+          targetHeight = bottomRect.bottom - topRect.top;
+        } else if (isBottom) {
+          // bottom card: expand upward to top of top card
+          targetTop = topRect.top;
+          targetHeight = cardRect.bottom - topRect.top;
+        }
+
+        const deltaY = targetTop - cardRect.top;
+
+        // hide other cards
+        allCards.forEach(c => {
+          if (c !== cardEl) {
+            gsap.to(c, { opacity: 0, duration: 0.25, ease: 'power1.out', pointerEvents: 'none' });
+          }
+        });
+
+        // store original inline styles for restore
+        cardEl.dataset.origInlineHeight = cardEl.style.height || '';
+        cardEl.dataset.origInlineTransform = cardEl.style.transform || '';
+        cardEl.dataset.origInlineZ = cardEl.style.zIndex || '';
+
+        const expandArea = cardEl.querySelector('.expand-area');
+        if (expandArea) expandArea.style.display = 'block';
+
+        cardEl.style.zIndex = '9999';
+        cardEl.classList.add('expanded');
+
+        // add minimize button if missing — place it in the center of the bottom buttons row
+        const buttonsRow = document.querySelector('.buttons-row');
+        let bottomMin = buttonsRow ? buttonsRow.querySelector('.minimize-bottom-btn') : null;
+        if (!bottomMin && buttonsRow) {
+          bottomMin = document.createElement('button');
+          bottomMin.className = 'minimize-bottom-btn';
+          // transparent background, no shadow, icon will be white
+          bottomMin.style.cssText = 'flex:0 0 60px; width:60px; height:60px; margin:0; border-radius:999px; background:transparent; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10002; pointer-events:auto;';
+          bottomMin.innerHTML = '<i data-lucide="minimize-2"></i>';
+          // insert between addBtnEl and statsBtnEl
+          const statsBtn = document.querySelector('.btn-stats');
+          if (statsBtn && statsBtn.parentNode) statsBtn.parentNode.insertBefore(bottomMin, statsBtn);
+          else if (buttonsRow) buttonsRow.appendChild(bottomMin);
+          lucide.createIcons({ scope: bottomMin });
+
+          // ensure it receives pointer events
+          bottomMin.addEventListener('pointerdown', ev => { ev.stopPropagation(); });
+          bottomMin.addEventListener('touchstart', ev => { ev.stopPropagation(); });
+          bottomMin.addEventListener('touchend', ev => { ev.stopPropagation(); ev.preventDefault && ev.preventDefault(); try { bottomMin.click(); } catch(e){} });
+        }
+
+        // set icon color to white (no background button).
+        // Also force the generated SVG stroke/fill to white in case lucide injected explicit attributes.
+        if (bottomMin) {
+          const icon = bottomMin.querySelector('i');
+          if (icon) icon.style.color = '#fff';
+          const svg = bottomMin.querySelector('svg');
+          if (svg) {
+            try {
+              svg.style.color = '#fff';
+              svg.setAttribute('stroke', '#fff');
+              svg.setAttribute('fill', 'none');
+              svg.setAttribute('stroke-width', svg.getAttribute('stroke-width') || '2');
+              svg.style.width = svg.style.width || '22px';
+              svg.style.height = svg.style.height || '22px';
+            } catch (e) {}
+          }
+        }
+
+        // hide the existing left/right bottom buttons with animation
+        try {
+          const addBtn = document.querySelector('.btn-plus');
+          const homeBtn = document.querySelector('.btn-plus, .btn-half.btn-plus');
+          const statsBtn = document.querySelector('.btn-stats');
+          const leftBtn = document.getElementById('addBtn') || homeBtn;
+          if (leftBtn) gsap.to(leftBtn, { opacity: 0, duration: 0.28, ease: 'power1.out', pointerEvents: 'none' });
+          if (statsBtn) gsap.to(statsBtn, { opacity: 0, duration: 0.28, ease: 'power1.out', pointerEvents: 'none' });
+        } catch (e) {}
+
+        // attach handler to bottomMin
+        if (bottomMin && !bottomMin.dataset.handler) {
+          bottomMin.dataset.handler = '1';
+          bottomMin.addEventListener('click', (e) => {
+            e.stopPropagation(); e.preventDefault && e.preventDefault();
+
+            // restore other cards
+            allCards.forEach(c => {
+              if (c !== cardEl) {
+                gsap.to(c, { opacity: 1, duration: 0.28, ease: 'power1.out', pointerEvents: 'auto' });
+              }
+            });
+
+            // hide expand area
+            if (expandArea) expandArea.style.display = 'none';
+
+            cardEl.classList.remove('expanded');
+
+            // animate back to original computed height and position
+            gsap.to(cardEl, {
+              y: 0,
+              height: cardRect.height,
+              duration: 0.45,
+              ease: 'power2.inOut',
+              onComplete: () => {
+                try { cardEl.style.removeProperty('height'); if (cardEl.dataset.origInlineTransform) cardEl.style.transform = cardEl.dataset.origInlineTransform; else cardEl.style.removeProperty('transform'); if (cardEl.dataset.origInlineZ) cardEl.style.zIndex = cardEl.dataset.origInlineZ; else cardEl.style.removeProperty('z-index'); } catch(e){}
+
+                // remove the bottom minimize button and restore bottom bar buttons
+                try { 
+                  const statsBtn = document.querySelector('.btn-stats');
+                  const leftBtn = document.getElementById('addBtn');
+                  const bottom = document.querySelector('.minimize-bottom-btn');
+                  if (bottom && bottom.parentNode) bottom.parentNode.removeChild(bottom);
+                  if (leftBtn) gsap.to(leftBtn, { opacity: 1, duration: 0.28, ease: 'power1.out', pointerEvents: 'auto' });
+                  if (statsBtn) gsap.to(statsBtn, { opacity: 1, duration: 0.28, ease: 'power1.out', pointerEvents: 'auto' });
+                } catch(e){}
+              }
+            });
+          });
+        }
+
+        // animate expansion (translateY + height)
+        gsap.to(cardEl, { y: deltaY, height: targetHeight, duration: 0.45, ease: 'power2.out' });
+      }
+
       // ======================================
-      // TOGGLE HABIT ODER GPS-CHECK
+      // CARD CLICK: Expand card according to position rules
       // ======================================
       card.addEventListener("click", async (e) => {
-
-        // QR-Mode → keine Toggles, Progress muss über QR kommen
-        if (card.dataset.qr === "true") return;
-
-        // GPS Check
-        const requiredAddress = card.dataset.location;
-        if (requiredAddress && requiredAddress.length > 0) {
-
-          e.stopPropagation();
-
-          navigator.geolocation.getCurrentPosition(async (pos) => {
-            const userLat = pos.coords.latitude;
-            const userLon = pos.coords.longitude;
-
-            const geo = await geocodeAddress(requiredAddress);
-            if (!geo) { shake(card); return; }
-
-            const dist = haversine(userLat, userLon, geo.lat, geo.lon);
-
-            if (dist > 100) { shake(card); return; }
-
-            // OK → Toggle
-            proceedHabitToggle(card);
-
-          }, () => shake(card));
-
+        // Ignore clicks coming from expanded subtask area or from subtask controls
+        if (e.target.closest(".expand-area") || e.target.closest('.subtask') || e.target.closest('.subtasks') || e.target.closest('.add-subtask')) {
           return;
         }
 
-        // Normaler Toggle
-        proceedHabitToggle(card);
+        // If QR-Mode, do not toggle or expand
+        if (card.dataset.qr === "true") return;
+
+        // If there are no subtasks present, perform the original toggle behaviour
+        const hasSubtasks = card.querySelectorAll('.subtask').length > 0;
+        if (!hasSubtasks) {
+          // GPS Check (if habit requires an address)
+          const requiredAddress = card.dataset.location;
+          if (requiredAddress && requiredAddress.length > 0) {
+            e.stopPropagation();
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+              const userLat = pos.coords.latitude;
+              const userLon = pos.coords.longitude;
+
+              const geo = await geocodeAddress(requiredAddress);
+              if (!geo) { shake(card); return; }
+
+              const dist = haversine(userLat, userLon, geo.lat, geo.lon);
+
+              if (dist > 100) { shake(card); return; }
+
+              // OK → Toggle
+              proceedHabitToggle(card);
+
+            }, () => shake(card));
+
+            return;
+          }
+
+          // Normal toggle when no subtasks
+          proceedHabitToggle(card);
+          return;
+        }
+
+        // Otherwise (has subtasks) expand the card
+        expandCard(card);
       });
 
       // ======================================
       // DOUBLE TAP → Progress Reset (für ALLE Habit-Typen)
       // ======================================
       let lastTap = 0;
-      card.addEventListener("touchend", async () => {
+      card.addEventListener("touchend", async (e) => {
+        // PATCH 3: Ignore touches inside expanded subtask area or subtask controls
+        if (e.target.closest(".expand-area") || e.target.closest('.subtask') || e.target.closest('.subtasks') || e.target.closest('.add-subtask')) {
+          return;
+        }
         const now = Date.now();
         if (now - lastTap < 300) {
           // Double Tap erkannt
@@ -1349,6 +1932,15 @@ forgotPw.onclick = () => {
 
       if (!input.textContent.trim()) return;
 
+      // If subtasks exist, they must all be completed first
+      const hasSubtasks = card.querySelectorAll(".subtask").length > 0;
+      const subtasksComplete = card.dataset.subtasksComplete === "true";
+
+      if (hasSubtasks && !subtasksComplete) {
+        shake(card);
+        return;
+      }
+
       let goal     = parseInt(card.dataset.goal) || 0;
       let progress = parseInt(card.dataset.progress) || 0;
       let active   = card.dataset.active === "true";
@@ -1391,11 +1983,31 @@ forgotPw.onclick = () => {
       card.dataset.progress = progress;
       card.dataset.active   = active ? "true" : "false";
 
+      // Ensure subtitle/subtask colors follow the title color immediately
+      try {
+        const titleColor = input.style.color || darken(card.dataset.color || '#e4e4e4');
+        card.querySelectorAll('.subtask-title').forEach(el => { el.style.color = titleColor; });
+        card.querySelectorAll('.subtask i').forEach(icon => { icon.style.color = titleColor; });
+        const divider = card.querySelector('.expand-divider'); if (divider) divider.style.background = titleColor;
+      } catch (e) { /* ignore if elements missing */ }
+
       if (goal >= 2) {
         counter.style.display = "block";
         counter.textContent   = progress + "/" + goal;
       } else {
         counter.style.display = "none";
+      }
+
+      // Reset subtasks after successful completion
+      const rows = card.querySelectorAll(".subtask");
+      if (rows.length > 0) {
+        rows.forEach(r => {
+          r.dataset.done = "false";
+          const icon = r.querySelector("i");
+          if (icon) icon.setAttribute("data-lucide", "circle");
+        });
+        card.dataset.subtasksComplete = "false";
+        lucide.createIcons();
       }
 
       saveHabit(card);
@@ -1441,9 +2053,32 @@ forgotPw.onclick = () => {
 
       if (!habitId) return;
 
+      // collect up to 3 subtasks from the DOM
+      const rows = card.querySelectorAll('.subtask');
+      const updates = {
+        title, color, progress, goal
+      };
+
+      // initialize sub fields to defaults
+      updates.sub1_title = '';
+      updates.sub1_progress = 0;
+      updates.sub2_title = '';
+      updates.sub2_progress = 0;
+      updates.sub3_title = '';
+      updates.sub3_progress = 0;
+
+      Array.from(rows).slice(0,3).forEach((r, i) => {
+        const ti = r.querySelector('.subtask-title');
+        const titleText = ti ? ti.value || ti.textContent || ti.placeholder || '' : '';
+        const done = r.dataset.done === 'true' ? 1 : 0;
+        const idx = i + 1;
+        updates[`sub${idx}_title`] = titleText;
+        updates[`sub${idx}_progress`] = done;
+      });
+
       const { error } = await supabaseClient
         .from("habits")
-        .update({ title, color, progress, goal })
+        .update(updates)
         .eq("id", habitId);
 
       if (error) console.error("saveHabit error:", error);
@@ -1510,8 +2145,8 @@ forgotPw.onclick = () => {
 
   async function loadHabitsForUser(userId) {
     const { data, error } = await supabaseClient
-      .from("habits_active")
-      .select("*")
+      .from("habits")
+      .select(`id, user_id, title, color, progress, goal, location_address, qr_enabled, sub1_title, sub1_progress, sub2_title, sub2_progress, sub3_title, sub3_progress, inserted_at`)
       .eq("user_id", userId)
       .order("inserted_at", { ascending: true })
       .limit(3);
@@ -2386,10 +3021,15 @@ async function processQRFlow(qrId) {
 
 <script>
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
+  // Only register service worker on secure origins or localhost
+  if (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    window.addEventListener("load", () => {
       navigator.serviceWorker.register("/habits/sw.js")
-      .catch(err => console.error("SW registration failed:", err));
-  });
+        .catch(err => console.error("SW registration failed:", err));
+    });
+  } else {
+    console.info('Service worker not registered: insecure origin', location.protocol);
+  }
 }
     
     function setupPushRealtime() {
@@ -2435,34 +3075,36 @@ if ("serviceWorker" in navigator) {
     setupPushRealtime();
     
     
-    supabaseClient
-      .channel('push-info-channel')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'push_info',
-          filter: `user_id=eq.${currentUser.id}`
-        },
-        (payload) => {
-          console.log("📨 PUSH via Realtime empfangen:", payload);
+    if (currentUser) {
+      supabaseClient
+        .channel('push-info-channel')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'push_info',
+            filter: `user_id=eq.${currentUser.id}`
+          },
+          (payload) => {
+            console.log("📨 PUSH via Realtime empfangen:", payload);
 
-          const data = payload.new;
-          if (!data) return;
+            const data = payload.new;
+            if (!data) return;
 
-          try {
-            new Notification(data.title || "Neue Nachricht", {
-              body: data.body || ""
-            });
-            console.log("🔔 Notification erzeugt:", data.title, data.body);
+            try {
+              new Notification(data.title || "Neue Nachricht", {
+                body: data.body || ""
+              });
+              console.log("🔔 Notification erzeugt:", data.title, data.body);
 
-          } catch (e) {
-            console.error("❌ Notification error:", e);
+            } catch (e) {
+              console.error("❌ Notification error:", e);
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    }
       
       async function checkMedalScreen() {
         if (!currentUser) return;
@@ -2520,3 +3162,13 @@ if ("serviceWorker" in navigator) {
 </body>
 </html>
   
+
+  <style>
+    /* Expanded card: move counter to top-right */
+    .card.expanded .counter {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      bottom: auto;
+    }
+  </style>
