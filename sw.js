@@ -11,7 +11,6 @@ const ASSETS = [
   "/habits/",
   "/habits/index.html",
   "/habits/manifest.json",
-  "/habits/image.png",
   "/habits/image.png"
 ];
 
