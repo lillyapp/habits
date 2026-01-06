@@ -1394,7 +1394,7 @@ forgotPw.onclick = () => {
         <div class="card-face back">
 
           <!-- GPS AREA -->
-          <div class="quarter" id="gpsArea">
+          <div class="quarter" data-role="gpsArea">
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
               <i data-lucide="map-pin" style="width:28px;height:28px;color:#777;"></i>
 
@@ -1417,25 +1417,25 @@ forgotPw.onclick = () => {
           </div>
 
           <!-- UNDO / DECREMENT AREA -->
-          <div class="quarter" id="undoArea">
+          <div class="quarter" data-role="undoArea">
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
               <i data-lucide="timer-reset" style="width:28px;height:28px;color:#777;"></i>
             </div>
           </div>
 
           <!-- SQUARES-SUBTRACT AREA -->
-          <div class="quarter" id="collapseArea">
+          <div class="quarter" data-role="collapseArea">
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
               <i data-lucide="squares-subtract" style="width:28px;height:28px;color:#777;"></i>
             </div>
           </div>
 
           <!-- Counter & GPS Input -->
-          <div class="quarter" id="numAreaWrapper">
-            <div id="numArea">0</div>
+      <div class="quarter" data-role="numAreaWrapper">
+        <div data-role="numArea">0</div>
 
-            <input 
-              id="gpsInput"
+        <input 
+          data-role="gpsInput"
               type="text"
               placeholder="Adresse eingeben..."
               style="
@@ -1473,7 +1473,7 @@ forgotPw.onclick = () => {
           counter.style.display = "none";
         }
       }
-      const numArea = card.querySelector("#numArea");
+      const numArea = card.querySelector('[data-role="numArea"]');
 
       const line1 = card.querySelector(".gps-address-line1");
       const line2 = card.querySelector(".gps-address-line2");
@@ -1548,11 +1548,11 @@ forgotPw.onclick = () => {
     function attachCardLogic(card) {
       const input     = card.querySelector(".card-input");
       const counter   = card.querySelector(".counter");
-      const gpsArea   = card.querySelector("#gpsArea");
-      const numArea   = card.querySelector("#numArea");
-      const gpsInput  = card.querySelector("#gpsInput");
-      const undoArea  = card.querySelector("#undoArea");
-      const collapseArea = card.querySelector("#collapseArea");
+      const gpsArea   = card.querySelector('[data-role="gpsArea"]');
+      const numArea   = card.querySelector('[data-role="numArea"]');
+      const gpsInput  = card.querySelector('[data-role="gpsInput"]');
+      const undoArea  = card.querySelector('[data-role="undoArea"]');
+      const collapseArea = card.querySelector('[data-role="collapseArea"]');
 
       let swipeStartX = 0;
       let swipeEndX   = 0;
@@ -2461,47 +2461,6 @@ forgotPw.onclick = () => {
       if (error) console.error("saveHabit error:", error);
     }
 
-    // Add-Button: erstellt nur DB-Datensatz, niemals lokal
-    addBtnEl.addEventListener("click", async () => {
-      if (addBtnEl.dataset.mode === "stats") {
-        addBtnEl.dataset.mode = "main";
-        statsOpen = false;
-        gsap.to("#statsView",{top:"100svh",duration:0.42,ease:"power1.in"});
-        refreshAddButtonIcon();
-        return;
-      }
-
-      if (habits.length >= 3) return;
-
-      if (!currentUser) {
-        const { data } = await supabaseClient.auth.getUser();
-        currentUser = data.user;
-        if (!currentUser) return;
-      }
-
-      const { data, error } = await supabaseClient
-        .from("habits")
-        .insert({
-          user_id: currentUser.id,
-          title: "",
-          color: "#e4e4e4",
-          progress: 0,
-          goal: 1,
-          appear_once: false
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error("insert habit error:", error);
-        return;
-      }
-
-      habits.push(data);
-      const index = habits.length - 1;
-      createCardFromHabit(data, index, 0);
-      refreshAddButtonIcon();
-    });
 
   async function loadOtherUser() {
     if (!currentUser) return null;
