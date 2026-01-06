@@ -2883,6 +2883,20 @@ forgotPw.onclick = () => {
             );
           }
 
+          // 🔔 System notification: habits reset executed
+          try {
+            await supabaseClient
+              .from("notification_message")
+              .insert({
+                user_id: currentUser.id,
+                type: "system",
+                title: "Habits zurückgesetzt",
+                body: "Alle Habits wurden soeben zurückgesetzt.",
+                payload: { source: "stats_commit" }
+              });
+          } catch (e) {
+            console.error("notification insert failed:", e);
+          }
           await safeLoadHabits();
           await refreshStatsLive();
         },
