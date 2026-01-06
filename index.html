@@ -2515,74 +2515,86 @@ forgotPw.onclick = () => {
     return data || [];
   }
   
-  // ============================
-  // STREAK BUTTON LONG-PRESS LOGIC
-  // ============================
-  let streakPressTimer = null;
-  const STREAK_LONGPRESS_MS = 1200;
-  document.addEventListener("DOMContentLoaded", () => {
-    // Attach long-press detection to the blue streak button
-    const blueBtn = document.querySelector('.stats-reset-btn.blue');
-    if (!blueBtn) return;
+// ============================
+// STREAK BUTTON LONG-PRESS LOGIC (FINAL)
+// ============================
+document.addEventListener("DOMContentLoaded", () => {
+  const blueBtn = document.querySelector(".stats-reset-btn.blue");
+  if (!blueBtn) return;
 
-    let fired = false;
-    let timeout = null;
-    function clearStreakLongPress() {
-      if (timeout) clearTimeout(timeout);
-      timeout = null;
-      fired = false;
-    }
+  const HOLD_MS = 1200;
+  let holdTimer = null;
+  let fired = false;
 
-    blueBtn.addEventListener('pointerdown', () => {
-      clearStreakLongPress();
-      timeout = setTimeout(async () => {
-        if (fired) return;
-        fired = true;
-        clearStreakLongPress();
-        // Call existing streak check/reset logic (reuse function)
-        if (typeof checkWeeklyStreakAndReset === "function") {
-          await checkWeeklyStreakAndReset();
+  const clearHold = () => {
+    if (holdTimer) clearTimeout(holdTimer);
+    holdTimer = null;
+    fired = false;
+  };
+
+  blueBtn.addEventListener("pointerdown", () => {
+    clearHold();
+    holdTimer = setTimeout(async () => {
+      if (fired) return;
+      fired = true;
+      clearHold();
+
+      // 1. Existing streak / reset logic
+      if (typeof checkWeeklyStreakAndReset === "function") {
+        await checkWeeklyStreakAndReset();
+      }
+
+      // 2. Determine weaker user and create notification
+      try {
+        const targetUserId = await getWeakerUserId();
+        if (!targetUserId) return;
+
+        const { error } = await supabaseClient
+          .from("notification_message")
+          .insert({
+            user_id: targetUserId,
+            type: "WARNING",
+            title: "Achtung",
+            body: "Dein Fortschritt liegt aktuell hinter dem deines Partners."
+          });
+
+        if (error) {
+          console.error("notification insert failed:", error);
+        } else {
+          console.log("notification inserted for user:", targetUserId);
         }
-        await createNotificationForWeakerUser();
-      }, STREAK_LONGPRESS_MS);
-    });
-    blueBtn.addEventListener('pointerup', clearStreakLongPress);
-    blueBtn.addEventListener('pointerleave', clearStreakLongPress);
+      } catch (err) {
+        console.error("long-press notification error:", err);
+      }
+    }, HOLD_MS);
   });
 
-  // Helper to get the weaker user id
-  async function getWeakerUserId() {
-    if (!currentUser) return null;
+  blueBtn.addEventListener("pointerup", clearHold);
+  blueBtn.addEventListener("pointerleave", clearHold);
+  blueBtn.addEventListener("pointercancel", clearHold);
+});
 
-    const other = await loadOtherUser();
-    if (!other) return null;
+// ============================
+// Helper: weaker user by summed progress
+// ============================
+async function getWeakerUserId() {
+  if (!currentUser) return null;
 
-    const myHabits = await loadHabitsForUser(currentUser.id);
-    const otherHabits = await loadHabitsForUser(other.id);
+  const other = await loadOtherUser();
+  if (!other) return null;
 
-    const sum = hs => hs.reduce((a,h)=>a+(parseInt(h.progress)||0),0);
+  const myHabits = await loadHabitsForUser(currentUser.id);
+  const otherHabits = await loadHabitsForUser(other.id);
 
-    const myScore = sum(myHabits);
-    const otherScore = sum(otherHabits);
+  const sumProgress = (hs) =>
+    hs.reduce((acc, h) => acc + (parseInt(h.progress) || 0), 0);
 
-    return myScore <= otherScore ? currentUser.id : other.id;
-  }
+  const myScore = sumProgress(myHabits);
+  const otherScore = sumProgress(otherHabits);
 
-  // Create notification for weaker user
-  async function createNotificationForWeakerUser() {
-    const targetUserId = await getWeakerUserId();
-    if (!targetUserId) return;
-
-    const { error } = await supabaseClient
-      .from("notification_message")
-      .insert({
-        user_id: targetUserId,
-        type: "WARNING",
-        body: "Dein Fortschritt liegt aktuell hinter dem deines Partners."
-      });
-
-    if (error) console.error("notification insert error:", error);
-  }
+  // weaker = lower or equal score
+  return myScore <= otherScore ? currentUser.id : other.id;
+}
 
   function barsHtml(habits) {
     let html = "";
