@@ -3219,7 +3219,7 @@ forgotPw.onclick = () => {
       });
 
       const { error } = await supabaseClient
-        .from("push_subscriptions")
+        .from("push_subscription")
         .insert({
           user_id: currentUser.id,
           endpoint: sub.endpoint,
