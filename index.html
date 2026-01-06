@@ -2515,64 +2515,72 @@ forgotPw.onclick = () => {
     return data || [];
   }
   
-// ============================
-// STREAK BUTTON LONG-PRESS LOGIC (FINAL)
-// ============================
-document.addEventListener("DOMContentLoaded", () => {
-  const blueBtn = document.querySelector(".stats-reset-btn.blue");
-  if (!blueBtn) return;
+  // ============================
+  // STREAK BUTTON LONG-PRESS LOGIC (FINAL)
+  // ============================
+  document.addEventListener("DOMContentLoaded", () => {
+    const blueBtn = document.querySelector(".stats-reset-btn.blue");
+    if (!blueBtn) return;
 
-  const HOLD_MS = 1200;
-  let holdTimer = null;
-  let fired = false;
+    const HOLD_MS = 1200;
+    let holdTimer = null;
+    let fired = false;
 
-  const clearHold = () => {
-    if (holdTimer) clearTimeout(holdTimer);
-    holdTimer = null;
-    fired = false;
-  };
+    const clearHold = () => {
+      if (holdTimer) clearTimeout(holdTimer);
+      holdTimer = null;
+      fired = false;
+    };
 
-  blueBtn.addEventListener("pointerdown", () => {
-    clearHold();
-    holdTimer = setTimeout(async () => {
-      if (fired) return;
-      fired = true;
+    blueBtn.addEventListener("pointerdown", () => {
       clearHold();
+      holdTimer = setTimeout(async () => {
+        if (fired) return;
+        fired = true;
+        clearHold();
 
-      // 1. Existing streak / reset logic
-      if (typeof checkWeeklyStreakAndReset === "function") {
-        await checkWeeklyStreakAndReset();
-      }
-
-      // 2. Determine weaker user and create notification
-      try {
-        const targetUserId = await getWeakerUserId();
-        if (!targetUserId) return;
-
-        const { error } = await supabaseClient
-          .from("notification_message")
-          .insert({
-            user_id: targetUserId,
-            type: "WARNING",
-            title: "Achtung",
-            body: "Dein Fortschritt liegt aktuell hinter dem deines Partners."
-          });
-
-        if (error) {
-          console.error("notification insert failed:", error);
-        } else {
-          console.log("notification inserted for user:", targetUserId);
+        // 1. bestehende Reset-Logik (falls vorhanden)
+        if (typeof checkWeeklyStreakAndReset === "function") {
+          await checkWeeklyStreakAndReset();
         }
-      } catch (err) {
-        console.error("long-press notification error:", err);
-      }
-    }, HOLD_MS);
-  });
 
-  blueBtn.addEventListener("pointerup", clearHold);
-  blueBtn.addEventListener("pointerleave", clearHold);
-  blueBtn.addEventListener("pointercancel", clearHold);
-});
+        // 2. 🔔 GARANTIERTER INSERT in notification_message
+        try {
+          const { data: authData } = await supabaseClient.auth.getUser();
+          const user = authData?.user;
+          if (!user) {
+            console.error("No authenticated user");
+            return;
+          }
+
+          const { data, error } = await supabaseClient
+            .from("notification_message")
+            .insert({
+              user_id: user.id,
+              type: "WARNING",
+              title: "Habits zurückgesetzt",
+              body: "Die Habits wurden soeben zurückgesetzt."
+            })
+            .select()
+            .single();
+
+          if (error) {
+            console.error("❌ notification insert failed:", error);
+          } else {
+            console.log("✅ notification created:", data);
+          }
+
+        } catch (err) {
+          console.error("❌ unexpected notification error:", err);
+        }
+
+      }, HOLD_MS);
+    });
+
+    blueBtn.addEventListener("pointerup", clearHold);
+    blueBtn.addEventListener("pointerleave", clearHold);
+    blueBtn.addEventListener("pointercancel", clearHold);
+  });
 
 // ============================
 // Helper: weaker user by summed progress
