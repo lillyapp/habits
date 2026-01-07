@@ -617,6 +617,18 @@
         animation: bellShake 1.2s ease-in-out infinite;
         transform-origin: 50% 0%;
       }
+    /* ================================
+       Hide streak indicators (visual only)
+       ================================ */
+    .streak,
+    .streak-value,
+    .streak-counter,
+    [data-streak],
+    #streakView,
+    #streakCounter,
+    .streak-badge {
+      display: none !important;
+    }
   </style>
   <!-- Counter positioning fix for expanded/front mode -->
   <!-- (removed previous override, see below for new state-based CSS) -->
@@ -811,6 +823,44 @@
       "#ea580c","#ca8a04","#4d7c0f","#15803d","#047857","#0f766e",
       "#0369a1","#1d4ed8","#4338ca","#6d28d9","#7e22ce","#be185d"
     ];
+
+    // ================================
+    // Motivational notification texts
+    // ================================
+
+    // When the user is behind (passive-aggressive but caring)
+    const MOTIVATION_TEXTS_TRAILING = [
+      "Heute war noch Luft nach oben. Morgen zählt wieder.",
+      "Du weißt selbst: Du kannst das besser. Und du wirst es zeigen.",
+      "Nicht schlimm. Aber wir beide wissen, dass da mehr drin ist.",
+      "Ein kleiner Hänger ist kein Rückschritt. Aufstehen lohnt sich.",
+      "Du bist nicht raus – du bist nur kurz langsamer.",
+      "Das Ziel ist noch da. Es wartet geduldig auf dich.",
+      "Kein Drama. Aber auch kein Grund stehenzubleiben.",
+      "Andere ziehen vorbei – noch. Das ist kein Urteil.",
+      "Du hast schon bewiesen, dass du es kannst.",
+      "Morgen ist ein verdammt guter Zeitpunkt, um zurückzukommen."
+    ];
+
+    // When the user is leading (positive reinforcement)
+    const MOTIVATION_TEXTS_LEADING = [
+      "Stark. Genau so entsteht Konstanz.",
+      "Du führst – und zwar verdient.",
+      "Das sieht nach echter Routine aus.",
+      "Sehr gut. Das ist kein Zufall mehr.",
+      "Du setzt gerade den Maßstab.",
+      "Sauber durchgezogen. Respekt.",
+      "So fühlt sich Dranbleiben an.",
+      "Du machst es vor. Weiter so.",
+      "Konsequent. Und genau deshalb vorne.",
+      "Das ist Momentum. Nutz es."
+    ];
+
+    // Helper to get a random text from a pool
+    function pickRandomMotivationText(pool) {
+      if (!Array.isArray(pool) || pool.length === 0) return "";
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
     
     addBtnEl.addEventListener("click", async () => {
 
@@ -1048,6 +1098,7 @@ forgotPw.onclick = () => {
 
       const { data } = await supabaseClient.auth.getUser();
       currentUser = data.user;
+      await ensureStreakViewRow();
       await ensurePushInfoRow();
       await loadUnreadNotificationCount();
       refreshBellIcon();
@@ -1072,6 +1123,8 @@ forgotPw.onclick = () => {
 
       if (data.user) {
         currentUser = data.user;
+        await ensureOwnStreakRow();
+        await ensureStreakViewRow();
         await ensurePushInfoRow();
         await loadUnreadNotificationCount();
         refreshBellIcon();
@@ -1096,7 +1149,15 @@ forgotPw.onclick = () => {
     })();
     
 
-    
+    async function ensureOwnStreakRow() {
+      if (!currentUser) return;
+
+      await supabaseClient
+        .from("streak_view")
+        .insert({ user_id: currentUser.id })
+        .select()
+        .maybeSingle();
+    }
     
 
     function setupRealtime() {
@@ -1110,7 +1171,7 @@ forgotPw.onclick = () => {
         )
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'streaks' },
+          { event: '*', schema: 'public', table: 'streak_view' },
           async () => {
             if (statsOpen) await refreshStatsLive();
           }
@@ -1226,6 +1287,26 @@ forgotPw.onclick = () => {
         });
 
       if (error) console.error("push_info upsert error:", error);
+    }
+    
+    async function ensureStreakViewRow() {
+      if (!currentUser) return;
+
+      const { error } = await supabaseClient
+        .from("streak_view")
+        .upsert(
+          {
+            user_id: currentUser.id,
+            current_streak: 0,
+            longest_streak: 0,
+            showMedal: 0
+          },
+          { onConflict: "user_id" }
+        );
+
+      if (error) {
+        console.error("ensureStreakViewRow error:", error);
+      }
     }
 
     async function loadUnreadNotificationCount() {
@@ -2625,22 +2706,22 @@ forgotPw.onclick = () => {
     return html;
   }
     
-        async function loadStreakForUser(userId) {
-          if (!userId) return 0;
+    async function loadStreakForUser(userId) {
+      if (!userId) return 0;
 
-          const { data, error } = await supabaseClient
-            .from("streaks")
-            .select("current_streak")
-            .eq("user_id", userId)
-            .maybeSingle();
+      const { data, error } = await supabaseClient
+        .from("streak_view")
+        .select("current_streak")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-          if (error) {
-            console.error("loadStreakForUser error:", error);
-            return 0;
-          }
+      if (error) {
+        console.error("loadStreakForUser error:", error);
+        return 0;
+      }
 
-          return data?.current_streak ?? 0;
-        }
+      return data?.current_streak ?? 0;
+    }
     
     async function renderNotifications() {
       const rows = await loadNotifications(30);
@@ -2877,10 +2958,10 @@ forgotPw.onclick = () => {
               });
 
             const { data: streakRow, error: readErr } = await supabaseClient
-              .from("streaks")
+              .from("streak_view")
               .select("current_streak, longest_streak")
               .eq("user_id", uid)
-              .maybeSingle();
+              .single();
 
             if (readErr) {
               console.error("streak read error", readErr);
@@ -2894,7 +2975,7 @@ forgotPw.onclick = () => {
             const nextLongest = Math.max(longest, nextCurrent);
 
             await supabaseClient
-              .from("streaks")
+              .from("streak_view")
               .upsert(
                 {
                   user_id: uid,
@@ -3717,7 +3798,7 @@ if ("serviceWorker" in navigator) {
         if (!isMonday) return;
 
         const { data, error } = await supabaseClient
-          .from("streaks")
+          .from("streak_view")
           .select("current_streak, showMedal")
           .eq("user_id", currentUser.id)
           .maybeSingle();
@@ -3753,7 +3834,7 @@ if ("serviceWorker" in navigator) {
 
           // Nach OK immer showMedal = 7 setzen
           await supabaseClient
-            .from("streaks")
+            .from("streak_view")
             .update({ showMedal: 7 })
             .eq("user_id", currentUser.id);
         };
