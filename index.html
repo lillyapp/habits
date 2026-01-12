@@ -372,6 +372,177 @@
       color: var(--c-text) !important;
     }
 
+    .desktop-workspace {
+      width:100%;
+    }
+
+    .desktop-left,
+    .desktop-right {
+      width:100%;
+    }
+
+    .desktop-divider {
+      display:none;
+    }
+
+    .desktop-actions {
+      display:none;
+    }
+
+    @media (min-width: 768px) {
+      #appPage {
+        padding:32px 24px;
+      }
+
+      .desktop-workspace {
+        width:min(940px, 100%);
+        margin:0 auto;
+        display:grid;
+        grid-template-columns:minmax(0, 1fr) 1px minmax(0, 1fr);
+        gap:32px;
+        align-items:stretch;
+        padding:24px 20px;
+        box-sizing:border-box;
+      }
+
+      .desktop-left {
+        display:flex;
+        flex-direction:column;
+        gap:16px;
+        align-items:stretch;
+        align-self:stretch;
+      }
+
+      .desktop-right {
+        display:flex;
+        flex-direction:column;
+        margin-top:0;
+      }
+
+      .desktop-left {
+        min-width:0;
+      }
+
+      .desktop-right {
+        min-width:0;
+      }
+
+      .desktop-divider {
+        display:block;
+        background:#d4d4d4;
+        border-radius:999px;
+        height:100%;
+        align-self:stretch;
+      }
+
+      .desktop-actions {
+        display:flex;
+        align-items:center;
+        gap:10px;
+      }
+
+      .desktop-icon-btn {
+        width:44px;
+        height:44px;
+        border-radius:999px;
+        border:none;
+        background:transparent;
+        color:var(--c-text);
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        cursor:pointer;
+        box-shadow:none;
+        padding:0;
+      }
+
+      .desktop-icon-btn svg {
+        width:22px;
+        height:22px;
+      }
+
+      .page {
+        padding:0;
+        padding-bottom:0;
+        gap:12px;
+        flex:1;
+      }
+
+      .cards {
+        flex:1;
+        height:auto;
+        display:flex;
+        flex-direction:column;
+      }
+
+      .slot {
+        min-height:0;
+        flex:1;
+      }
+
+      .slot {
+        min-height:180px;
+        height:180px;
+        flex:0 0 180px;
+      }
+
+      .card {
+        padding:20px;
+        border-radius:20px;
+      }
+
+      .card-face,
+      .back {
+        padding:20px;
+        border-radius:20px;
+      }
+
+      .card-input {
+        font-size:1.7rem;
+      }
+
+      .counter {
+        font-size:1rem;
+        padding:4px 10px;
+      }
+
+      .stats-name {
+        font-size:1.7rem;
+      }
+
+      .stat-bar {
+        height:42px;
+      }
+
+      .stat-calendar {
+        --cal-day: 24px;
+        --cal-gap: 6px;
+      }
+
+      .notification-title {
+        font-size:1.7rem;
+        margin-bottom:18px;
+      }
+
+      .notification-item {
+        font-size:0.95rem;
+        padding:12px 14px;
+      }
+
+      .buttons-row {
+        display:none;
+      }
+
+      #statsView {
+        position:relative;
+        left:auto;
+        right:auto;
+        top:0;
+        bottom:auto;
+        padding:0;
+        overflow:visible;
+      }
+    }
 
     /* Stats View */
     #statsView {
@@ -789,11 +960,27 @@
         font-weight:600;
       ">OK</button>
     </div>
-  <div class="page">
-    <div class="cards">
-      <div class="slot" id="slot1"></div>
-      <div class="slot" id="slot2"></div>
-      <div class="slot" id="slot3"></div>
+    <div class="desktop-workspace">
+      <div class="desktop-left">
+      <div class="desktop-actions">
+        <button id="remindersDesktopBtn" class="desktop-icon-btn" aria-label="Reminders">
+          <i data-lucide="bell"></i>
+        </button>
+        <button id="logoutDesktopBtn" class="desktop-icon-btn" aria-label="Abmelden">
+          <i data-lucide="door-closed-locked"></i>
+        </button>
+      </div>
+      <div class="page">
+        <div class="cards">
+          <div class="slot" id="slot1"></div>
+          <div class="slot" id="slot2"></div>
+          <div class="slot" id="slot3"></div>
+        </div>
+      </div>
+    </div>
+    <div class="desktop-divider"></div>
+    <div class="desktop-right">
+      <div id="statsView"></div>
     </div>
   </div>
 
@@ -811,7 +998,6 @@
     </button>
   </div>
 
-  <div id="statsView"></div>
   <div id="notificationsView"></div>
   <!-- Dünner Shake-Delete-Balken -->
   <div id="deletePanel">
@@ -846,10 +1032,18 @@
     const deleteAllBtn  = document.getElementById("deleteAllBtn");
     const bellBtnEl = document.getElementById("bellBtn");
     const notificationsViewEl = document.getElementById("notificationsView");
+    const remindersDesktopBtn = document.getElementById("remindersDesktopBtn");
+    const logoutDesktopBtn = document.getElementById("logoutDesktopBtn");
    
   document.addEventListener("DOMContentLoaded", () => {
     refreshBellIcon();
     checkForAppUpdate();
+    window.addEventListener("resize", () => {
+      if (currentUser) ensureDesktopStats();
+      updateDesktopLayoutHeights();
+      alignDesktopStatsTop();
+      alignDesktopDividerHeight();
+    });
   });
 
     const slotOrder = ["slot3","slot2","slot1"];
@@ -1046,6 +1240,24 @@
       refreshBellIcon();
     });
 
+    if (remindersDesktopBtn) {
+      remindersDesktopBtn.addEventListener("click", () => {
+        bellBtnEl.click();
+      });
+    }
+
+    if (logoutDesktopBtn) {
+      logoutDesktopBtn.addEventListener("click", async () => {
+        stopNotificationPolling();
+        try {
+          await supabaseClient.auth.signOut();
+        } catch (e) {
+          console.error("logout error:", e);
+        }
+        window.location.reload();
+      });
+    }
+
 
     function darken(hex, f=0.55) {
       let r = parseInt(hex.slice(1,3),16)*f|0;
@@ -1080,6 +1292,108 @@
         ease:"sine.inOut",
         onComplete: () => { loginScreen.style.display = "none"; }
       });
+    }
+
+    function updateDesktopLayoutHeights() {
+      const isDesktop = window.matchMedia("(min-width: 768px)").matches;
+      const leftCol = document.querySelector(".desktop-left");
+      const cardsEl = document.querySelector(".desktop-left .cards");
+      const btnEl = remindersDesktopBtn;
+      const workspaceEl = document.querySelector(".desktop-workspace");
+
+      if (!leftCol || !cardsEl || !workspaceEl) return;
+      if (!isDesktop) {
+        cardsEl.style.height = "";
+        workspaceEl.style.height = "";
+        return;
+      }
+
+      const gap = parseFloat(getComputedStyle(leftCol).rowGap || getComputedStyle(leftCol).gap || 0);
+      const btnHeight = btnEl ? btnEl.getBoundingClientRect().height : 0;
+
+      let statsHeight = statsViewEl ? statsViewEl.scrollHeight : 0;
+      if (statsViewEl) {
+        const bars = statsViewEl.querySelectorAll(".stat-bar");
+        const lastBar = bars.length ? bars[bars.length - 1] : null;
+        if (lastBar) {
+          const statsRect = statsViewEl.getBoundingClientRect();
+          const barRect = lastBar.getBoundingClientRect();
+          statsHeight = Math.max(0, barRect.bottom - statsRect.top);
+        }
+      }
+
+      workspaceEl.style.height = `${statsHeight}px`;
+      const target = Math.max(0, statsHeight - btnHeight - gap);
+
+      cardsEl.style.height = `${target}px`;
+    }
+
+    function alignDesktopDividerHeight() {
+      const isDesktop = window.matchMedia("(min-width: 768px)").matches;
+      const dividerEl = document.querySelector(".desktop-divider");
+      if (!dividerEl || !statsViewEl) return;
+
+      if (!isDesktop) {
+        dividerEl.style.height = "";
+        return;
+      }
+
+      const statsRect = statsViewEl.getBoundingClientRect();
+      const statsCommitBtn = document.getElementById("statsCommitBtn");
+      const commitRect = statsCommitBtn ? statsCommitBtn.getBoundingClientRect() : null;
+
+      let height = statsViewEl.scrollHeight;
+      if (commitRect) {
+        height = Math.max(0, commitRect.bottom - statsRect.top);
+      }
+      dividerEl.style.height = `${height}px`;
+    }
+
+    function alignDesktopStatsTop() {
+      const isDesktop = window.matchMedia("(min-width: 768px)").matches;
+      if (!isDesktop || !statsViewEl || !remindersDesktopBtn) {
+        if (statsViewEl) statsViewEl.style.marginTop = "";
+        return;
+      }
+
+      const workspaceEl = document.querySelector(".desktop-workspace");
+      if (!workspaceEl) return;
+
+      const workspaceRect = workspaceEl.getBoundingClientRect();
+      const btnRect = remindersDesktopBtn.getBoundingClientRect();
+      const statsRect = statsViewEl.getBoundingClientRect();
+
+      const desiredTop = btnRect.top - workspaceRect.top;
+      const currentTop = statsRect.top - workspaceRect.top;
+      const offset = desiredTop - currentTop;
+
+      statsViewEl.style.marginTop = `${offset}px`;
+    }
+    
+    async function ensureDesktopStats() {
+      const isDesktop = window.matchMedia("(min-width: 768px)").matches;
+      if (isDesktop) {
+        statsOpen = true;
+        if (statsViewEl) {
+          statsViewEl.style.position = "relative";
+          statsViewEl.style.top = "0";
+          statsViewEl.style.bottom = "auto";
+          statsViewEl.style.left = "auto";
+          statsViewEl.style.right = "auto";
+        }
+        await refreshStatsLive();
+        updateDesktopLayoutHeights();
+        alignDesktopStatsTop();
+        alignDesktopDividerHeight();
+      } else if (statsViewEl) {
+        statsViewEl.style.position = "";
+        statsViewEl.style.top = "100svh";
+        statsViewEl.style.bottom = "0";
+        statsViewEl.style.left = "0";
+        statsViewEl.style.right = "0";
+        statsViewEl.style.marginTop = "";
+        alignDesktopDividerHeight();
+      }
     }
 
     // === Passwort-Reset-Funktionen (müssen VOR dem Login-Block stehen) ===
@@ -1191,6 +1505,7 @@ forgotPw.onclick = () => {
       const subline = document.getElementById("loginSubline");
       if (subline) subline.style.display = "none";
       showAppAfterDataLoaded();
+      await ensureDesktopStats();
       await checkMedalScreen();
       const qr = getQRParam();
       if (qr) await processQRFlow(qr);
@@ -1212,6 +1527,7 @@ forgotPw.onclick = () => {
 
         await safeLoadHabits();
         showAppAfterDataLoaded();
+        await ensureDesktopStats();
         await checkMedalScreen();
         const qr = getQRParam();
         if (qr) await processQRFlow(qr);
@@ -3164,6 +3480,9 @@ forgotPw.onclick = () => {
       };
       setupStatCalendarInteractions();
       refreshStatsCalendarData();
+      updateDesktopLayoutHeights();
+      alignDesktopStatsTop();
+      alignDesktopDividerHeight();
       // --- NAME-EDITIERUNG AKTIVIEREN ---
       const editableName = document.getElementById("editableName");
 
