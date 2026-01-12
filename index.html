@@ -316,10 +316,17 @@
         color: var(--c-text);
       }
 
-    .counter {
+    .counter-wrap {
       position: absolute;
       bottom: 24px;
       right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 2;
+    }
+
+    .counter {
       padding: 4px 12px;
       border-radius: 999px;
       font-size: 1.2rem;
@@ -330,6 +337,45 @@
       background: #ffffff;
       color: #000000;
       border: 2px solid #000000;
+    }
+
+    .card-flip-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 2px solid currentColor;
+      background: transparent;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .card-flip-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .card-flip-back {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      color: #666;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .card-flip-back svg {
+      width: 18px;
+      height: 18px;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -461,6 +507,30 @@
         height:22px;
       }
 
+      .desktop-commit-btn {
+        height:44px;
+        min-width:44px;
+        padding:0 12px;
+        border-radius:12px;
+        border:2px solid #1d4ed8;
+        background:transparent;
+        color:#1d4ed8;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        cursor:pointer;
+        position:relative;
+        overflow:hidden;
+      }
+
+      .desktop-commit-btn .stats-reset-progress {
+        background: rgba(29,78,216,0.25);
+      }
+
+      .stats-reset-wrap {
+        display:none;
+      }
+
       .page {
         padding:0;
         padding-bottom:0;
@@ -477,13 +547,8 @@
 
       .slot {
         min-height:0;
-        flex:1;
-      }
-
-      .slot {
-        min-height:180px;
-        height:180px;
-        flex:0 0 180px;
+        height: var(--desktop-slot-height, 180px);
+        flex:0 0 var(--desktop-slot-height, 180px);
       }
 
       .card {
@@ -504,6 +569,14 @@
       .counter {
         font-size:1rem;
         padding:4px 10px;
+      }
+
+      .card-flip-btn {
+        display:inline-flex;
+      }
+
+      .card-flip-back {
+        display:inline-flex;
       }
 
       .stats-name {
@@ -969,6 +1042,12 @@
         <button id="logoutDesktopBtn" class="desktop-icon-btn" aria-label="Abmelden">
           <i data-lucide="door-closed-locked"></i>
         </button>
+        <button id="statsCommitBtnDesktop" class="desktop-commit-btn" aria-label="Commit">
+          <div class="stats-reset-progress" id="statsCommitProgressDesktop"></div>
+          <div class="stats-reset-btn-content" id="statsCommitContentDesktop">
+            <i data-lucide="check-circle-2"></i>
+          </div>
+        </button>
       </div>
       <div class="page">
         <div class="cards">
@@ -1034,7 +1113,12 @@
     const notificationsViewEl = document.getElementById("notificationsView");
     const remindersDesktopBtn = document.getElementById("remindersDesktopBtn");
     const logoutDesktopBtn = document.getElementById("logoutDesktopBtn");
+    const statsCommitBtnDesktop = document.getElementById("statsCommitBtnDesktop");
+    const statsCommitProgressDesktop = document.getElementById("statsCommitProgressDesktop");
+    const statsCommitContentDesktop = document.getElementById("statsCommitContentDesktop");
    
+    const isDesktopView = () => window.matchMedia("(min-width: 768px)").matches;
+
   document.addEventListener("DOMContentLoaded", () => {
     refreshBellIcon();
     checkForAppUpdate();
@@ -1298,18 +1382,20 @@
       const isDesktop = window.matchMedia("(min-width: 768px)").matches;
       const leftCol = document.querySelector(".desktop-left");
       const cardsEl = document.querySelector(".desktop-left .cards");
-      const btnEl = remindersDesktopBtn;
+      const actionsEl = document.querySelector(".desktop-actions");
       const workspaceEl = document.querySelector(".desktop-workspace");
 
       if (!leftCol || !cardsEl || !workspaceEl) return;
       if (!isDesktop) {
         cardsEl.style.height = "";
+        cardsEl.style.removeProperty("--desktop-slot-height");
         workspaceEl.style.height = "";
         return;
       }
 
       const gap = parseFloat(getComputedStyle(leftCol).rowGap || getComputedStyle(leftCol).gap || 0);
-      const btnHeight = btnEl ? btnEl.getBoundingClientRect().height : 0;
+      const actionsHeight = actionsEl ? actionsEl.getBoundingClientRect().height : 0;
+      const cardsGap = parseFloat(getComputedStyle(cardsEl).rowGap || getComputedStyle(cardsEl).gap || 0);
 
       let statsHeight = statsViewEl ? statsViewEl.scrollHeight : 0;
       if (statsViewEl) {
@@ -1323,9 +1409,12 @@
       }
 
       workspaceEl.style.height = `${statsHeight}px`;
-      const target = Math.max(0, statsHeight - btnHeight - gap);
+      const target = Math.max(0, statsHeight - actionsHeight - gap);
+      const slotHeight = Math.max(120, (target - cardsGap * 2) / 3);
+      const totalCardsHeight = slotHeight * 3 + cardsGap * 2;
 
-      cardsEl.style.height = `${target}px`;
+      cardsEl.style.setProperty("--desktop-slot-height", `${slotHeight}px`);
+      cardsEl.style.height = `${totalCardsHeight}px`;
     }
 
     function alignDesktopDividerHeight() {
@@ -1339,12 +1428,13 @@
       }
 
       const statsRect = statsViewEl.getBoundingClientRect();
-      const statsCommitBtn = document.getElementById("statsCommitBtn");
-      const commitRect = statsCommitBtn ? statsCommitBtn.getBoundingClientRect() : null;
+      const bars = statsViewEl.querySelectorAll(".stat-bar");
+      const lastBar = bars.length ? bars[bars.length - 1] : null;
 
       let height = statsViewEl.scrollHeight;
-      if (commitRect) {
-        height = Math.max(0, commitRect.bottom - statsRect.top);
+      if (lastBar) {
+        const barRect = lastBar.getBoundingClientRect();
+        height = Math.max(0, barRect.bottom - statsRect.top);
       }
       dividerEl.style.height = `${height}px`;
     }
@@ -1840,7 +1930,12 @@ forgotPw.onclick = () => {
       <div class="card-face front">
         <div class="front-header">
           <div class="card-input" contenteditable="true" data-placeholder="Titel eingeben..."></div>
-          <div class="counter counter-kcal" style="display:none;"></div>
+          <div class="counter-wrap">
+            <div class="counter counter-kcal" style="display:none;"></div>
+            <button class="card-flip-btn" aria-label="Karte umdrehen">
+              <i data-lucide="eye"></i>
+            </button>
+          </div>
         </div>
 
         <div class="expand-area" style="display:none;">
@@ -1853,6 +1948,9 @@ forgotPw.onclick = () => {
       </div>
 
         <div class="card-face back">
+          <button class="card-flip-back" aria-label="Zurück">
+            <i data-lucide="corner-up-left"></i>
+          </button>
 
           <!-- GPS AREA -->
           <div class="quarter" id="gpsArea">
@@ -1919,6 +2017,7 @@ forgotPw.onclick = () => {
       // --- DOM REFS ---
       const input   = card.querySelector(".card-input");
       const counter = card.querySelector(".counter");
+      const flipBtn = card.querySelector(".card-flip-btn");
       const isQR = qrEnabled;
       const kcalTarget = 21000;
 
@@ -1978,6 +2077,7 @@ forgotPw.onclick = () => {
         card.dataset.active   = "false";
         card.dataset.color    = "#e4e4e4";
       }
+      if (flipBtn) flipBtn.style.color = input.style.color || "#666";
 
       // === Animation ===
       gsap.fromTo(card, { y:-80, opacity:0 }, {
@@ -2014,6 +2114,8 @@ forgotPw.onclick = () => {
       const gpsInput  = card.querySelector("#gpsInput");
       const undoArea  = card.querySelector("#undoArea");
       const collapseArea = card.querySelector("#collapseArea");
+      const flipBtn = card.querySelector(".card-flip-btn");
+      const flipBackBtn = card.querySelector(".card-flip-back");
 
       let swipeStartX = 0;
       let swipeEndX   = 0;
@@ -2040,6 +2142,28 @@ forgotPw.onclick = () => {
           gsap.to(card,{ rotationY:0, duration:0.48, ease:"sine.inOut" });
         }
       });
+
+      if (flipBtn) {
+        flipBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (isDesktopView()) {
+            card.style.transform = "rotateY(180deg)";
+          } else {
+            gsap.to(card,{ rotationY:180, duration:0.48, ease:"sine.inOut" });
+          }
+        });
+      }
+
+      if (flipBackBtn) {
+        flipBackBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (isDesktopView()) {
+            card.style.transform = "rotateY(0deg)";
+          } else {
+            gsap.to(card,{ rotationY:0, duration:0.48, ease:"sine.inOut" });
+          }
+        });
+      }
 
       // ======================================
       // NUMMER / GOAL ÄNDERN (NICHT BEI QR)
@@ -2405,6 +2529,8 @@ forgotPw.onclick = () => {
         const titleColor = (titleEl && titleEl.style && titleEl.style.color)
           ? titleEl.style.color
           : darken(card.dataset.color || '#e4e4e4');
+        const flipBtn = card.querySelector('.card-flip-btn');
+        if (flipBtn) flipBtn.style.color = titleColor;
 
         card.querySelectorAll('.subtask-title').forEach(el => {
           el.style.color = titleColor;
@@ -2824,6 +2950,7 @@ forgotPw.onclick = () => {
           return;
         }
       }
+      if (flipBtn) flipBtn.style.color = input.style.color || "#666";
 
       card.dataset.progress = progress;
       card.dataset.active   = active ? "true" : "false";
@@ -2834,6 +2961,7 @@ forgotPw.onclick = () => {
         card.querySelectorAll('.subtask-title').forEach(el => { el.style.color = titleColor; });
         card.querySelectorAll('.subtask i').forEach(icon => { icon.style.color = titleColor; });
         const divider = card.querySelector('.expand-divider'); if (divider) divider.style.background = titleColor;
+        if (flipBtn) flipBtn.style.color = titleColor;
       } catch (e) { /* ignore if elements missing */ }
 
       if (goal >= 2) {
@@ -3458,17 +3586,19 @@ forgotPw.onclick = () => {
 
         html += barsHtml(otherHabits, "other");
 
-        // Two buttons side-by-side with equal width
-        html += `
-          <div class="stats-reset-wrap" style="gap:12px;">
-            <button id="statsCommitBtn" class="stats-reset-btn blue">
-              <div class="stats-reset-progress" id="statsCommitProgress"></div>
-              <div class="stats-reset-btn-content" id="statsCommitContent">
-                <i data-lucide="check-circle-2"></i>
-              </div>
-            </button>
-          </div>
-        `;
+        const showCommitInStats = !isDesktopView();
+        if (showCommitInStats) {
+          html += `
+            <div class="stats-reset-wrap" style="gap:12px;">
+              <button id="statsCommitBtn" class="stats-reset-btn blue">
+                <div class="stats-reset-progress" id="statsCommitProgress"></div>
+                <div class="stats-reset-btn-content" id="statsCommitContent">
+                  <i data-lucide="check-circle-2"></i>
+                </div>
+              </button>
+            </div>
+          `;
+        }
       }
 
       statsViewEl.innerHTML = html;
@@ -3493,6 +3623,8 @@ forgotPw.onclick = () => {
       const statsCommitBtn = document.getElementById("statsCommitBtn");
       const statsCommitProgress = document.getElementById("statsCommitProgress");
       const statsCommitContent = document.getElementById("statsCommitContent");
+      const showDesktopCommit = !!otherUserData;
+      if (statsCommitBtnDesktop) statsCommitBtnDesktop.style.display = showDesktopCommit ? "inline-flex" : "none";
 
       function setupHoldButton(btn, progressEl, contentEl, onExecute, hintText) {
         if (!btn) return;
@@ -3623,6 +3755,107 @@ forgotPw.onclick = () => {
           }
 
           // --- Create self praise notification for current user ---
+          if (currentUser && currentUser.id) {
+            const selfTitle = "Stark!";
+            const selfBody =
+              "Du hast deinen Tages-Commit erfolgreich abgeschlossen. Gute Arbeit – bleib dran.";
+
+            const { error: selfNotifErr } = await supabaseClient
+              .from("notification_message")
+              .insert({
+                user_id: currentUser.id,
+                type: "streak_commit",
+                title: selfTitle,
+                body: selfBody,
+                created_at: new Date().toISOString()
+              });
+
+            if (selfNotifErr) {
+              console.error("self notification_message insert error:", selfNotifErr);
+            }
+          }
+
+          await safeLoadHabits();
+          await refreshStatsLive();
+        },
+        "5 Sekunden halten"
+      );
+
+      setupHoldButton(
+        statsCommitBtnDesktop,
+        statsCommitProgressDesktop,
+        statsCommitContentDesktop,
+        async () => {
+          const users = otherUser
+            ? [currentUser.id, otherUser.id]
+            : [currentUser.id];
+
+          for (const uid of users) {
+            const habits = await loadHabitsForUser(uid);
+
+            const allFull =
+              habits.length === 3 &&
+              habits.every(h => {
+                if (h.qr_enabled === true || h.qr_enabled === "true") return false;
+                const goal = h.goal || 0;
+                return goal > 0 && h.progress >= goal;
+              });
+
+            const { data: streakRow, error: readErr } = await supabaseClient
+              .from("streak_view")
+              .select("current_streak, longest_streak")
+              .eq("user_id", uid)
+              .single();
+
+            if (readErr) {
+              console.error("streak read error", readErr);
+              continue;
+            }
+
+            const current = streakRow?.current_streak ?? 0;
+            const longest = streakRow?.longest_streak ?? 0;
+
+            const nextCurrent = allFull ? current + 1 : 0;
+            const nextLongest = Math.max(longest, nextCurrent);
+
+            await supabaseClient
+              .from("streak_view")
+              .upsert(
+                {
+                  user_id: uid,
+                  current_streak: nextCurrent,
+                  longest_streak: nextLongest,
+                  last_update: new Date().toISOString()
+                },
+                { onConflict: "user_id" }
+              );
+
+            await supabaseClient.rpc(
+              "reset_progress_for_users",
+              { uids: [uid] }
+            );
+          }
+
+          if (otherUser && otherUser.id && otherUser.id !== currentUser.id) {
+            const title = "Streak-Update";
+            const body =
+              "Die andere Person hat ihren Tages-Commit abgeschlossen. Schau dir den aktuellen Stand an.";
+
+            const { error: notifErr } = await supabaseClient
+              .from("notification_message")
+              .insert({
+                user_id: otherUser.id,
+                type: "streak_commit",
+                title,
+                body,
+                created_at: new Date().toISOString()
+              });
+
+            if (notifErr) {
+              console.error("notification_message insert error:", notifErr);
+            }
+          }
+
           if (currentUser && currentUser.id) {
             const selfTitle = "Stark!";
             const selfBody =
@@ -4457,8 +4690,7 @@ if ("serviceWorker" in navigator) {
 
   <style>
     /* Expanded card: move counter to top-right */
-    .card.expanded .counter {
-      position: absolute;
+    .card.expanded .counter-wrap {
       top: 24px;
       right: 24px;
       bottom: auto;
