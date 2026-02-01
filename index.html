@@ -97,7 +97,7 @@
       overflow: hidden;
     }
 
-    .stat-progress::after {
+    .stat-progress.is-complete::after {
       content: "";
       position: absolute;
       inset: -60% -120%;
@@ -4722,6 +4722,7 @@ forgotPw.onclick = () => {
       const bars = statsViewEl ? statsViewEl.querySelectorAll(".stat-progress") : [];
       bars.forEach(bar => {
         const target = parseFloat(bar.dataset.progress || "0");
+        bar.classList.toggle("is-complete", target >= 100);
         if (window.gsap) {
           gsap.set(bar, { width: "0%" });
           gsap.to(bar, { width: `${target}%`, duration: 0.6, ease: "power2.out" });
