@@ -67,11 +67,14 @@
     .card {
       background: var(--c-card);
       color: var(--c-text);
+    }
+
+    .card-face.front {
       position: relative;
       overflow: hidden;
     }
 
-    .card.is-goal-complete::after {
+    .card.is-goal-complete .card-face.front::after {
       content: "";
       position: absolute;
       inset: -40% -120%;
@@ -92,31 +95,6 @@
       100% { transform: translateX(60%); }
     }
 
-    .stat-progress {
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stat-progress::after {
-      content: "";
-      position: absolute;
-      inset: -60% -120%;
-      background: linear-gradient(120deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.2) 40%,
-        rgba(255, 255, 255, 0.65) 50%,
-        rgba(255, 255, 255, 0.2) 60%,
-        transparent 100%);
-      transform: translateX(-60%);
-      animation: barShine 5.2s ease-in-out infinite;
-      pointer-events: none;
-    }
-
-    @keyframes barShine {
-      0% { transform: translateX(-60%); }
-      60% { transform: translateX(60%); }
-      100% { transform: translateX(60%); }
-    }
 
     .card-face.back {
       background: var(--c-card);
