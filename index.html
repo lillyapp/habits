@@ -63,6 +63,7 @@
       height:100svh;
       overflow:hidden;
     }
+
     /* Dark Mode Enhancements */
     .card {
       background: var(--c-card);
@@ -803,6 +804,8 @@
         bottom:auto;
         padding:0;
         overflow:visible;
+        transform:none;
+        pointer-events:auto;
       }
     }
 
@@ -1076,9 +1079,10 @@
       }
 
       .reminder-close {
-        position: absolute;
-        right: 0;
-        top: 0;
+        position: fixed;
+        right: calc(16px + env(safe-area-inset-right));
+        top: calc(16px + env(safe-area-inset-top));
+        z-index: 1000;
         width: 36px;
         height: 36px;
         border-radius: 999px;
@@ -1378,7 +1382,7 @@
     </button>
 
     <button class="btn-half btn-stats" id="statsBtn">
-      <i data-lucide="bar-chart-2"></i>
+      <i data-lucide="chart-spline"></i>
     </button>
   </div>
 
@@ -1747,17 +1751,29 @@
       statsOpen = false;
       addBtnEl.dataset.mode = "notifications";
 
-      gsap.to("#notificationsView", {
-        top: "0svh",
-        duration: 0.42,
-        ease: "power1.out"
-      });
-
-      gsap.to("#statsView", {
-        top: "100svh",
-        duration: 0.42,
-        ease: "power1.in"
-      });
+      if (isDesktopView()) {
+        gsap.to("#notificationsView", {
+          top: "0svh",
+          duration: 0.42,
+          ease: "power1.out"
+        });
+        gsap.to("#statsView", {
+          top: "100svh",
+          duration: 0.42,
+          ease: "power1.in"
+        });
+      } else {
+        gsap.to("#notificationsView", {
+          top: "0svh",
+          duration: 0.42,
+          ease: "power1.out"
+        });
+        gsap.to("#statsView", {
+          top: "100svh",
+          duration: 0.42,
+          ease: "power1.in"
+        });
+      }
 
       refreshAddButtonIcon();
 
@@ -2405,13 +2421,13 @@ forgotPw.onclick = () => {
       const addBtn = addBtnEl;
 
       if (addBtn.dataset.mode === "notifications") {
-        addBtn.innerHTML = '<i data-lucide="house"></i>';
+        addBtn.innerHTML = '<i data-lucide="house-heart"></i>';
         lucide.createIcons();
         return;
       }
 
       if (addBtn.dataset.mode === "stats") {
-        addBtn.innerHTML = '<i data-lucide="house"></i>';
+        addBtn.innerHTML = '<i data-lucide="house-heart"></i>';
         lucide.createIcons();
         return;
       }
@@ -2419,7 +2435,7 @@ forgotPw.onclick = () => {
       if (habits.length < 3) {
         addBtn.innerHTML = '<i data-lucide="plus"></i>';
       } else {
-        addBtn.innerHTML = '<i data-lucide="home"></i>';
+        addBtn.innerHTML = '<i data-lucide="house-heart"></i>';
       }
 
       lucide.createIcons();
