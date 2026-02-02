@@ -145,9 +145,117 @@
     #loginCircle {
       width:30px;
       height:30px;
-      background: var(--c-text);
+      background: #ffffff;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
       border-radius:50%;
       animation:pulse 2.2s ease-in-out infinite;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #loginOrbLayer {
+      position: absolute;
+      inset: -30%;
+      border-radius: 50%;
+      overflow: hidden;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    .login-orb {
+      position: absolute;
+      width: 60%;
+      height: 60%;
+      border-radius: 50%;
+      filter: blur(10px);
+      opacity: 0.7;
+      mix-blend-mode: screen;
+      animation: loginBlob 4.8s ease-in-out infinite;
+    }
+
+    body.login-orbs-paused .login-orb {
+      animation-play-state: paused;
+    }
+    .login-orb.orb-1 { top: -10%; left: 5%; }
+    .login-orb.orb-2 { top: 10%; right: -5%; }
+    .login-orb.orb-3 { bottom: -8%; left: 12%; }
+    .login-orb.orb-4 { top: 35%; left: -12%; }
+    .login-orb.orb-5 { bottom: 18%; right: -10%; }
+    .login-orb.orb-6 { top: -6%; right: 18%; }
+    .login-orb.orb-7 { bottom: -12%; right: 8%; }
+    .login-orb.orb-8 { top: 28%; left: 22%; }
+    .login-orb.orb-9 { bottom: 28%; left: 38%; }
+
+    .login-orb.orb-2 {
+      width: 50%;
+      height: 50%;
+      opacity: 0.65;
+      animation-duration: 5.6s;
+      animation-delay: -1.2s;
+    }
+
+    .login-orb.orb-3 {
+      width: 42%;
+      height: 42%;
+      opacity: 0.55;
+      animation-duration: 6.4s;
+      animation-delay: -2.1s;
+    }
+
+    .login-orb.orb-4 {
+      width: 55%;
+      height: 55%;
+      opacity: 0.5;
+      animation-duration: 7s;
+      animation-delay: -3s;
+    }
+
+    .login-orb.orb-5 {
+      width: 48%;
+      height: 48%;
+      opacity: 0.6;
+      animation-duration: 5.2s;
+      animation-delay: -1.8s;
+    }
+
+    .login-orb.orb-6 {
+      width: 40%;
+      height: 40%;
+      opacity: 0.55;
+      animation-duration: 6.8s;
+      animation-delay: -2.6s;
+    }
+
+    .login-orb.orb-7 {
+      width: 52%;
+      height: 52%;
+      opacity: 0.6;
+      animation-duration: 5.9s;
+      animation-delay: -2.2s;
+    }
+
+    .login-orb.orb-8 {
+      width: 44%;
+      height: 44%;
+      opacity: 0.5;
+      animation-duration: 7.4s;
+      animation-delay: -3.4s;
+    }
+
+    .login-orb.orb-9 {
+      width: 36%;
+      height: 36%;
+      opacity: 0.5;
+      animation-duration: 6.1s;
+      animation-delay: -2.9s;
+    }
+
+    @keyframes loginBlob {
+      0%   { transform: translate(6%, 8%) scale(0.9); }
+      35%  { transform: translate(18%, -6%) scale(1.1); }
+      65%  { transform: translate(-10%, 12%) scale(0.95); }
+      100% { transform: translate(6%, 8%) scale(0.9); }
     }
 
     #loginHeadline {
@@ -207,6 +315,8 @@
       width: 100%;
       height: 100%;
       display: block;
+      position: relative;
+      z-index: 2;
     }
 
     #introStreakCenter {
@@ -217,6 +327,7 @@
       align-items: center;
       justify-content: center;
       pointer-events: none;
+      z-index: 3;
     }
 
     #introStreakValue {
@@ -1093,6 +1204,8 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        opacity: 0;
+        pointer-events: none;
       }
 
       .reminder-close svg {
@@ -1247,7 +1360,19 @@
 
 <!-- LOGIN -->
 <div id="loginScreen">
-  <div id="loginCircle"></div>
+    <div id="loginCircle">
+      <div id="loginOrbLayer" aria-hidden="true">
+        <div class="login-orb orb-1"></div>
+        <div class="login-orb orb-2"></div>
+        <div class="login-orb orb-3"></div>
+        <div class="login-orb orb-4"></div>
+        <div class="login-orb orb-5"></div>
+        <div class="login-orb orb-6"></div>
+        <div class="login-orb orb-7"></div>
+        <div class="login-orb orb-8"></div>
+        <div class="login-orb orb-9"></div>
+      </div>
+    </div>
   <div id="loginHeadline">Wir versuchen dich anzumelden</div>
 
   <div id="loginButtonBar" style="display:none;">
@@ -1670,10 +1795,18 @@
     function closeNotificationsPane() {
       if (addBtnEl.dataset.mode !== "notifications") return;
       addBtnEl.dataset.mode = "main";
+      const closeBtn = document.getElementById("reminderCloseBtn");
+      if (closeBtn) {
+        closeBtn.style.opacity = "0";
+        closeBtn.style.pointerEvents = "none";
+      }
       gsap.to("#notificationsView", {
         top: "100svh",
         duration: 0.42,
-        ease: "power1.in"
+        ease: "power1.in",
+        delay: 0.4,
+        onStart: () => setLoginOrbsPaused(true),
+        onComplete: () => setLoginOrbsPaused(false)
       });
       refreshAddButtonIcon();
     }
@@ -1690,10 +1823,18 @@
       if (addBtnEl.dataset.mode === "stats") {
         addBtnEl.dataset.mode = "main";
         statsOpen = false;
+        const closeBtn = document.getElementById("reminderCloseBtn");
+        if (closeBtn) {
+          closeBtn.style.opacity = "0";
+          closeBtn.style.pointerEvents = "none";
+        }
         gsap.to("#statsView", {
           top: "100svh",
           duration: 0.42,
-          ease: "power1.in"
+          ease: "power1.in",
+          delay: 0.4,
+          onStart: () => setLoginOrbsPaused(true),
+          onComplete: () => setLoginOrbsPaused(false)
         });
         refreshAddButtonIcon();
         return;
@@ -1755,24 +1896,38 @@
         gsap.to("#notificationsView", {
           top: "0svh",
           duration: 0.42,
-          ease: "power1.out"
+          ease: "power1.out",
+          delay: 0.4,
+          onStart: () => setLoginOrbsPaused(true),
+          onComplete: () => setLoginOrbsPaused(false)
         });
         gsap.to("#statsView", {
           top: "100svh",
           duration: 0.42,
-          ease: "power1.in"
+          ease: "power1.in",
+          delay: 0.4
         });
       } else {
         gsap.to("#notificationsView", {
           top: "0svh",
           duration: 0.42,
-          ease: "power1.out"
+          ease: "power1.out",
+          delay: 0.4,
+          onStart: () => setLoginOrbsPaused(true),
+          onComplete: () => setLoginOrbsPaused(false)
         });
         gsap.to("#statsView", {
           top: "100svh",
           duration: 0.42,
-          ease: "power1.in"
+          ease: "power1.in",
+          delay: 0.4
         });
+      }
+
+      const closeBtn = document.getElementById("reminderCloseBtn");
+      if (closeBtn) {
+        closeBtn.style.opacity = "1";
+        closeBtn.style.pointerEvents = "auto";
       }
 
       refreshAddButtonIcon();
@@ -1853,12 +2008,31 @@
     function startLoginCircleFloat() {
       if (!document.getElementById("loginCircle")) return;
       gsap.to("#loginCircle", {
-        y: -6,
-        duration: 2.4,
+        y: -10,
+        x: 2,
+        duration: 2.8,
         repeat: -1,
         yoyo: true,
         ease: "sine.inOut"
       });
+    }
+
+    function updateLoginOrbsFromHabits() {
+      const layer = document.getElementById("loginOrbLayer");
+      if (!layer) return;
+      const orbs = layer.querySelectorAll(".login-orb");
+      const fallbackColors = ["#ff2d55", "#34c759", "#0a84ff"];
+      orbs.forEach((orb, idx) => {
+        const color = habits[idx % 3]?.color || fallbackColors[idx % 3] || "#ffffff";
+        orb.style.background = color;
+      });
+      requestAnimationFrame(() => {
+        layer.style.opacity = "1";
+      });
+    }
+
+    function setLoginOrbsPaused(isPaused) {
+      document.body.classList.toggle("login-orbs-paused", !!isPaused);
     }
 
     function escapeHtml(value) {
@@ -1906,6 +2080,7 @@
       });
     }
 
+
     function launchIntroConfetti() {
       if (!introConfetti || !introProgressScreen) return;
       introConfetti.innerHTML = "";
@@ -1940,6 +2115,7 @@
       }
 
       introFlowDone = false;
+      updateLoginOrbsFromHabits();
       const ringData = getIntroRingData();
       const allComplete = ringData.every(item => item.goal > 0 && item.progress >= item.goal);
       const streakValue = currentUser ? await loadStreakForUser(currentUser.id) : 0;
@@ -2047,6 +2223,7 @@
     
 
     function showAppAfterDataLoaded() {
+      updateLoginOrbsFromHabits();
       appPage.style.display = "block";
       gsap.fromTo(appPage, { opacity:0 }, {
         opacity:1,
@@ -4694,10 +4871,18 @@ forgotPw.onclick = () => {
     statsBtnEl.addEventListener("click", async () => {
 
       // Close notifications if open
+      const closeBtn = document.getElementById("reminderCloseBtn");
+      if (closeBtn) {
+        closeBtn.style.opacity = "0";
+        closeBtn.style.pointerEvents = "none";
+      }
       gsap.to("#notificationsView", {
         top: "100svh",
         duration: 0.42,
-        ease: "power1.in"
+        ease: "power1.in",
+        delay: 0.4,
+        onStart: () => setLoginOrbsPaused(true),
+        onComplete: () => setLoginOrbsPaused(false)
       });
 
       addBtnEl.dataset.mode = "stats";
@@ -4721,7 +4906,10 @@ forgotPw.onclick = () => {
       gsap.to("#statsView", {
         top: "0svh",
         duration: 0.42,
-        ease: "power1.out"
+        ease: "power1.out",
+        delay: 0.4,
+        onStart: () => setLoginOrbsPaused(true),
+        onComplete: () => setLoginOrbsPaused(false)
       });
 
       refreshAddButtonIcon();
