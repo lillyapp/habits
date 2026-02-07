@@ -31,6 +31,8 @@
       --stats-name-size: 1.8rem;
       --stats-streak-size: 1.8rem;
       --stats-avatar-size: 38px;
+      --stats-summary-bar-bg: #ffffff;
+      --stats-summary-fill: rgba(0,0,0,0.18);
     }
       
       :root {
@@ -38,6 +40,8 @@
         --c-text: #000000;
         --c-card: #e4e4e4;
         color-scheme: light dark;
+        --stats-summary-bar-bg: #ffffff;
+        --stats-summary-fill: rgba(0,0,0,0.18);
       }
 
       @media (prefers-color-scheme: dark) {
@@ -46,6 +50,8 @@
           --c-text: #ffffff;
           --c-card: #1e1e1e;
           color-scheme: dark;
+          --stats-summary-bar-bg: #000000;
+          --stats-summary-fill: rgba(255,255,255,0.2);
         }
       }
 
@@ -156,110 +162,6 @@
       overflow: hidden;
     }
 
-    #loginOrbLayer {
-      position: absolute;
-      inset: -30%;
-      border-radius: 50%;
-      overflow: hidden;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.6s ease;
-    }
-
-    .login-orb {
-      position: absolute;
-      width: 60%;
-      height: 60%;
-      border-radius: 50%;
-      filter: blur(10px);
-      opacity: 0.7;
-      mix-blend-mode: screen;
-      animation: loginBlob 4.8s ease-in-out infinite;
-    }
-
-    body.login-orbs-paused .login-orb {
-      animation-play-state: paused;
-    }
-    .login-orb.orb-1 { top: -10%; left: 5%; }
-    .login-orb.orb-2 { top: 10%; right: -5%; }
-    .login-orb.orb-3 { bottom: -8%; left: 12%; }
-    .login-orb.orb-4 { top: 35%; left: -12%; }
-    .login-orb.orb-5 { bottom: 18%; right: -10%; }
-    .login-orb.orb-6 { top: -6%; right: 18%; }
-    .login-orb.orb-7 { bottom: -12%; right: 8%; }
-    .login-orb.orb-8 { top: 28%; left: 22%; }
-    .login-orb.orb-9 { bottom: 28%; left: 38%; }
-
-    .login-orb.orb-2 {
-      width: 50%;
-      height: 50%;
-      opacity: 0.65;
-      animation-duration: 5.6s;
-      animation-delay: -1.2s;
-    }
-
-    .login-orb.orb-3 {
-      width: 42%;
-      height: 42%;
-      opacity: 0.55;
-      animation-duration: 6.4s;
-      animation-delay: -2.1s;
-    }
-
-    .login-orb.orb-4 {
-      width: 55%;
-      height: 55%;
-      opacity: 0.5;
-      animation-duration: 7s;
-      animation-delay: -3s;
-    }
-
-    .login-orb.orb-5 {
-      width: 48%;
-      height: 48%;
-      opacity: 0.6;
-      animation-duration: 5.2s;
-      animation-delay: -1.8s;
-    }
-
-    .login-orb.orb-6 {
-      width: 40%;
-      height: 40%;
-      opacity: 0.55;
-      animation-duration: 6.8s;
-      animation-delay: -2.6s;
-    }
-
-    .login-orb.orb-7 {
-      width: 52%;
-      height: 52%;
-      opacity: 0.6;
-      animation-duration: 5.9s;
-      animation-delay: -2.2s;
-    }
-
-    .login-orb.orb-8 {
-      width: 44%;
-      height: 44%;
-      opacity: 0.5;
-      animation-duration: 7.4s;
-      animation-delay: -3.4s;
-    }
-
-    .login-orb.orb-9 {
-      width: 36%;
-      height: 36%;
-      opacity: 0.5;
-      animation-duration: 6.1s;
-      animation-delay: -2.9s;
-    }
-
-    @keyframes loginBlob {
-      0%   { transform: translate(6%, 8%) scale(0.9); }
-      35%  { transform: translate(18%, -6%) scale(1.1); }
-      65%  { transform: translate(-10%, 12%) scale(0.95); }
-      100% { transform: translate(6%, 8%) scale(0.9); }
-    }
 
     #loginHeadline {
       margin-top:28px;
@@ -957,13 +859,100 @@
       height:0.9em;
     }
     .stat-item { margin-bottom:18px; }
+    .stats-summary {
+      --summary-avatar-size: 26px;
+      --summary-streak-max: 26px;
+      --summary-gap: 8px;
+      margin-bottom:22px;
+    }
+    .stats-summary-title {
+      font-size:1rem;
+      font-weight:700;
+      margin-bottom:12px;
+      color:var(--c-text);
+      margin-left:0;
+    }
+    .stats-summary-bars {
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding-left:0;
+      padding-right:0;
+    }
+    .stats-summary-row {
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .stats-summary-bar {
+      --pct: 0%;
+      position:relative;
+      flex:1;
+      height:16px;
+      background:var(--stats-summary-bar-bg);
+      border-radius:999px;
+      overflow:visible;
+    }
+    .stats-summary-fill {
+      position:absolute;
+      inset:0;
+      width:clamp(0px, calc(var(--pct) - var(--summary-gap)), 100%);
+      background:var(--stats-summary-fill);
+      border-radius:999px;
+    }
+    .stats-summary-user {
+      position:absolute;
+      top:50%;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      transform:translate(var(--summary-gap), -50%);
+      z-index:2;
+      left:clamp(0px, calc(var(--pct) - var(--summary-avatar-size)), calc(100% - var(--summary-avatar-size) - var(--summary-streak-max)));
+      max-width:calc(var(--summary-avatar-size) + var(--summary-streak-max) + 6px);
+      overflow:hidden;
+    }
+    .stats-summary-streak {
+      display:inline-block;
+      max-width:var(--summary-streak-max);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .stats-summary-avatar {
+      width:var(--summary-avatar-size);
+      height:var(--summary-avatar-size);
+      border-radius:999px;
+      object-fit:cover;
+      background:#d1d5db;
+      box-shadow:0 0 0 3px var(--c-bg);
+      flex:0 0 auto;
+    }
+    .stats-panel-toggle {
+      border:none;
+      background:transparent;
+      color:var(--c-text);
+      width:32px;
+      height:32px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+    }
+    .stats-user-panel.is-collapsed {
+      display:none;
+    }
+    .stats-summary-streak {
+      font-weight:700;
+      font-size:0.9rem;
+    }
     .stat-bar {
       width:100%;
       height:56px;
       background: transparent;
       border-radius:16px;
       overflow:hidden;
-      padding:6px;
+      padding:6px 0;
       box-sizing:border-box;
     }
     .stat-bar.is-clickable { cursor:pointer; }
@@ -974,12 +963,13 @@
       align-items:center;
       gap:8px;
       height:100%;
+      padding:0;
     }
     .stat-icon-btn,
     .stat-icon-option {
       width:32px;
       height:32px;
-      border-radius:10px;
+      border-radius:0;
       border:none;
       background:transparent;
       display:inline-flex;
@@ -988,6 +978,9 @@
       color:var(--c-text);
       cursor:pointer;
       flex:0 0 auto;
+    }
+    .stat-icon-btn {
+      margin-left:-6px;
     }
     .stat-icon-btn i,
     .stat-icon-option i {
@@ -1008,6 +1001,28 @@
       width:76px;
       opacity:1;
       pointer-events:auto;
+    }
+    .stat-trend {
+      margin-bottom:18px;
+    }
+    .stat-trend-chart {
+      width:100%;
+      height:140px;
+      background:var(--c-card);
+      border-radius:16px;
+      padding:12px;
+      box-sizing:border-box;
+    }
+    .stat-trend svg {
+      width:100%;
+      height:100%;
+      display:block;
+    }
+    .stat-trend path {
+      fill:none;
+      stroke-width:3;
+      stroke-linecap:round;
+      stroke-linejoin:round;
     }
     .stat-bar-track {
       position:relative;
@@ -1612,7 +1627,7 @@
     </button>
 
     <button class="btn-half btn-stats" id="statsBtn">
-      <i data-lucide="chart-spline"></i>
+      <i data-lucide="chart-bar-stacked"></i>
     </button>
   </div>
 
@@ -2747,6 +2762,7 @@ forgotPw.onclick = () => {
 
       lucide.createIcons();
     }
+
     
     // -------------------------------
     // Notifications / Push (DB-backed)
@@ -4514,6 +4530,47 @@ forgotPw.onclick = () => {
     return counts;
   }
 
+  async function loadHabitDayCountForWeek(habitsArr, dateObj = new Date()) {
+    const habitIds = (habitsArr || []).map(h => h.id).filter(Boolean);
+    if (!habitIds.length) return 0;
+    const range = getWeekRange(dateObj);
+    const startStr = getLocalDateString(range.start);
+    const endStr = getLocalDateString(range.end);
+    const today = getLocalDateString(dateObj);
+
+    const { data, error } = await supabaseClient
+      .from("habit_days")
+      .select("habit_id, date")
+      .in("habit_id", habitIds)
+      .gte("date", startStr)
+      .lt("date", endStr);
+
+    if (error) {
+      console.error("loadHabitDayCountForWeek error:", error);
+      return 0;
+    }
+
+    let count = 0;
+    (data || []).forEach(row => {
+      if (!row?.date || !row?.habit_id) return;
+      if (row.date === today) return;
+      count += 1;
+    });
+
+    const todayCount = (habitsArr || []).reduce((sum, h) => {
+      const progress = parseInt(h.progress) || 0;
+      const goal = parseInt(h.goal) || 1;
+      if (h.qr_enabled === true || h.qr_enabled === "true") {
+        return sum + (progress > 0 ? 1 : 0);
+      }
+      const capped = Math.max(0, Math.min(progress, goal));
+      return sum + capped;
+    }, 0);
+
+    return count + todayCount;
+  }
+
+
   async function refreshStatsCalendarData() {
     const myIds = (statsCalendarHabits.myHabits || []).map(h => h.id).filter(Boolean);
     const otherIds = (statsCalendarHabits.otherHabits || []).map(h => h.id).filter(Boolean);
@@ -4694,6 +4751,8 @@ forgotPw.onclick = () => {
       closeAllStatIconPickers();
     });
   }
+
+
 
   function barsHtml(habits, keyPrefix) {
     let html = "";
@@ -5005,6 +5064,48 @@ forgotPw.onclick = () => {
 
       let html = "";
 
+      // === Summary ===
+      const [myWeekCount, otherWeekCount] = await Promise.all([
+        loadHabitDayCountForWeek(myHabits),
+        otherUserData ? loadHabitDayCountForWeek(otherHabits) : Promise.resolve(0)
+      ]);
+      const summaryTitle = "Zusammenfassung";
+      const maxWeek = Math.max(1, myWeekCount, otherWeekCount);
+      const myPct = Math.min(100, Math.round((myWeekCount / maxWeek) * 100));
+      const otherPct = Math.min(100, Math.round((otherWeekCount / maxWeek) * 100));
+
+      html += `
+        <div class="stats-summary">
+          <div class="stats-summary-title">${summaryTitle}</div>
+          <div class="stats-summary-bars">
+            <div class="stats-summary-row">
+              <div class="stats-summary-bar" style="--pct:${myPct}%;">
+                <div class="stats-summary-fill"></div>
+                <div class="stats-summary-user">
+                  <img class="stats-summary-avatar" src="${myAvatarUrl}" alt="Avatar">
+                  <span class="stats-summary-streak">${myStreak}</span>
+                </div>
+              </div>
+            </div>
+            ${
+              otherUserData
+                ? `
+                  <div class="stats-summary-row">
+                    <div class="stats-summary-bar" style="--pct:${otherPct}%;">
+                      <div class="stats-summary-fill"></div>
+                      <div class="stats-summary-user">
+                        <img class="stats-summary-avatar" src="${getAvatarUrl(otherUserData || {})}" alt="Avatar">
+                        <span class="stats-summary-streak">${otherStreak ?? 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                `
+                : ""
+            }
+          </div>
+        </div>
+      `;
+
       // === Mein Name + Streak rechts perfekt bündig ===
       html += `
         <div style="
@@ -5016,24 +5117,19 @@ forgotPw.onclick = () => {
 
           <!-- Name: klickbar / editierbar -->
           <div id="editableNameWrapper" class="stats-name-row">
-            <img id="statsAvatarSelf" class="stats-avatar" src="${myAvatarUrl}" alt="Avatar">
             <div id="editableName" class="stats-name" style="line-height:1; margin:0; padding:0; cursor:pointer;">
               ${myName}
             </div>
           </div>
 
-          <!-- Streak -->
-          <div class="stats-streak">
-            ${
-              otherUserData && myStreak !== otherStreak
-                ? `<i data-lucide="${myStreak > otherStreak ? 'trophy' : 'turtle'}" class="stats-streak-icon"></i>`
-                : ``
-            }
-            <span class="stats-streak-value">${myStreak}</span>
-          </div>
+          <button class="stats-panel-toggle" type="button" data-panel-target="my">
+            <i data-lucide="panel-bottom-open"></i>
+          </button>
 
         </div>
       `;
+
+      html += `<div class="stats-user-panel" data-panel="my">`;
 
       html += barsHtml(myHabits, "my");
 
@@ -5066,6 +5162,8 @@ forgotPw.onclick = () => {
         `;
       }
 
+      html += `</div>`;
+
       // === Optional: anderer User ===
       if (otherUserData) {
         const otherName = otherUserData.display_name || "Freund:in";
@@ -5081,8 +5179,7 @@ forgotPw.onclick = () => {
             align-items:flex-end;
             margin-bottom:20px;
           ">
-            <div class="stats-name-row">
-              <img class="stats-avatar" src="${otherAvatarUrl}" alt="Avatar">
+          <div class="stats-name-row">
               <div class="stats-name" style="
                 line-height:1;
                 margin:0;
@@ -5090,18 +5187,15 @@ forgotPw.onclick = () => {
               ">${otherName}</div>
             </div>
 
-            <div class="stats-streak">
-              ${
-                myStreak !== otherStreak
-                  ? `<i data-lucide="${myStreak > otherStreak ? 'turtle' : 'trophy'}" class="stats-streak-icon"></i>`
-                  : ``
-              }
-              <span class="stats-streak-value">${otherStreak}</span>
-            </div>
+            <button class="stats-panel-toggle" type="button" data-panel-target="other">
+              <i data-lucide="panel-top-open"></i>
+            </button>
           </div>
         `;
 
+        html += `<div class="stats-user-panel is-collapsed" data-panel="other">`;
         html += barsHtml(otherHabits, "other");
+        html += `</div>`;
 
       }
 
@@ -5180,11 +5274,77 @@ forgotPw.onclick = () => {
         });
       });
 
-      if (statsAvatarSelf) {
-        statsAvatarSelf.addEventListener("click", () => {
-          showAvatarPicker();
+      statsViewEl.querySelectorAll(".stats-panel-toggle").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const target = btn.dataset.panelTarget;
+          const panel = statsViewEl.querySelector(`.stats-user-panel[data-panel="${target}"]`);
+          if (!panel) return;
+          const otherPanel = statsViewEl.querySelector(`.stats-user-panel[data-panel="${target === "my" ? "other" : "my"}"]`);
+          const otherBtn = statsViewEl.querySelector(`.stats-panel-toggle[data-panel-target="${target === "my" ? "other" : "my"}"]`);
+          if (otherPanel && !otherPanel.classList.contains("is-collapsed")) {
+            if (window.gsap) {
+              gsap.to(otherPanel, {
+                height: 0,
+                opacity: 0,
+                duration: 0.2,
+                ease: "power1.in",
+                onComplete: () => {
+                  otherPanel.classList.add("is-collapsed");
+                  otherPanel.style.height = "";
+                  otherPanel.style.opacity = "";
+                }
+              });
+            } else {
+              otherPanel.classList.add("is-collapsed");
+            }
+            if (otherBtn) {
+              otherBtn.innerHTML = `<i data-lucide="panel-top-open"></i>`;
+              lucide.createIcons({ scope: otherBtn });
+            }
+          }
+
+          const isCollapsed = panel.classList.contains("is-collapsed");
+          if (isCollapsed) {
+            panel.classList.remove("is-collapsed");
+            if (window.gsap) {
+              const targetHeight = panel.scrollHeight;
+              gsap.fromTo(panel, { height: 0, opacity: 0 }, {
+                height: targetHeight,
+                opacity: 1,
+                duration: 0.24,
+                ease: "power2.out",
+                onComplete: () => {
+                  panel.style.height = "";
+                  panel.style.opacity = "";
+                }
+              });
+            }
+          } else {
+            if (window.gsap) {
+              gsap.to(panel, {
+                height: 0,
+                opacity: 0,
+                duration: 0.2,
+                ease: "power1.in",
+                onComplete: () => {
+                  panel.classList.add("is-collapsed");
+                  panel.style.height = "";
+                  panel.style.opacity = "";
+                }
+              });
+            } else {
+              panel.classList.add("is-collapsed");
+            }
+          }
+
+          const nowCollapsed = panel.classList.contains("is-collapsed");
+          btn.innerHTML = `<i data-lucide="${nowCollapsed ? "panel-top-open" : "panel-bottom-open"}"></i>`;
+          lucide.createIcons({ scope: btn });
+          updateDesktopLayoutHeights();
+          alignDesktopStatsTop();
+          alignDesktopDividerHeight();
         });
-      }
+      });
       lucide.createIcons();
     }
 
@@ -5210,6 +5370,7 @@ forgotPw.onclick = () => {
   }
 
     statsBtnEl.addEventListener("click", async () => {
+      if (statsOpen) return;
 
       // Close notifications if open
       const closeBtn = document.getElementById("reminderCloseBtn");
