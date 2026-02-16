@@ -2777,14 +2777,14 @@ forgotPw.onclick = () => {
       unreadNotificationCount = 0;
     }
 
+    const PUSH_VAPID_PUBLIC_KEY = "BIuQ1Oi-yAKNjlbzj8r_wUjBY9Q1GRKzr7ZM_CM3ZDZOXHm0HllkPnX4s7H6AEKqIBpDvTdHqgLgo7VjpGW68f0";
+
     // NOTE: Push subscription requires HTTPS (or localhost). It will not work on file://
     async function registerPushSubscription() {
       if (!supportsPush) return;
       if (!currentUser) return;
       if (Notification.permission !== "granted") return;
-
-      // TODO: replace with your real VAPID public key (Base64URL)
-      const VAPID_PUBLIC_KEY = "REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY";
+      if (!PUSH_VAPID_PUBLIC_KEY) return;
 
       function urlBase64ToUint8Array(base64String) {
         const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -2799,7 +2799,7 @@ forgotPw.onclick = () => {
         const reg = await navigator.serviceWorker.register("/habits/sw.js");
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+          applicationServerKey: urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)
         });
 
         const json = sub.toJSON();
@@ -2817,8 +2817,8 @@ forgotPw.onclick = () => {
           /android/i.test(navigator.userAgent) ? "android" : "desktop";
 
         const { error } = await supabaseClient
-          .from("push_subscription")
-          .insert({
+          .from("push_subscriptions")
+          .upsert({
             user_id: currentUser.id,
             endpoint,
             p256dh,
@@ -2826,9 +2826,9 @@ forgotPw.onclick = () => {
             platform,
             user_agent: navigator.userAgent || "",
             last_used_at: new Date().toISOString()
-          });
+          }, { onConflict: "endpoint" });
 
-        if (error) console.error("push_subscription insert error:", error);
+        if (error) console.error("push_subscriptions upsert error:", error);
       } catch (e) {
         console.error("registerPushSubscription error:", e);
       }
@@ -5507,7 +5507,7 @@ forgotPw.onclick = () => {
     async function subscribeUserToPush() {
       const reg = await navigator.serviceWorker.ready;
 
-      const vapidKey = urlBase64ToUint8Array("BIuQ1Oi-yAKNjlbzj8r_wUjBY9Q1GRKzr7ZM_CM3ZDZOXHm0HllkPnX4s7H6AEKqIBpDvTdHqgLgo7VjpGW68f0");
+      const vapidKey = urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY);
 
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
@@ -5516,12 +5516,13 @@ forgotPw.onclick = () => {
 
       const { error } = await supabaseClient
         .from("push_subscriptions")
-        .insert({
+        .upsert({
           user_id: currentUser.id,
           endpoint: sub.endpoint,
           p256dh: btoa(String.fromCharCode(...new Uint8Array(sub.getKey("p256dh")))),
-          auth: btoa(String.fromCharCode(...new Uint8Array(sub.getKey("auth"))))
-        });
+          auth: btoa(String.fromCharCode(...new Uint8Array(sub.getKey("auth")))),
+          last_used_at: new Date().toISOString()
+        }, { onConflict: "endpoint" });
 
       if (error) console.error("push subscribe error", error);
     }
