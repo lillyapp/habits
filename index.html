@@ -949,6 +949,104 @@
       stroke-linecap:round;
       stroke-linejoin:round;
     }
+    .reliability-chart {
+      margin-bottom:10px;
+    }
+    .reliability-summary {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+      font-size:0.78rem;
+      font-weight:700;
+      color:var(--c-text);
+    }
+    .reliability-summary-left,
+    .reliability-summary-right {
+      opacity:0.9;
+      white-space:nowrap;
+    }
+    .reliability-summary-center {
+      opacity:0.75;
+      font-size:0.72rem;
+      font-weight:600;
+      text-align:center;
+      flex:1;
+    }
+    .reliability-chart-svg {
+      width:100%;
+      height:auto;
+      display:block;
+      background:var(--c-card);
+      border-radius:14px;
+      padding:4px;
+    }
+    .reliability-axis-label {
+      fill:var(--c-text);
+      fill-opacity:0.55;
+      font-size:11px;
+      font-weight:600;
+    }
+    .reliability-grid {
+      stroke:var(--c-text);
+      stroke-opacity:0.12;
+      stroke-width:1;
+    }
+    .reliability-line {
+      fill:none;
+      stroke-width:3;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+    .reliability-line-secondary {
+      opacity:0.45;
+      stroke-width:2;
+    }
+    .reliability-line-primary {
+      opacity:0.98;
+      stroke-width:4;
+    }
+    .reliability-legend {
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:8px 12px;
+      margin-top:10px;
+    }
+    .reliability-legend-item {
+      display:flex;
+      align-items:center;
+      gap:7px;
+      min-width:0;
+      font-size:0.75rem;
+      font-weight:600;
+      color:var(--c-text);
+      opacity:0.9;
+    }
+    .reliability-legend-dot {
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      flex:0 0 auto;
+    }
+    .reliability-legend-label {
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .reliability-help {
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:var(--c-card);
+      color:var(--c-text);
+      font-size:0.72rem;
+      line-height:1.35;
+      opacity:0.88;
+    }
+    .reliability-help-row + .reliability-help-row {
+      margin-top:5px;
+    }
     .stat-bar-track {
       position:relative;
       flex:1;
@@ -1884,6 +1982,8 @@
       "PushManager" in window &&
       "Notification" in window
     );
+    const PUSH_API_BASE = "https://habits-push-worker.9dgw4nf86r.workers.dev";
+    let pushVapidPublicKeyCache = null;
 
     const APP_VERSION = 1;
 
@@ -2936,58 +3036,46 @@ forgotPw.onclick = () => {
       unreadNotificationCount = 0;
     }
 
-    const PUSH_VAPID_PUBLIC_KEY = "BIuQ1Oi-yAKNjlbzj8r_wUjBY9Q1GRKzr7ZM_CM3ZDZOXHm0HllkPnX4s7H6AEKqIBpDvTdHqgLgo7VjpGW68f0";
+    async function fetchPushVapidPublicKey() {
+      if (pushVapidPublicKeyCache) return pushVapidPublicKeyCache;
+      const res = await fetch(`${PUSH_API_BASE}/vapid-public-key`, { method: "GET" });
+      if (!res.ok) throw new Error(`vapid-public-key request failed (${res.status})`);
+      const data = await res.json();
+      if (!data?.publicKey) throw new Error("vapid-public-key missing publicKey");
+      pushVapidPublicKeyCache = data.publicKey;
+      return pushVapidPublicKeyCache;
+    }
 
     // NOTE: Push subscription requires HTTPS (or localhost). It will not work on file://
     async function registerPushSubscription() {
       if (!supportsPush) return;
       if (!currentUser) return;
       if (Notification.permission !== "granted") return;
-      if (!PUSH_VAPID_PUBLIC_KEY) return;
-
-      function urlBase64ToUint8Array(base64String) {
-        const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-        const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-        const rawData = atob(base64);
-        const outputArray = new Uint8Array(rawData.length);
-        for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-        return outputArray;
-      }
 
       try {
         const reg = await navigator.serviceWorker.register("/habits/sw.js");
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)
-        });
-
-        const json = sub.toJSON();
-        const endpoint = sub.endpoint;
-        const p256dh = json?.keys?.p256dh || "";
-        const auth = json?.keys?.auth || "";
-
-        if (!endpoint || !p256dh || !auth) {
-          console.error("push subscription missing keys");
-          return;
+        const publicKey = await fetchPushVapidPublicKey();
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey)
+          });
         }
 
-        const platform =
-          /iphone|ipad|ipod/i.test(navigator.userAgent) ? "ios" :
-          /android/i.test(navigator.userAgent) ? "android" : "desktop";
+        const res = await fetch(`${PUSH_API_BASE}/subscribe`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: currentUser.id,
+            subscription: sub.toJSON()
+          })
+        });
 
-        const { error } = await supabaseClient
-          .from("push_subscriptions")
-          .upsert({
-            user_id: currentUser.id,
-            endpoint,
-            p256dh,
-            auth,
-            platform,
-            user_agent: navigator.userAgent || "",
-            last_used_at: new Date().toISOString()
-          }, { onConflict: "endpoint" });
-
-        if (error) console.error("push_subscriptions upsert error:", error);
+        if (!res.ok) {
+          const body = await res.text();
+          throw new Error(`worker /subscribe failed (${res.status}): ${body}`);
+        }
       } catch (e) {
         console.error("registerPushSubscription error:", e);
       }
@@ -4532,6 +4620,184 @@ forgotPw.onclick = () => {
     return count || 0;
   }
 
+  async function buildReliabilityChartHtml(myHabits, otherHabits, otherName = "Freund:in") {
+    const monthInfo = getStatsMonthInfo();
+    const today = new Date();
+    const isCurrentMonth = (
+      today.getFullYear() === monthInfo.year &&
+      today.getMonth() === monthInfo.month
+    );
+    const visibleDays = isCurrentMonth
+      ? Math.max(1, Math.min(today.getDate(), monthInfo.daysInMonth))
+      : monthInfo.daysInMonth;
+    const xDenominator = Math.max(1, visibleDays - 1);
+
+    const myTop3 = [0, 1, 2].map(i => myHabits?.[i] || null);
+    const otherTop3 = [0, 1, 2].map(i => otherHabits?.[i] || null);
+    const allHabits = [...myTop3, ...otherTop3].filter(Boolean);
+    const ids = allHabits.map(h => h.id).filter(Boolean);
+    const monthDaysMap = await loadHabitDaysForMonth(ids);
+
+    const seriesMeta = [];
+    const groups = [
+      { ownerLabel: "Du", items: myTop3 },
+      { ownerLabel: otherName || "Freund:in", items: otherTop3 }
+    ];
+    groups.forEach(group => {
+      group.items.forEach((habit, idx) => {
+        const rawTitle = habit?.title?.trim();
+        const title = rawTitle ? rawTitle : `Habit ${idx + 1}`;
+        seriesMeta.push({
+          label: `${group.ownerLabel}: ${title}`,
+          color: habit?.color || "#9ca3af",
+          days: habit?.id ? (monthDaysMap[habit.id] || new Set()) : new Set()
+        });
+      });
+    });
+
+    const svgW = 640;
+    const svgH = 250;
+    const padL = 24;
+    const padR = 10;
+    const padT = 12;
+    const padB = 20;
+    const innerW = svgW - padL - padR;
+    const innerH = svgH - padT - padB;
+
+    function toX(day) {
+      return padL + ((day - 1) / xDenominator) * innerW;
+    }
+
+    function toY(valuePct) {
+      return padT + ((100 - valuePct) / 100) * innerH;
+    }
+
+    function pathFromPoints(points) {
+      if (!points.length) return "";
+      if (points.length === 1) return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+      let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+      for (let i = 1; i < points.length; i++) {
+        const p0 = points[i - 1];
+        const p1 = points[i];
+        const cp1x = p0.x + (p1.x - p0.x) / 3;
+        const cp1y = p0.y;
+        const cp2x = p0.x + ((p1.x - p0.x) * 2) / 3;
+        const cp2y = p1.y;
+        d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${p1.x.toFixed(2)} ${p1.y.toFixed(2)}`;
+      }
+      return d;
+    }
+
+    const gridYValues = [0, 50, 100];
+    const gridHtml = gridYValues
+      .map(v => {
+        const y = toY(v).toFixed(2);
+        return `<line class="reliability-grid" x1="${padL}" y1="${y}" x2="${svgW - padR}" y2="${y}"></line>`;
+      })
+      .join("");
+
+    const habitLineHtml = seriesMeta
+      .map(series => {
+        const points = [];
+        for (let day = 1; day <= visibleDays; day++) {
+          const val = series.days.has(day) ? 100 : 0;
+          points.push({ x: toX(day), y: toY(val) });
+        }
+        const d = pathFromPoints(points);
+        return `<path class="reliability-line reliability-line-secondary" d="${d}" style="stroke:${series.color};"></path>`;
+      })
+      .join("");
+
+    const mySeries = seriesMeta.slice(0, 3);
+    const otherSeries = seriesMeta.slice(3, 6);
+
+    function buildAveragePoints(seriesList) {
+      const points = [];
+      for (let day = 1; day <= visibleDays; day++) {
+        let doneCount = 0;
+        seriesList.forEach(series => {
+          if (series.days.has(day)) doneCount += 1;
+        });
+        const pct = (doneCount / 3) * 100;
+        points.push({ x: toX(day), y: toY(pct) });
+      }
+      return points;
+    }
+
+    const myAveragePoints = buildAveragePoints(mySeries);
+    const otherAveragePoints = buildAveragePoints(otherSeries);
+    const myAveragePath = pathFromPoints(myAveragePoints);
+    const otherAveragePath = pathFromPoints(otherAveragePoints);
+
+    const myColor = mySeries[0]?.color || "#3b82f6";
+    const otherColor = otherSeries[0]?.color || "#ef4444";
+    const primaryLineHtml = `
+      <path class="reliability-line reliability-line-primary" d="${myAveragePath}" style="stroke:${myColor};"></path>
+      <path class="reliability-line reliability-line-primary" d="${otherAveragePath}" style="stroke:${otherColor};"></path>
+    `;
+
+    function averagePercent(seriesList) {
+      let done = 0;
+      seriesList.forEach(series => {
+        for (let day = 1; day <= visibleDays; day++) {
+          if (series.days.has(day)) done += 1;
+        }
+      });
+      const max = Math.max(1, visibleDays * 3);
+      return Math.round((done / max) * 100);
+    }
+
+    const myAvgPct = averagePercent(mySeries);
+    const otherAvgPct = averagePercent(otherSeries);
+    const delta = myAvgPct - otherAvgPct;
+    const centerText = delta === 0
+      ? "gleichauf"
+      : delta > 0
+        ? `+${delta} vorne`
+        : `${delta} hinten`;
+
+    const axisLabelHtml = `
+      <text class="reliability-axis-label" x="${padL}" y="${(svgH - 2)}">Tag 1</text>
+      <text class="reliability-axis-label" x="${(padL + innerW / 2)}" y="${(svgH - 2)}" text-anchor="middle">Monatsmitte</text>
+      <text class="reliability-axis-label" x="${(svgW - padR)}" y="${(svgH - 2)}" text-anchor="end">Tag ${visibleDays}</text>
+      <text class="reliability-axis-label" x="${padL - 6}" y="${toY(100)}" text-anchor="end" dominant-baseline="middle">100%</text>
+      <text class="reliability-axis-label" x="${padL - 6}" y="${toY(50)}" text-anchor="end" dominant-baseline="middle">50%</text>
+      <text class="reliability-axis-label" x="${padL - 6}" y="${toY(0)}" text-anchor="end" dominant-baseline="middle">0%</text>
+    `;
+
+    const legendHtml = seriesMeta
+      .map(series => `
+        <div class="reliability-legend-item">
+          <span class="reliability-legend-dot" style="background:${series.color};"></span>
+          <span class="reliability-legend-label">${escapeHtml(series.label)}</span>
+        </div>
+      `)
+      .join("");
+
+    return `
+      <div class="reliability-chart">
+        <div class="reliability-summary">
+          <div class="reliability-summary-left">Du: ${myAvgPct}%</div>
+          <div class="reliability-summary-center">${centerText}</div>
+          <div class="reliability-summary-right">${escapeHtml(otherName)}: ${otherAvgPct}%</div>
+        </div>
+        <svg class="reliability-chart-svg" viewBox="0 0 ${svgW} ${svgH}" preserveAspectRatio="none" role="img" aria-label="Verlässlichkeit im Monatsverlauf">
+          ${gridHtml}
+          ${habitLineHtml}
+          ${primaryLineHtml}
+          ${axisLabelHtml}
+        </svg>
+        <div class="reliability-legend">${legendHtml}</div>
+        <div class="reliability-help">
+          <div class="reliability-help-row">Dicke Linien: durchschnittliche tägliche Verlässlichkeit je User (über 3 Habits).</div>
+          <div class="reliability-help-row">Dünne Linien: einzelne Habit-Verläufe (pro Tag 0% = nicht erledigt, 100% = erledigt).</div>
+          <div class="reliability-help-row">Oben: Monatsdurchschnitt in % und dein Abstand zum anderen User.</div>
+          <div class="reliability-help-row">X-Achse: Tage im Monat, Y-Achse: Verlässlichkeit von 0% bis 100%.</div>
+        </div>
+      </div>
+    `;
+  }
+
   async function syncHabitDayForProgress(habitId, progress) {
     if (!habitId) return;
     const day = getLocalDateString();
@@ -5250,6 +5516,27 @@ forgotPw.onclick = () => {
         html += barsHtml(otherHabits, "other");
         html += `</div>`;
 
+        const reliabilityChartHtml = await buildReliabilityChartHtml(myHabits, otherHabits, otherName);
+        html += `
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-end;
+            margin-top:24px;
+            margin-bottom:14px;
+          ">
+            <div class="stats-name-row">
+              <div class="stats-name" style="line-height:1; margin:0; padding:0;">Diagramm</div>
+            </div>
+            <button class="stats-panel-toggle" type="button" data-panel-target="diagram">
+              <i data-lucide="panel-top-open"></i>
+            </button>
+          </div>
+        `;
+        html += `<div class="stats-user-panel is-collapsed" data-panel="diagram">`;
+        html += reliabilityChartHtml;
+        html += `</div>`;
+
       }
 
       statsViewEl.innerHTML = html;
@@ -5332,29 +5619,33 @@ forgotPw.onclick = () => {
           const target = btn.dataset.panelTarget;
           const panel = statsViewEl.querySelector(`.stats-user-panel[data-panel="${target}"]`);
           if (!panel) return;
-          const otherPanel = statsViewEl.querySelector(`.stats-user-panel[data-panel="${target === "my" ? "other" : "my"}"]`);
-          const otherBtn = statsViewEl.querySelector(`.stats-panel-toggle[data-panel-target="${target === "my" ? "other" : "my"}"]`);
-          if (otherPanel && !otherPanel.classList.contains("is-collapsed")) {
+          const allPanels = Array.from(statsViewEl.querySelectorAll(".stats-user-panel"));
+          const allButtons = Array.from(statsViewEl.querySelectorAll(".stats-panel-toggle"));
+
+          allPanels.forEach(p => {
+            if (p === panel || p.classList.contains("is-collapsed")) return;
             if (window.gsap) {
-              gsap.to(otherPanel, {
+              gsap.to(p, {
                 height: 0,
                 opacity: 0,
                 duration: 0.2,
                 ease: "power1.in",
                 onComplete: () => {
-                  otherPanel.classList.add("is-collapsed");
-                  otherPanel.style.height = "";
-                  otherPanel.style.opacity = "";
+                  p.classList.add("is-collapsed");
+                  p.style.height = "";
+                  p.style.opacity = "";
                 }
               });
             } else {
-              otherPanel.classList.add("is-collapsed");
+              p.classList.add("is-collapsed");
             }
-            if (otherBtn) {
-              otherBtn.innerHTML = `<i data-lucide="panel-top-open"></i>`;
-              lucide.createIcons({ scope: otherBtn });
-            }
-          }
+          });
+
+          allButtons.forEach(otherBtn => {
+            if (otherBtn === btn) return;
+            otherBtn.innerHTML = `<i data-lucide="panel-top-open"></i>`;
+            lucide.createIcons({ scope: otherBtn });
+          });
 
           const isCollapsed = panel.classList.contains("is-collapsed");
           if (isCollapsed) {
@@ -5663,29 +5954,6 @@ forgotPw.onclick = () => {
       return outputArray;
     }
 
-    async function subscribeUserToPush() {
-      const reg = await navigator.serviceWorker.ready;
-
-      const vapidKey = urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY);
-
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: vapidKey
-      });
-
-      const { error } = await supabaseClient
-        .from("push_subscriptions")
-        .upsert({
-          user_id: currentUser.id,
-          endpoint: sub.endpoint,
-          p256dh: btoa(String.fromCharCode(...new Uint8Array(sub.getKey("p256dh")))),
-          auth: btoa(String.fromCharCode(...new Uint8Array(sub.getKey("auth")))),
-          last_used_at: new Date().toISOString()
-        }, { onConflict: "endpoint" });
-
-      if (error) console.error("push subscribe error", error);
-    }
-    
      // Auto permission + push subscribe removed; handled in intro flow.
     
     function getQRParam() {
