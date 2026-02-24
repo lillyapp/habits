@@ -441,6 +441,7 @@
       position:absolute;
       inset:0;
       backface-visibility:hidden;
+      -webkit-backface-visibility:hidden;
       border-radius:24px;
       padding:24px;
     }
@@ -451,6 +452,15 @@
         flex-direction:column;
         justify-content:flex-start;
       }
+
+    .card-face.front .front-header,
+    .card-face.front .card-title-display,
+    .card-face.front .card-input,
+    .card-face.front .card-display-icon,
+    .card-face.front .card-display-icon * {
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
 
     .back {
       background: var(--c-card);
