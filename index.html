@@ -1616,6 +1616,70 @@
       text-align:center;
       flex:1;
     }
+    .reliability-simple-title {
+      font-size:0.9rem;
+      font-weight:800;
+      color:var(--c-text);
+      margin-bottom:4px;
+    }
+    .reliability-simple-subtitle {
+      font-size:0.72rem;
+      color:var(--c-text);
+      opacity:0.72;
+      margin-bottom:10px;
+      line-height:1.3;
+    }
+    .reliability-compare {
+      background:var(--c-card);
+      border-radius:14px;
+      padding:12px;
+    }
+    .reliability-compare-row + .reliability-compare-row {
+      margin-top:12px;
+      padding-top:12px;
+      border-top:1px solid color-mix(in srgb, var(--c-text) 10%, transparent);
+    }
+    .reliability-compare-row-top {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      margin-bottom:7px;
+    }
+    .reliability-compare-label {
+      font-size:0.82rem;
+      font-weight:700;
+      color:var(--c-text);
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .reliability-compare-value {
+      font-size:0.82rem;
+      font-weight:800;
+      color:var(--c-text);
+      white-space:nowrap;
+    }
+    .reliability-compare-bar {
+      height:12px;
+      border-radius:999px;
+      background: color-mix(in srgb, var(--c-text) 8%, transparent);
+      overflow:hidden;
+    }
+    .reliability-compare-fill {
+      height:100%;
+      border-radius:999px;
+      min-width:0;
+      box-shadow: inset 0 -1px 0 rgba(0,0,0,0.14);
+    }
+    .reliability-compare-meta {
+      margin-top:6px;
+      font-size:0.68rem;
+      line-height:1.25;
+      color:var(--c-text);
+      opacity:0.72;
+    }
     .reliability-chart-svg {
       width:100%;
       height:auto;
@@ -6202,169 +6266,80 @@ forgotPw.onclick = () => {
     const visibleDays = isCurrentMonth
       ? Math.max(1, Math.min(today.getDate(), monthInfo.daysInMonth))
       : monthInfo.daysInMonth;
-    const xDenominator = Math.max(1, visibleDays - 1);
-
     const myTop3 = [0, 1, 2].map(i => myHabits?.[i] || null);
     const otherTop3 = [0, 1, 2].map(i => otherHabits?.[i] || null);
     const allHabits = [...myTop3, ...otherTop3].filter(Boolean);
     const ids = allHabits.map(h => h.id).filter(Boolean);
     const monthDaysMap = await loadHabitDaysForMonth(ids);
-
-    const seriesMeta = [];
-    const groups = [
-      { ownerLabel: "Du", items: myTop3 },
-      { ownerLabel: otherName || "Freund:in", items: otherTop3 }
-    ];
-    groups.forEach(group => {
-      group.items.forEach((habit, idx) => {
-        const rawTitle = habit?.title?.trim();
-        const title = rawTitle ? rawTitle : `Habit ${idx + 1}`;
-        seriesMeta.push({
-          label: `${group.ownerLabel}: ${title}`,
-          color: habit?.color || "#9ca3af",
-          days: habit?.id ? (monthDaysMap[habit.id] || new Set()) : new Set()
-        });
-      });
-    });
-
-    const svgW = 640;
-    const svgH = 250;
-    const padL = 24;
-    const padR = 10;
-    const padT = 12;
-    const padB = 20;
-    const innerW = svgW - padL - padR;
-    const innerH = svgH - padT - padB;
-
-    function toX(day) {
-      return padL + ((day - 1) / xDenominator) * innerW;
-    }
-
-    function toY(valuePct) {
-      return padT + ((100 - valuePct) / 100) * innerH;
-    }
-
-    function pathFromPoints(points) {
-      if (!points.length) return "";
-      if (points.length === 1) return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
-      let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
-      for (let i = 1; i < points.length; i++) {
-        const p0 = points[i - 1];
-        const p1 = points[i];
-        const cp1x = p0.x + (p1.x - p0.x) / 3;
-        const cp1y = p0.y;
-        const cp2x = p0.x + ((p1.x - p0.x) * 2) / 3;
-        const cp2y = p1.y;
-        d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${p1.x.toFixed(2)} ${p1.y.toFixed(2)}`;
-      }
-      return d;
-    }
-
-    const gridYValues = [0, 50, 100];
-    const gridHtml = gridYValues
-      .map(v => {
-        const y = toY(v).toFixed(2);
-        return `<line class="reliability-grid" x1="${padL}" y1="${y}" x2="${svgW - padR}" y2="${y}"></line>`;
-      })
-      .join("");
-
-    const habitLineHtml = seriesMeta
-      .map(series => {
-        const points = [];
+    function buildUserMonthStats(items) {
+      const normalized = [0, 1, 2].map(i => items?.[i] || null);
+      let doneCount = 0;
+      const habitBreakdown = normalized.map((habit, idx) => {
+        const title = (habit?.title || "").trim() || `Habit ${idx + 1}`;
+        const daysSet = habit?.id ? (monthDaysMap[habit.id] || new Set()) : new Set();
+        let habitDone = 0;
         for (let day = 1; day <= visibleDays; day++) {
-          const val = series.days.has(day) ? 100 : 0;
-          points.push({ x: toX(day), y: toY(val) });
+          if (daysSet.has(day)) habitDone += 1;
         }
-        const d = pathFromPoints(points);
-        return `<path class="reliability-line reliability-line-secondary" d="${d}" style="stroke:${series.color};"></path>`;
-      })
-      .join("");
-
-    const mySeries = seriesMeta.slice(0, 3);
-    const otherSeries = seriesMeta.slice(3, 6);
-
-    function buildAveragePoints(seriesList) {
-      const points = [];
-      for (let day = 1; day <= visibleDays; day++) {
-        let doneCount = 0;
-        seriesList.forEach(series => {
-          if (series.days.has(day)) doneCount += 1;
-        });
-        const pct = (doneCount / 3) * 100;
-        points.push({ x: toX(day), y: toY(pct) });
-      }
-      return points;
-    }
-
-    const myAveragePoints = buildAveragePoints(mySeries);
-    const otherAveragePoints = buildAveragePoints(otherSeries);
-    const myAveragePath = pathFromPoints(myAveragePoints);
-    const otherAveragePath = pathFromPoints(otherAveragePoints);
-
-    const myColor = mySeries[0]?.color || "#3b82f6";
-    const otherColor = otherSeries[0]?.color || "#ef4444";
-    const primaryLineHtml = `
-      <path class="reliability-line reliability-line-primary" d="${myAveragePath}" style="stroke:${myColor};"></path>
-      <path class="reliability-line reliability-line-primary" d="${otherAveragePath}" style="stroke:${otherColor};"></path>
-    `;
-
-    function averagePercent(seriesList) {
-      let done = 0;
-      seriesList.forEach(series => {
-        for (let day = 1; day <= visibleDays; day++) {
-          if (series.days.has(day)) done += 1;
-        }
+        doneCount += habitDone;
+        return {
+          title,
+          done: habitDone,
+          percent: Math.round((habitDone / Math.max(1, visibleDays)) * 100)
+        };
       });
       const max = Math.max(1, visibleDays * 3);
-      return Math.round((done / max) * 100);
+      return {
+        doneCount,
+        max,
+        percent: Math.round((doneCount / max) * 100),
+        avgPerDay: Math.round((doneCount / Math.max(1, visibleDays)) * 10) / 10,
+        habitBreakdown
+      };
     }
 
-    const myAvgPct = averagePercent(mySeries);
-    const otherAvgPct = averagePercent(otherSeries);
-    const delta = myAvgPct - otherAvgPct;
-    const centerText = delta === 0
-      ? "gleichauf"
-      : delta > 0
-        ? `+${delta} vorne`
-        : `${delta} hinten`;
+    const myStats = buildUserMonthStats(myTop3);
+    const otherStats = buildUserMonthStats(otherTop3);
+    const deltaPct = myStats.percent - otherStats.percent;
+    const deltaText = deltaPct === 0
+      ? "Ihr seid aktuell gleichauf."
+      : deltaPct > 0
+        ? `Du liegst aktuell ${deltaPct} Prozentpunkte vorn.`
+        : `${escapeHtml(otherName)} liegt aktuell ${Math.abs(deltaPct)} Prozentpunkte vorn.`;
 
-    const axisLabelHtml = `
-      <text class="reliability-axis-label" x="${padL}" y="${(svgH - 2)}">Tag 1</text>
-      <text class="reliability-axis-label" x="${(padL + innerW / 2)}" y="${(svgH - 2)}" text-anchor="middle">Monatsmitte</text>
-      <text class="reliability-axis-label" x="${(svgW - padR)}" y="${(svgH - 2)}" text-anchor="end">Tag ${visibleDays}</text>
-      <text class="reliability-axis-label" x="${padL - 6}" y="${toY(100)}" text-anchor="end" dominant-baseline="middle">100%</text>
-      <text class="reliability-axis-label" x="${padL - 6}" y="${toY(50)}" text-anchor="end" dominant-baseline="middle">50%</text>
-      <text class="reliability-axis-label" x="${padL - 6}" y="${toY(0)}" text-anchor="end" dominant-baseline="middle">0%</text>
-    `;
+    const monthLabel = isCurrentMonth
+      ? `${monthInfo.monthName} (bis heute)`
+      : monthInfo.monthName;
 
-    const legendHtml = seriesMeta
-      .map(series => `
-        <div class="reliability-legend-item">
-          <span class="reliability-legend-dot" style="background:${series.color};"></span>
-          <span class="reliability-legend-label">${escapeHtml(series.label)}</span>
+    function buildCompareRow(label, percent, doneCount, max, accent, avgPerDay) {
+      return `
+        <div class="reliability-compare-row">
+          <div class="reliability-compare-row-top">
+            <div class="reliability-compare-label">${escapeHtml(label)}</div>
+            <div class="reliability-compare-value">${percent}%</div>
+          </div>
+          <div class="reliability-compare-bar">
+            <div class="reliability-compare-fill" style="width:${Math.max(0, Math.min(100, percent))}%; background:${accent};"></div>
+          </div>
+          <div class="reliability-compare-meta">${doneCount} von ${max} möglichen Erledigungen • Ø ${avgPerDay}/Tag</div>
         </div>
-      `)
-      .join("");
+      `;
+    }
+
+    const myAccent = myTop3.find(Boolean)?.color || "#8bb6ff";
+    const otherAccent = otherTop3.find(Boolean)?.color || "#ff8b9e";
 
     return `
       <div class="reliability-chart">
-        <div class="reliability-summary">
-          <div class="reliability-summary-left">Du: ${myAvgPct}%</div>
-          <div class="reliability-summary-center">${centerText}</div>
-          <div class="reliability-summary-right">${escapeHtml(otherName)}: ${otherAvgPct}%</div>
+        <div class="reliability-simple-title">Monatsvergleich</div>
+        <div class="reliability-simple-subtitle">${escapeHtml(monthLabel)} • Grundlage: die 3 sichtbaren Habits</div>
+        <div class="reliability-compare">
+          ${buildCompareRow("Du", myStats.percent, myStats.doneCount, myStats.max, myAccent, myStats.avgPerDay)}
+          ${buildCompareRow(otherName, otherStats.percent, otherStats.doneCount, otherStats.max, otherAccent, otherStats.avgPerDay)}
         </div>
-        <svg class="reliability-chart-svg" viewBox="0 0 ${svgW} ${svgH}" preserveAspectRatio="none" role="img" aria-label="Verlässlichkeit im Monatsverlauf">
-          ${gridHtml}
-          ${habitLineHtml}
-          ${primaryLineHtml}
-          ${axisLabelHtml}
-        </svg>
-        <div class="reliability-legend">${legendHtml}</div>
         <div class="reliability-help">
-          <div class="reliability-help-row">Dicke Linien: durchschnittliche tägliche Verlässlichkeit je User (über 3 Habits).</div>
-          <div class="reliability-help-row">Dünne Linien: einzelne Habit-Verläufe (pro Tag 0% = nicht erledigt, 100% = erledigt).</div>
-          <div class="reliability-help-row">Oben: Monatsdurchschnitt in % und dein Abstand zum anderen User.</div>
-          <div class="reliability-help-row">X-Achse: Tage im Monat, Y-Achse: Verlässlichkeit von 0% bis 100%.</div>
+          <div class="reliability-help-row">${deltaText}</div>
+          <div class="reliability-help-row">Ein Tag zählt pro Habit als erledigt oder nicht erledigt (kein Linienverlauf mehr).</div>
         </div>
       </div>
     `;
