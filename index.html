@@ -7014,10 +7014,6 @@ forgotPw.onclick = () => {
             </div>
           </div>
 
-          <button class="stats-panel-toggle" type="button" data-panel-target="my">
-            <i data-lucide="panel-bottom-open"></i>
-          </button>
-
         </div>
       `;
 
@@ -7079,13 +7075,10 @@ forgotPw.onclick = () => {
               ">${otherName}</div>
             </div>
 
-            <button class="stats-panel-toggle" type="button" data-panel-target="other">
-              <i data-lucide="panel-top-open"></i>
-            </button>
           </div>
         `;
 
-        html += `<div class="stats-user-panel is-collapsed" data-panel="other">`;
+        html += `<div class="stats-user-panel" data-panel="other">`;
         html += barsHtml(otherHabits, "other");
         html += `</div>`;
 
@@ -7101,12 +7094,9 @@ forgotPw.onclick = () => {
             <div class="stats-name-row">
               <div class="stats-name" style="line-height:1; margin:0; padding:0;">Diagramm</div>
             </div>
-            <button class="stats-panel-toggle" type="button" data-panel-target="diagram">
-              <i data-lucide="panel-top-open"></i>
-            </button>
           </div>
         `;
-        html += `<div class="stats-user-panel is-collapsed" data-panel="diagram">`;
+        html += `<div class="stats-user-panel" data-panel="diagram">`;
         html += reliabilityChartHtml;
         html += `</div>`;
 
