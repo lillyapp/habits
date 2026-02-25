@@ -315,7 +315,7 @@ revoke all on function public.consume_login_pin(text, uuid) from public;
 grant execute on function public.consume_login_pin(text, uuid) to anon, authenticated;
 
 create or replace function public.admin_list_users()
-returns table(user_id uuid, email text, display_name text, avatar_url text, is_admin boolean, is_locked boolean)
+returns table(user_id uuid, email text, display_name text, avatar_url text, is_admin boolean, is_locked boolean, is_verified boolean)
 language plpgsql
 security definer
 set search_path = public, auth
@@ -335,7 +335,8 @@ begin
     coalesce(up.display_name, u.raw_user_meta_data ->> 'display_name', split_part(coalesce(u.email::text, ''), '@', 1), 'User')::text as display_name,
     coalesce(up.avatar_url, u.raw_user_meta_data ->> 'avatar_url', '')::text as avatar_url,
     exists (select 1 from public.app_admins a where a.user_id = u.id) as is_admin,
-    exists (select 1 from public.app_locked_users l where l.user_id = u.id) as is_locked
+    exists (select 1 from public.app_locked_users l where l.user_id = u.id) as is_locked,
+    (u.email_confirmed_at is not null) as is_verified
   from auth.users u
   left join public.users_public up on up.id = u.id
   order by lower(coalesce(up.display_name, u.raw_user_meta_data ->> 'display_name', u.email::text, ''));

@@ -1732,6 +1732,10 @@
       background: rgba(0,0,0,0.035);
     }
 
+    .settings-admin-row.is-pending {
+      opacity: 0.58;
+    }
+
     .settings-admin-user {
       min-width: 0;
       display: flex;
@@ -1789,6 +1793,10 @@
 
     .settings-admin-row:hover {
       background: rgba(0,0,0,0.045);
+    }
+
+    .settings-admin-row.is-pending:hover {
+      background: rgba(0,0,0,0.04);
     }
 
     #settingsAdminUsersStatus:empty {
@@ -4670,7 +4678,10 @@
               const lockTerms = row?.is_locked
                 ? "gesperrt lock locked konto gesperrt"
                 : "aktiv entsperrt unlocked";
-              return name.includes(query) || email.includes(query) || userId.includes(query) || roleTerms.includes(query) || lockTerms.includes(query);
+              const verifyTerms = row?.is_verified === false
+                ? "nicht verifiziert unverified pending ausstehend"
+                : "verifiziert verified";
+              return name.includes(query) || email.includes(query) || userId.includes(query) || roleTerms.includes(query) || lockTerms.includes(query) || verifyTerms.includes(query);
             })
           : rows;
 
@@ -4686,12 +4697,13 @@
             const email = escapeHtml(row.email || "");
             const isAdminRow = Boolean(row.is_admin);
             const isLockedRow = Boolean(row.is_locked);
+            const isVerifiedRow = row?.is_verified === false ? false : true;
             const isSelf = String(currentUser?.id || "") === userId;
             return `
-              <div class="settings-admin-row" data-user-id="${userId}" data-is-admin="${isAdminRow ? "true" : "false"}" data-is-locked="${isLockedRow ? "true" : "false"}">
+              <div class="settings-admin-row${isVerifiedRow ? "" : " is-pending"}" data-user-id="${userId}" data-is-admin="${isAdminRow ? "true" : "false"}" data-is-locked="${isLockedRow ? "true" : "false"}">
                 <div class="settings-admin-user">
                   <div class="settings-admin-name">${name}</div>
-                  <div class="settings-admin-meta">${email || userId}${isAdminRow ? " • Admin" : " • User"}${isLockedRow ? " • Gesperrt" : ""}${isSelf ? " • Du" : ""}</div>
+                  <div class="settings-admin-meta">${email || userId}${isAdminRow ? " • Admin" : " • User"}${isLockedRow ? " • Gesperrt" : ""}${!isVerifiedRow ? " • Nicht verifiziert" : ""}${isSelf ? " • Du" : ""}</div>
                 </div>
                 <div class="settings-admin-actions">
                   <button type="button" class="settings-admin-icon-btn" data-admin-action="rename" title="Umbenennen" aria-label="Umbenennen">
