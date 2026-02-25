@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
+<head>. 
   <meta charset="UTF-8" />
   <title>Consistency</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -14,15 +14,35 @@
 <!-- OneSignal -->
       <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
+  window.__oneSignalInitStatus = {
+    ready: false,
+    error: null,
+    serviceWorkerInstallFailed: false
+  };
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "c3cfa0bc-4faf-48c3-a00f-f5ce23924559",
-      serviceWorkerPath: "/habits/sw.js",
-      serviceWorkerUpdaterPath: "/habits/sw.js",
-      serviceWorkerParam: { scope: "/habits/" },
-      notifyButton: { enable: false }
-    });
+    try {
+      await OneSignal.init({
+        appId: "c3cfa0bc-4faf-48c3-a00f-f5ce23924559",
+        serviceWorkerPath: "/habits/onesignal/OneSignalSDKWorker.js",
+        serviceWorkerUpdaterPath: "/habits/onesignal/OneSignalSDKWorker.js",
+        serviceWorkerParam: { scope: "/habits/onesignal/" },
+        notifyButton: { enable: false }
+      });
+      window.__oneSignalInitStatus = {
+        ready: true,
+        error: null,
+        serviceWorkerInstallFailed: false
+      };
+    } catch (err) {
+      const msg = String(err?.message || err || "");
+      window.__oneSignalInitStatus = {
+        ready: false,
+        error: msg,
+        serviceWorkerInstallFailed: /service\s*worker/i.test(msg)
+      };
+      console.warn("OneSignal init fehlgeschlagen:", err);
+    }
   });
 </script>
           
@@ -2315,7 +2335,7 @@
     <button class="btn" id="btnRegister">Registrieren</button>
   </div>
 
-  <div id="loginForm">
+  <form id="loginForm" novalidate>
     <input id="loginName" class="login-input" placeholder="Name" type="text" style="display:none;" />
     <input id="loginEmail" class="login-input" placeholder="E-Mail" type="email" />
     <input id="loginPassword" class="login-input" placeholder="Passwort" type="password" />
@@ -2330,8 +2350,8 @@
     ">
       Passwort vergessen?
     </div>
-    <button class="btn" id="loginOkBtn">OK</button>
-  </div>
+    <button class="btn" id="loginOkBtn" type="button">OK</button>
+  </form>
 
   <div id="loginError"></div>
 </div>
@@ -2533,6 +2553,10 @@
     const desktopReminderTitle = document.getElementById("desktopReminderTitle");
     const desktopReminderBody = document.getElementById("desktopReminderBody");
     const logoutDesktopBtn = document.getElementById("logoutDesktopBtn");
+    loginForm?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      loginOkBtn?.click();
+    });
     const settingsDesktopBtn = document.getElementById("settingsDesktopBtn");
     const avatarPickerOverlay = document.getElementById("avatarPickerOverlay");
     const avatarPickerButtons = document.querySelectorAll(".avatar-picker-btn");
@@ -2729,23 +2753,45 @@
       });
     }
 
+    function getOneSignalInitStatus() {
+      const status = window.__oneSignalInitStatus || {};
+      return {
+        ready: Boolean(status.ready),
+        error: status.error ? String(status.error) : "",
+        serviceWorkerInstallFailed: Boolean(status.serviceWorkerInstallFailed)
+      };
+    }
+
     async function getNotificationSettingsState() {
       if (location.protocol === "file:") {
         return {
           supported: false,
           enabled: false,
           permission: "default",
+          disableControls: true,
           message: "Benachrichtigungen funktionieren nur über HTTPS oder localhost (nicht über file://)."
         };
       }
 
       try {
+        const initStatus = getOneSignalInitStatus();
+        if (initStatus.serviceWorkerInstallFailed) {
+          return {
+            supported: false,
+            enabled: false,
+            permission: (typeof Notification !== "undefined" ? Notification.permission : "default"),
+            disableControls: true,
+            message: `Service-Worker konnte nicht installiert werden: ${initStatus.error || "Unbekannter Fehler"}`
+          };
+        }
+
         const OneSignal = await getOneSignalInstance();
         if (!OneSignal) {
           return {
             supported: false,
             enabled: false,
             permission: (typeof Notification !== "undefined" ? Notification.permission : "default"),
+            disableControls: true,
             message: "OneSignal ist noch nicht geladen."
           };
         }
@@ -2758,6 +2804,7 @@
             supported: false,
             enabled: false,
             permission: (typeof Notification !== "undefined" ? Notification.permission : "default"),
+            disableControls: true,
             message: "Web-Push wird auf diesem Gerät/Browser nicht unterstützt."
           };
         }
@@ -2780,15 +2827,18 @@
           supported: true,
           enabled: optedIn,
           permission,
+          disableControls: false,
           message
         };
       } catch (err) {
         console.error("getNotificationSettingsState error:", err);
+        const msg = err?.message || "Benachrichtigungsstatus konnte nicht geladen werden.";
         return {
           supported: false,
           enabled: false,
           permission: (typeof Notification !== "undefined" ? Notification.permission : "default"),
-          message: "Benachrichtigungsstatus konnte nicht geladen werden."
+          disableControls: true,
+          message: msg
         };
       }
     }
@@ -3319,6 +3369,7 @@
       const displayStatus = settingsViewEl.querySelector("#settingsDisplayStatus");
       const accountStatus = settingsViewEl.querySelector("#settingsAccountStatus");
       const deleteStatus = settingsViewEl.querySelector("#settingsDeleteStatus");
+      const notificationModeGroup = settingsViewEl.querySelector("#notificationModeGroup");
       const notificationsInfo = settingsViewEl.querySelector("#settingsNotificationsInfo");
       const notificationsOnBtn = settingsViewEl.querySelector("#settingsNotificationsOnBtn");
       const notificationsOffBtn = settingsViewEl.querySelector("#settingsNotificationsOffBtn");
@@ -3345,6 +3396,14 @@
 
         notificationsOnBtn.disabled = !state.supported || isEnabled;
         notificationsOffBtn.disabled = !state.supported || !isEnabled;
+
+        const dimControls = Boolean(state.disableControls || (state.message && /Service-Worker konnte nicht installiert/i.test(state.message)));
+        if (notificationModeGroup) {
+          notificationModeGroup.style.opacity = dimControls ? "0.5" : "1";
+          notificationModeGroup.style.pointerEvents = dimControls ? "none" : "";
+        }
+        notificationsOnBtn.style.opacity = dimControls ? "0.5" : "";
+        notificationsOffBtn.style.opacity = dimControls ? "0.5" : "";
 
         if (notificationsInfo) {
           notificationsInfo.textContent = state.message || "";
