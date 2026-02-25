@@ -3668,7 +3668,7 @@
               <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="layout-grid"></i></div>
               <div class="settings-section-head-text">
                 <h3 class="settings-section-title">Anzeige der Habits</h3>
-                <p class="settings-copy">Text oder Symbol für die großen Habit-Karten.</p>
+                <p class="settings-copy">Darstellung wählen</p>
               </div>
             </div>
             <div class="settings-segment" id="habitDisplayModeGroup">
@@ -3680,7 +3680,7 @@
                 <i data-lucide="palette"></i>
                 <div class="settings-subsection-title">Darstellung</div>
               </div>
-              <p class="settings-copy">Lege fest, ob die App hell, dunkel oder nach System-Einstellung angezeigt wird.</p>
+              <p class="settings-copy">Hell, dunkel oder System</p>
               <div class="settings-segment is-3-col" id="themeModeGroup">
                 <button type="button" class="settings-segment-btn ${themeMode === "light" ? "is-active" : ""}" data-theme-mode="light"><i data-lucide="sun"></i><span>Hell</span></button>
                 <button type="button" class="settings-segment-btn ${themeMode === "dark" ? "is-active" : ""}" data-theme-mode="dark"><i data-lucide="moon"></i><span>Dunkel</span></button>
@@ -3692,7 +3692,7 @@
                 <i data-lucide="cookie"></i>
                 <div class="settings-subsection-title">Cookie-Modus</div>
               </div>
-              <p class="settings-copy">Aktiviere den Cookie-Modus, um deine Nahrungsaufnahme zum Bulken zu tracken (z. B. per KCAL-/QR-Habit).</p>
+              <p class="settings-copy">Bulking-Tracking</p>
               <div class="settings-segment" id="cookieModeGroup">
                 <button type="button" class="settings-segment-btn ${cookieModeEnabled ? "is-active" : ""}" data-cookie-mode="on">Aktiv</button>
                 <button type="button" class="settings-segment-btn ${!cookieModeEnabled ? "is-active" : ""}" data-cookie-mode="off">Deaktiviert</button>
@@ -3703,7 +3703,7 @@
                 <i data-lucide="bell"></i>
                 <div class="settings-subsection-title">Benachrichtigungen</div>
               </div>
-              <p class="settings-copy">Aktiviere Push-Benachrichtigungen für Erinnerungen auf deinem Gerät.</p>
+              <p class="settings-copy">Push für Erinnerungen</p>
               <div class="settings-segment" id="notificationModeGroup">
                 <button type="button" class="settings-segment-btn" id="settingsNotificationsOnBtn">Aktivieren</button>
                 <button type="button" class="settings-segment-btn" id="settingsNotificationsOffBtn">Deaktivieren</button>
@@ -3719,7 +3719,7 @@
               <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="user"></i></div>
               <div class="settings-section-head-text">
                 <h3 class="settings-section-title">Account</h3>
-                <p class="settings-copy">E-Mailadresse und Passwort verwalten.</p>
+                <p class="settings-copy">E-Mail & Passwort</p>
               </div>
             </div>
             <div class="settings-field">
@@ -3727,7 +3727,7 @@
               <input id="settingsEmailInput" type="email" value="${escapeHtml(currentEmail)}" placeholder="name@beispiel.de" />
             </div>
             <button type="button" class="settings-action-btn" id="settingsEmailSaveBtn">E-Mailadresse ändern</button>
-            <div class="settings-inline-note">Supabase sendet ggf. eine Bestätigungs-E-Mail an die neue Adresse.</div>
+            <div class="settings-inline-note">Bestätigung ggf. per E-Mail.</div>
 
             <form id="settingsPasswordForm" novalidate>
               <input type="email" autocomplete="username" value="${escapeHtml(currentEmail)}" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;" />
@@ -3749,7 +3749,7 @@
               <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="triangle-alert"></i></div>
               <div class="settings-section-head-text">
                 <h3 class="settings-section-title">Danger-Bereich</h3>
-                <p class="settings-copy">Account und Daten dauerhaft löschen.</p>
+                <p class="settings-copy">Dauerhaft löschen</p>
               </div>
             </div>
             <div class="settings-field">
