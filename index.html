@@ -1362,6 +1362,7 @@
       margin: 0;
       font-size: 1rem;
       font-weight: 800;
+      line-height: 1.15;
     }
 
     .settings-copy {
@@ -1529,6 +1530,7 @@
       font-size: 0.88rem;
       font-weight: 800;
       margin: 0;
+      line-height: 1.15;
     }
 
     .settings-subsection-head {
@@ -1603,10 +1605,15 @@
 
     .settings-subsection-head i,
     .settings-subsection-head svg {
-      width: 16px;
-      height: 16px;
+      width: 17px;
+      height: 17px;
       opacity: 0.85;
       flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+      stroke-width: 2.05;
     }
 
     .settings-danger {
@@ -1902,12 +1909,25 @@
 
       .settings-section-head-icon,
       .settings-section-head-icon svg {
-        width: 20px;
-        height: 20px;
+        width: 21px;
+        height: 21px;
       }
 
       .settings-section-title {
         font-size: 1.05rem;
+        line-height: 1.15;
+      }
+
+      .settings-subsection-title {
+        font-size: 0.92rem;
+        line-height: 1.15;
+      }
+
+      .settings-subsection-head i,
+      .settings-subsection-head svg {
+        width: 18px;
+        height: 18px;
+        margin-top: 0;
       }
 
       .settings-segment-btn {
@@ -3649,6 +3669,9 @@
     let settingsOpen = false;
     let changesOpen = false;
     let otherUser   = null;
+    let statsRealtimeChannel = null;
+    let statsRefreshInFlight = false;
+    let statsRefreshQueued = false;
     let introFlowDone = false;
     let suppressNextLegacyAddHandler = false;
     const DEFAULT_USER_SETTINGS = Object.freeze({
@@ -6942,21 +6965,42 @@ forgotPw.onclick = () => {
     
 
     function setupRealtime() {
-      supabaseClient.channel('habits-realtime')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'habits' },
-          async () => {
-            if (statsOpen) await refreshStatsLive();
+      if (statsRealtimeChannel) return;
+
+      const handleStatsRealtimeChange = async () => {
+        dataCache.habits.clear();
+        dataCache.streak.clear();
+        dataCache.otherUser = { value: null, ts: 0 };
+        dataCache.otherUsers = { value: null, ts: 0 };
+        if (!(statsOpen || isDesktopView())) return;
+        if (!currentUser) return;
+
+        if (statsRefreshInFlight) {
+          statsRefreshQueued = true;
+          return;
+        }
+
+        statsRefreshInFlight = true;
+        try {
+          await refreshStatsLive();
+        } catch (e) {
+          console.error("stats realtime refresh error:", e);
+        } finally {
+          statsRefreshInFlight = false;
+          if (statsRefreshQueued) {
+            statsRefreshQueued = false;
+            queueMicrotask(() => { void handleStatsRealtimeChange(); });
           }
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'streak_view' },
-          async () => {
-            if (statsOpen) await refreshStatsLive();
-          }
-        )
+        }
+      };
+
+      statsRealtimeChannel = supabaseClient
+        .channel("habits-stats-realtime")
+        .on("postgres_changes", { event: "*", schema: "public", table: "habits" }, handleStatsRealtimeChange)
+        .on("postgres_changes", { event: "*", schema: "public", table: "habit_days" }, handleStatsRealtimeChange)
+        .on("postgres_changes", { event: "*", schema: "public", table: "streak_view" }, handleStatsRealtimeChange)
+        .on("postgres_changes", { event: "*", schema: "public", table: "reminder_clicks" }, handleStatsRealtimeChange)
+        .on("postgres_changes", { event: "*", schema: "public", table: "users_public" }, handleStatsRealtimeChange)
         .subscribe();
     }
 
@@ -9308,9 +9352,6 @@ forgotPw.onclick = () => {
       notificationsViewEl.innerHTML = `
         <div class="reminder-pane">
           <div class="reminder-header">
-            <button class="reminder-close" id="reminderCloseBtn" aria-label="Schließen">
-              <i data-lucide="x"></i>
-            </button>
             <div class="reminder-status${isComplete ? " is-complete" : ""}" id="reminderStatus">
               <i data-lucide="check-circle"></i>
               <div class="reminder-status-title">Heute alles erledigt</div>
