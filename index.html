@@ -2307,7 +2307,7 @@
 
   <form id="loginForm" novalidate>
     <input id="loginName" class="login-input" placeholder="Name" type="text" style="display:none;" />
-    <input id="loginEmail" class="login-input" placeholder="E-Mail" type="email" />
+    <input id="loginEmail" class="login-input" placeholder="E-Mail" type="email" autocomplete="username" />
     <input id="loginPassword" class="login-input" placeholder="Passwort" type="password" autocomplete="current-password" />
     <div id="forgotPw" style="
       display:none;
@@ -3405,15 +3405,17 @@
             <button type="button" class="settings-action-btn" id="settingsEmailSaveBtn">E-Mailadresse ändern</button>
             <div class="settings-inline-note">Supabase sendet ggf. eine Bestätigungs-E-Mail an die neue Adresse.</div>
 
-            <div class="settings-field">
-              <label for="settingsPasswordInput">Neues Passwort</label>
-              <input id="settingsPasswordInput" type="password" placeholder="Mindestens 6 Zeichen" />
-            </div>
-            <div class="settings-field">
-              <label for="settingsPasswordConfirmInput">Passwort wiederholen</label>
-              <input id="settingsPasswordConfirmInput" type="password" placeholder="Passwort wiederholen" />
-            </div>
-            <button type="button" class="settings-action-btn" id="settingsPasswordSaveBtn">Passwort ändern</button>
+            <form id="settingsPasswordForm" novalidate>
+              <div class="settings-field">
+                <label for="settingsPasswordInput">Neues Passwort</label>
+                <input id="settingsPasswordInput" type="password" placeholder="Mindestens 6 Zeichen" autocomplete="new-password" />
+              </div>
+              <div class="settings-field">
+                <label for="settingsPasswordConfirmInput">Passwort wiederholen</label>
+                <input id="settingsPasswordConfirmInput" type="password" placeholder="Passwort wiederholen" autocomplete="new-password" />
+              </div>
+              <button type="button" class="settings-action-btn" id="settingsPasswordSaveBtn">Passwort ändern</button>
+            </form>
             <div class="settings-status" id="settingsAccountStatus"></div>
           </section>
 
@@ -3581,9 +3583,16 @@
         });
       }
 
+      const passwordForm = settingsViewEl.querySelector("#settingsPasswordForm");
       const passwordInput = settingsViewEl.querySelector("#settingsPasswordInput");
       const passwordConfirmInput = settingsViewEl.querySelector("#settingsPasswordConfirmInput");
       const passwordBtn = settingsViewEl.querySelector("#settingsPasswordSaveBtn");
+      if (passwordForm && passwordBtn) {
+        passwordForm.addEventListener("submit", (event) => {
+          event.preventDefault();
+          passwordBtn.click();
+        });
+      }
       if (passwordBtn && passwordInput && passwordConfirmInput) {
         passwordBtn.addEventListener("click", async () => {
           const password = passwordInput.value.trim();
