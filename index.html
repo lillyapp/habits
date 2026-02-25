@@ -11,41 +11,10 @@
       <meta name="apple-mobile-web-app-capable" content="yes">
       <meta name="mobile-web-app-capable" content="yes">
       
-<!-- OneSignal -->
-      <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.__oneSignalInitStatus = {
-    ready: false,
-    error: null,
-    serviceWorkerInstallFailed: false
-  };
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    try {
-      await OneSignal.init({
-        appId: "c3cfa0bc-4faf-48c3-a00f-f5ce23924559",
-        safari_web_id: "web.onesignal.auto.55479a10-4eda-4299-901a-290da3fd1836",
-        serviceWorkerPath: "/OneSignalSDKWorker.js",
-        serviceWorkerUpdaterPath: "/OneSignalSDKWorker.js",
-        serviceWorkerParam: { scope: "/habits/onesignal/" },
-        notifyButton: { enable: false }
-      });
-      window.__oneSignalInitStatus = {
-        ready: true,
-        error: null,
-        serviceWorkerInstallFailed: false
-      };
-    } catch (err) {
-      const msg = String(err?.message || err || "");
-      window.__oneSignalInitStatus = {
-        ready: false,
-        error: msg,
-        serviceWorkerInstallFailed: /service\s*worker/i.test(msg)
-      };
-      console.warn("OneSignal init fehlgeschlagen:", err);
-    }
-  });
-</script>
+<!-- Firebase Cloud Messaging (FCM) -->
+      <script src="/habits/firebase-messaging-config.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js" defer></script>
+      <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js" defer></script>
           
   <!-- Lucide -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -2339,7 +2308,7 @@
   <form id="loginForm" novalidate>
     <input id="loginName" class="login-input" placeholder="Name" type="text" style="display:none;" />
     <input id="loginEmail" class="login-input" placeholder="E-Mail" type="email" />
-    <input id="loginPassword" class="login-input" placeholder="Passwort" type="password" />
+    <input id="loginPassword" class="login-input" placeholder="Passwort" type="password" autocomplete="current-password" />
     <div id="forgotPw" style="
       display:none;
       text-align:center;
@@ -2668,7 +2637,7 @@
 
     let unreadNotificationCount = 0;
 
-    // Legacy Supabase notification polling removed (OneSignal is used instead).
+    // Legacy Supabase notification polling removed (notifications are handled via Web Push/FCM).
     function startNotificationPolling() {}
     function stopNotificationPolling() {}
 
@@ -2747,20 +2716,100 @@
       return { error };
     }
 
-    function getOneSignalInstance() {
-      return new Promise((resolve) => {
-        const queue = window.OneSignalDeferred = window.OneSignalDeferred || [];
-        queue.push(async (OneSignal) => resolve(OneSignal || null));
-      });
+    const FCM_TOKEN_STORAGE_KEY = "fcm_registration_token_v1";
+    let firebaseMessagingClient = null;
+    let firebaseForegroundListenerAttached = false;
+
+    function getFirebaseMessagingSetup() {
+      const config = (typeof window !== "undefined" && window.__HABITS_FIREBASE_CONFIG) || null;
+      const vapidKey = (typeof window !== "undefined" && window.__HABITS_FIREBASE_VAPID_KEY) || "";
+      const required = ["apiKey", "authDomain", "projectId", "messagingSenderId", "appId"];
+      const missingFields = [];
+
+      if (!config || typeof config !== "object") {
+        missingFields.push("config");
+      } else {
+        required.forEach((key) => {
+          if (!config[key]) missingFields.push(key);
+        });
+      }
+      if (!vapidKey) missingFields.push("vapidKey");
+
+      return {
+        config,
+        vapidKey,
+        configured: missingFields.length === 0,
+        missingFields
+      };
     }
 
-    function getOneSignalInitStatus() {
-      const status = window.__oneSignalInitStatus || {};
+    function getStoredFcmToken() {
+      try {
+        return localStorage.getItem(FCM_TOKEN_STORAGE_KEY) || "";
+      } catch (e) {
+        return "";
+      }
+    }
+
+    function setStoredFcmToken(token) {
+      try {
+        if (token) localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
+        else localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
+      } catch (e) {}
+    }
+
+    async function ensureFirebaseMessagingClient() {
+      const setup = getFirebaseMessagingSetup();
+      if (!setup.configured) {
+        throw new Error(
+          `Firebase FCM ist noch nicht konfiguriert (${setup.missingFields.join(", ")}). Trage die Werte in /habits/firebase-messaging-config.js ein.`
+        );
+      }
+
+      if (!window.firebase?.initializeApp || !window.firebase?.messaging) {
+        throw new Error("Firebase SDK ist noch nicht geladen.");
+      }
+
+      const isSupportedFn = window.firebase.messaging.isSupported;
+      const isSupported = typeof isSupportedFn === "function"
+        ? await Promise.resolve(isSupportedFn())
+        : true;
+      if (!isSupported) {
+        throw new Error("Web-Push/FCM wird auf diesem Gerät oder Browser nicht unterstützt.");
+      }
+
+      if (!window.firebase.apps?.length) {
+        window.firebase.initializeApp(setup.config);
+      } else if (!window.firebase.apps[0]) {
+        window.firebase.initializeApp(setup.config);
+      }
+
+      firebaseMessagingClient = firebaseMessagingClient || window.firebase.messaging();
+
+      if (!firebaseForegroundListenerAttached && typeof firebaseMessagingClient.onMessage === "function") {
+        firebaseMessagingClient.onMessage((payload) => {
+          console.info("FCM foreground message:", payload);
+        });
+        firebaseForegroundListenerAttached = true;
+      }
+
       return {
-        ready: Boolean(status.ready),
-        error: status.error ? String(status.error) : "",
-        serviceWorkerInstallFailed: Boolean(status.serviceWorkerInstallFailed)
+        messaging: firebaseMessagingClient,
+        vapidKey: setup.vapidKey
       };
+    }
+
+    async function getPushServiceWorkerRegistration() {
+      if (!("serviceWorker" in navigator)) {
+        throw new Error("Service Worker werden in diesem Browser nicht unterstützt.");
+      }
+
+      let reg = await navigator.serviceWorker.getRegistration("/habits/sw.js");
+      if (!reg) reg = await navigator.serviceWorker.getRegistration("/habits/");
+      if (!reg) reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) reg = await navigator.serviceWorker.register("/habits/sw.js");
+
+      return reg;
     }
 
     async function getNotificationSettingsState() {
@@ -2775,32 +2824,20 @@
       }
 
       try {
-        const initStatus = getOneSignalInitStatus();
-        if (initStatus.serviceWorkerInstallFailed) {
+        const setup = getFirebaseMessagingSetup();
+        if (!setup.configured) {
           return {
             supported: false,
             enabled: false,
             permission: (typeof Notification !== "undefined" ? Notification.permission : "default"),
             disableControls: true,
-            message: `Service-Worker konnte nicht installiert werden: ${initStatus.error || "Unbekannter Fehler"}`
+            message: `Firebase FCM ist noch nicht konfiguriert (${setup.missingFields.join(", ")}).`
           };
         }
 
-        const OneSignal = await getOneSignalInstance();
-        if (!OneSignal) {
-          return {
-            supported: false,
-            enabled: false,
-            permission: (typeof Notification !== "undefined" ? Notification.permission : "default"),
-            disableControls: true,
-            message: "OneSignal ist noch nicht geladen."
-          };
-        }
+        await ensureFirebaseMessagingClient();
 
-        const pushSupported = await Promise.resolve(
-          OneSignal.Notifications?.isPushSupported?.() ?? false
-        );
-        if (!pushSupported) {
+        if (!("Notification" in window) || !("serviceWorker" in navigator)) {
           return {
             supported: false,
             enabled: false,
@@ -2810,16 +2847,17 @@
           };
         }
 
-        const permission =
-          OneSignal.Notifications?.permission ||
-          (typeof Notification !== "undefined" ? Notification.permission : "default");
-        const optedIn = Boolean(OneSignal.User?.PushSubscription?.optedIn);
+        const permission = typeof Notification !== "undefined" ? Notification.permission : "default";
+        const storedToken = getStoredFcmToken();
+        const optedIn = permission === "granted" && Boolean(storedToken);
 
         let message = "";
         if (permission === "denied") {
           message = "Benachrichtigungen sind im Browser blockiert. Bitte im Browser wieder erlauben.";
         } else if (optedIn) {
           message = "Benachrichtigungen sind aktiviert.";
+        } else if (permission === "granted" && !storedToken) {
+          message = "Benachrichtigungen sind erlaubt, aber noch nicht mit FCM registriert.";
         } else {
           message = "Benachrichtigungen sind deaktiviert.";
         }
@@ -2844,16 +2882,44 @@
       }
     }
 
-    async function enableOneSignalNotifications() {
-      const OneSignal = await getOneSignalInstance();
-      if (!OneSignal) throw new Error("OneSignal nicht verfügbar.");
-      await Promise.resolve(OneSignal.User?.PushSubscription?.optIn?.());
+    async function enablePushNotifications() {
+      const { messaging, vapidKey } = await ensureFirebaseMessagingClient();
+
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        if (permission === "denied") {
+          throw new Error("Benachrichtigungen sind im Browser blockiert.");
+        }
+        throw new Error("Benachrichtigungsfreigabe wurde nicht erteilt.");
+      }
+
+      const serviceWorkerRegistration = await getPushServiceWorkerRegistration();
+      const token = await messaging.getToken({
+        vapidKey,
+        serviceWorkerRegistration
+      });
+
+      if (!token) {
+        throw new Error("FCM-Token konnte nicht erstellt werden.");
+      }
+
+      setStoredFcmToken(token);
+      return token;
     }
 
-    async function disableOneSignalNotifications() {
-      const OneSignal = await getOneSignalInstance();
-      if (!OneSignal) throw new Error("OneSignal nicht verfügbar.");
-      await Promise.resolve(OneSignal.User?.PushSubscription?.optOut?.());
+    async function disablePushNotifications() {
+      const token = getStoredFcmToken();
+      if (!token) return;
+
+      try {
+        const { messaging } = await ensureFirebaseMessagingClient();
+        const deleted = await messaging.deleteToken();
+        if (deleted === false) {
+          throw new Error("FCM-Token konnte nicht gelöscht werden.");
+        }
+      } finally {
+        setStoredFcmToken("");
+      }
     }
 
     function getCardTitleColor(card) {
@@ -3017,7 +3083,7 @@
     }
 
     async function requestNotificationPermissionOnce() {
-      // Legacy custom push flow removed. OneSignal opt-in is handled from Settings.
+      // Legacy custom push flow removed. Push opt-in is handled from Settings (FCM).
       localStorage.setItem(PERM_KEYS.notifications, "1");
     }
 
@@ -3415,7 +3481,7 @@
         notificationsOnBtn.addEventListener("click", async () => {
           setStatus(displayStatus, "", "");
           try {
-            await enableOneSignalNotifications();
+            await enablePushNotifications();
             await refreshNotificationControls();
             const state = await getNotificationSettingsState();
             if (state.permission === "denied") {
@@ -3437,7 +3503,7 @@
         notificationsOffBtn.addEventListener("click", async () => {
           setStatus(displayStatus, "", "");
           try {
-            await disableOneSignalNotifications();
+            await disablePushNotifications();
             await refreshNotificationControls();
             setStatus(displayStatus, "Benachrichtigungen deaktiviert.", "success");
           } catch (err) {
@@ -7931,7 +7997,7 @@ if ("serviceWorker" in navigator) {
   }
 }
     
-    // Legacy Supabase push realtime removed. Notifications are handled via OneSignal.
+    // Legacy Supabase push realtime removed. Notifications are handled via Web Push/FCM.
       
       async function checkMedalScreen() {
         if (!currentUser) return;
