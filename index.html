@@ -1517,6 +1517,36 @@
       align-items: center;
       gap: 6px;
       flex: 0 0 auto;
+      --settings-head-icon-size: 28px;
+      --settings-head-icon-gap: 6px;
+    }
+
+    .settings-subsection-head-search {
+      display: none;
+      align-items: center;
+      min-width: 0;
+      width: min(260px, 44vw);
+      margin-right: calc(-1 * (var(--settings-head-icon-size) + var(--settings-head-icon-gap)));
+      z-index: 0;
+    }
+
+    .settings-subsection-head-search input {
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.045);
+      color: var(--c-text);
+      height: var(--settings-head-icon-size);
+      padding: 0 10px;
+      font-size: 0.88rem;
+      line-height: 1.2;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .settings-subsection-head-search input::placeholder {
+      color: var(--c-text);
+      opacity: 0.45;
     }
 
     .settings-head-icon-btn {
@@ -1532,6 +1562,8 @@
       cursor: pointer;
       padding: 0;
       flex: 0 0 auto;
+      position: relative;
+      z-index: 1;
     }
 
     .settings-head-icon-btn svg {
@@ -1727,6 +1759,10 @@
 
     .settings-admin-row:hover {
       background: rgba(0,0,0,0.045);
+    }
+
+    #settingsAdminUsersStatus:empty {
+      display: none;
     }
 
     @media (min-width: 980px) {
@@ -1940,6 +1976,18 @@
       .settings-head-icon-btn {
         width: 30px;
         height: 30px;
+        border-radius: 10px;
+      }
+
+      .settings-subsection-head-search {
+        --settings-head-icon-size: 30px;
+        --settings-head-icon-gap: 6px;
+        width: min(300px, 40vw);
+      }
+
+      .settings-subsection-head-search input {
+        height: var(--settings-head-icon-size);
+        padding: 0 11px;
         border-radius: 10px;
       }
 
@@ -4404,6 +4452,9 @@
                 <div class="settings-subsection-head">
                   <div class="settings-subsection-head-spacer"></div>
                   <div class="settings-subsection-head-actions">
+                    <div class="settings-subsection-head-search" id="settingsAdminUsersSearchWrap" style="display:none;">
+                      <input id="settingsAdminUsersSearchInput" type="search" placeholder="Name, E-Mail oder Rolle suchen" autocomplete="off" aria-label="Nutzer suchen" />
+                    </div>
                     <button type="button" class="settings-head-icon-btn" id="settingsAdminUsersSearchToggleBtn" aria-label="Suche öffnen" title="Suche">
                       <i data-lucide="search"></i>
                     </button>
@@ -4411,10 +4462,6 @@
                       <i data-lucide="plus"></i>
                     </button>
                   </div>
-                </div>
-                <div class="settings-field" id="settingsAdminUsersSearchWrap" style="display:none;">
-                  <label for="settingsAdminUsersSearchInput">Suche</label>
-                  <input id="settingsAdminUsersSearchInput" type="search" placeholder="Name, E-Mail oder Rolle suchen" autocomplete="off" />
                 </div>
                 <div class="settings-status" id="settingsAdminUsersStatus"></div>
                 <div class="settings-admin-list" id="settingsAdminUsersList"></div>
@@ -4536,6 +4583,7 @@
       const inviteCopyBtn = settingsViewEl.querySelector("#settingsInviteCopyBtn");
       const inviteCreateBlock = settingsViewEl.querySelector("#settingsInviteCreateBlock");
       const adminUsersList = settingsViewEl.querySelector("#settingsAdminUsersList");
+      const adminUsersStatusWrap = settingsViewEl.querySelector("#settingsAdminUsersStatus");
       const adminUsersSearchInput = settingsViewEl.querySelector("#settingsAdminUsersSearchInput");
       const adminUsersSearchWrap = settingsViewEl.querySelector("#settingsAdminUsersSearchWrap");
       const adminUsersSearchToggleBtn = settingsViewEl.querySelector("#settingsAdminUsersSearchToggleBtn");
@@ -4658,7 +4706,7 @@
             adminUsersSearchToggleBtn.setAttribute("aria-label", "Suche öffnen");
             adminUsersSearchToggleBtn.setAttribute("title", "Suche");
           } else {
-            adminUsersSearchWrap.style.display = "";
+            adminUsersSearchWrap.style.display = "inline-flex";
             adminUsersSearchToggleBtn.setAttribute("aria-label", "Suche schließen");
             adminUsersSearchToggleBtn.setAttribute("title", "Suche schließen");
             requestAnimationFrame(() => adminUsersSearchInput?.focus());
@@ -4671,11 +4719,17 @@
           const isOpen = inviteCreateBlock.style.display !== "none";
           if (isOpen) {
             inviteCreateBlock.style.display = "none";
+            if (adminUsersSearchWrap) adminUsersSearchWrap.style.display = "none";
+            if (adminUsersList) adminUsersList.style.display = "";
+            if (adminUsersStatusWrap) adminUsersStatusWrap.style.display = "";
             adminInviteToggleBtn.setAttribute("aria-label", "Neuen Nutzer öffnen");
             adminInviteToggleBtn.setAttribute("title", "Neuer Nutzer");
             adminInviteToggleBtn.innerHTML = `<i data-lucide="plus"></i>`;
           } else {
             inviteCreateBlock.style.display = "";
+            if (adminUsersSearchWrap) adminUsersSearchWrap.style.display = "none";
+            if (adminUsersList) adminUsersList.style.display = "none";
+            if (adminUsersStatusWrap) adminUsersStatusWrap.style.display = "none";
             adminInviteToggleBtn.setAttribute("aria-label", "Neuen Nutzer schließen");
             adminInviteToggleBtn.setAttribute("title", "Neuen Nutzer schließen");
             adminInviteToggleBtn.innerHTML = `<i data-lucide="x"></i>`;
@@ -6183,6 +6237,43 @@ async function enforceUnlockedSessionOrLogout() {
   return true;
 }
 
+async function waitForSupabaseVerifiedSession(timeoutMs = 10 * 60 * 1000, pollMs = 2000) {
+  return await new Promise((resolve) => {
+    let settled = false;
+    let intervalId = null;
+    let timeoutId = null;
+    let authSub = null;
+
+    const finish = (session) => {
+      if (settled) return;
+      settled = true;
+      try { if (intervalId) clearInterval(intervalId); } catch (e) {}
+      try { if (timeoutId) clearTimeout(timeoutId); } catch (e) {}
+      try { authSub?.subscription?.unsubscribe?.(); } catch (e) {}
+      resolve(session || null);
+    };
+
+    try {
+      const subRes = supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (session?.user) finish(session);
+      });
+      authSub = subRes?.data || subRes;
+    } catch (e) {
+      console.error("onAuthStateChange subscribe error:", e);
+    }
+
+    intervalId = setInterval(async () => {
+      if (settled) return;
+      try {
+        const { data } = await supabaseClient.auth.getSession();
+        if (data?.session?.user) finish(data.session);
+      } catch (e) {}
+    }, Math.max(800, pollMs));
+
+    timeoutId = setTimeout(() => finish(null), Math.max(3000, timeoutMs));
+  });
+}
+
 function setRegisterPinStep(unlocked) {
   registerPinVerified = Boolean(unlocked);
   if (loginPin) {
@@ -6331,6 +6422,20 @@ forgotPw.onclick = () => {
             error = consumeUnexpectedErr;
           }
         }
+
+        if (!error && signUpData?.user && !signUpData?.session) {
+          if (loginHeadline) loginHeadline.textContent = "Bitte E-Mail bestätigen";
+          if (loginOkBtn) loginOkBtn.disabled = true;
+          showLoginMessage("Wir warten auf deine Verifikation durch Supabase ...", "success");
+
+          const verifiedSession = await waitForSupabaseVerifiedSession();
+
+          if (loginOkBtn) loginOkBtn.disabled = false;
+          if (!verifiedSession?.user) {
+            showLoginMessage("Bitte E-Mail bestätigen. Danach wirst du automatisch weitergeleitet oder kannst dich anmelden.", "success");
+            return;
+          }
+        }
       }
 
       else if (authMode === "reset") {
@@ -6375,6 +6480,7 @@ forgotPw.onclick = () => {
       await safeLoadHabits();
       const subline = document.getElementById("loginSubline");
       if (subline) subline.style.display = "none";
+      if (loginOkBtn) loginOkBtn.disabled = false;
       await proceedAfterIntro();
     };
 
