@@ -2902,6 +2902,11 @@
           message = "Benachrichtigungen sind im Browser blockiert. Bitte im Browser wieder erlauben.";
         } else if (optedIn) {
           message = "Benachrichtigungen sind aktiviert.";
+          if (currentUser?.id && storedToken) {
+            upsertFcmTokenInSupabase(storedToken).catch((err) => {
+              console.error("silent FCM token sync error:", err);
+            });
+          }
         } else if (permission === "granted" && !storedToken) {
           message = "Benachrichtigungen sind erlaubt, aber noch nicht mit FCM registriert.";
         } else {
