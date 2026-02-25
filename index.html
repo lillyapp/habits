@@ -429,6 +429,36 @@
       flex:0 0 auto;
     }
 
+    #loginVerificationResend {
+      margin-top: 10px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--c-text);
+      opacity: 0.8;
+      text-align: center;
+    }
+
+    #loginVerificationResendBtn {
+      border: none;
+      background: transparent;
+      color: var(--c-text);
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0;
+      font: inherit;
+      font-weight: 700;
+    }
+
+    #loginVerificationResendBtn:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+      text-decoration: none;
+    }
+
     /* MAIN PAGE (Habit-Klötze) */
     #appPage {
       position:absolute;
@@ -3120,6 +3150,10 @@
   </form>
 
   <div id="loginError"></div>
+  <div id="loginVerificationResend">
+    <button id="loginVerificationResendBtn" type="button">Code erneut senden</button>
+    <span id="loginVerificationResendHint"></span>
+  </div>
 </div>
 
 <!-- INTRO PROGRESS SCREEN -->
