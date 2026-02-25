@@ -2761,6 +2761,46 @@
       } catch (e) {}
     }
 
+    async function upsertFcmTokenInSupabase(token) {
+      if (!token || !currentUser?.id) return;
+
+      const payload = {
+        user_id: currentUser.id,
+        token,
+        platform: "web",
+        is_active: true,
+        permission: (typeof Notification !== "undefined" ? Notification.permission : "default"),
+        user_agent: (typeof navigator !== "undefined" ? navigator.userAgent : ""),
+        last_seen_at: new Date().toISOString()
+      };
+
+      const { error } = await supabaseClient
+        .from("push_subscriptions")
+        .upsert(payload, { onConflict: "user_id,token" });
+
+      if (error) {
+        throw new Error(error.message || "FCM-Token konnte nicht in Supabase gespeichert werden.");
+      }
+    }
+
+    async function disableFcmTokenInSupabase(token) {
+      if (!token || !currentUser?.id) return;
+
+      const { error } = await supabaseClient
+        .from("push_subscriptions")
+        .update({
+          is_active: false,
+          permission: (typeof Notification !== "undefined" ? Notification.permission : "default"),
+          last_seen_at: new Date().toISOString()
+        })
+        .eq("user_id", currentUser.id)
+        .eq("token", token);
+
+      if (error) {
+        console.error("disableFcmTokenInSupabase error:", error);
+      }
+    }
+
     async function ensureFirebaseMessagingClient() {
       const setup = getFirebaseMessagingSetup();
       if (!setup.configured) {
@@ -2910,6 +2950,12 @@
       }
 
       setStoredFcmToken(token);
+      try {
+        await upsertFcmTokenInSupabase(token);
+      } catch (err) {
+        console.error("upsert FCM token error:", err);
+        throw new Error("Benachrichtigungen aktiviert, aber Token konnte nicht in Supabase gespeichert werden.");
+      }
       return token;
     }
 
@@ -2924,6 +2970,7 @@
           throw new Error("FCM-Token konnte nicht gelöscht werden.");
         }
       } finally {
+        await disableFcmTokenInSupabase(token);
         setStoredFcmToken("");
       }
     }
