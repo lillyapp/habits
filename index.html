@@ -2366,7 +2366,7 @@
       padding:20px;
       text-align:center;
     ">
-      <img id="medalImage" src="https://raw.githubusercontent.com/lillyapp/habits/refs/heads/main/firstplace.png" style="
+      <img id="medalImage" src="/habits/3FC2E555-7142-43BE-83DE-E5ED7A123793.png" style="
         width:140px;
         height:140px;
         margin-bottom:28px;
@@ -2722,7 +2722,8 @@
 
     function getFirebaseMessagingSetup() {
       const config = (typeof window !== "undefined" && window.__HABITS_FIREBASE_CONFIG) || null;
-      const vapidKey = (typeof window !== "undefined" && window.__HABITS_FIREBASE_VAPID_KEY) || "";
+      const vapidKeyRaw = (typeof window !== "undefined" && window.__HABITS_FIREBASE_VAPID_KEY) || "";
+      const vapidKey = String(vapidKeyRaw || "").trim();
       const required = ["apiKey", "authDomain", "projectId", "messagingSenderId", "appId"];
       const missingFields = [];
 
@@ -2733,11 +2734,13 @@
           if (!config[key]) missingFields.push(key);
         });
       }
+      const vapidKeyLikelyValid = vapidKey.length >= 80 && /^[A-Za-z0-9_-]+$/.test(vapidKey);
       if (!vapidKey) missingFields.push("vapidKey");
 
       return {
         config,
         vapidKey,
+        vapidKeyLikelyValid,
         configured: missingFields.length === 0,
         missingFields
       };
@@ -2764,6 +2767,9 @@
         throw new Error(
           `Firebase FCM ist noch nicht konfiguriert (${setup.missingFields.join(", ")}). Trage die Werte in /habits/firebase-messaging-config.js ein.`
         );
+      }
+      if (!setup.vapidKeyLikelyValid) {
+        throw new Error("Der FCM Web Push Public VAPID Key ist ungültig. Bitte den langen Schlüssel aus Firebase > Cloud Messaging > Web-Push-Zertifikate > Schlüsselpaar einfügen.");
       }
 
       if (!window.firebase?.initializeApp || !window.firebase?.messaging) {
@@ -3406,6 +3412,7 @@
             <div class="settings-inline-note">Supabase sendet ggf. eine Bestätigungs-E-Mail an die neue Adresse.</div>
 
             <form id="settingsPasswordForm" novalidate>
+              <input type="email" autocomplete="username" value="${escapeHtml(currentEmail)}" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;" />
               <div class="settings-field">
                 <label for="settingsPasswordInput">Neues Passwort</label>
                 <input id="settingsPasswordInput" type="password" placeholder="Mindestens 6 Zeichen" autocomplete="new-password" />
@@ -8035,13 +8042,13 @@ if ("serviceWorker" in navigator) {
 
         // Erfolg: showMedal = 1
         if (parseInt(data.showMedal) === 1) {
-          medalImage.src = "https://raw.githubusercontent.com/lillyapp/habits/refs/heads/main/firstplace.png";
+          medalImage.src = "/habits/3FC2E555-7142-43BE-83DE-E5ED7A123793.png";
           medalText.textContent =
             `Yeah! Du hast eine Woche mehr geschafft! Dein Streak ist bei ${streak}.`;
         }
         // Misserfolg: showMedal = 0
         else {
-          medalImage.src = "https://raw.githubusercontent.com/lillyapp/habits/refs/heads/main/cry.png";
+          medalImage.src = "/habits/3FC2E555-7142-43BE-83DE-E5ED7A123793.png";
           medalText.textContent =
             "Dein Streak wurde nicht erweitert.\nDu schaffst es!";
         }
