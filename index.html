@@ -3501,6 +3501,7 @@
     let habits      = [];
     let currentUser = null;
     let authMode    = "login";
+    let awaitingSignupVerification = false;
     let verificationResendEmail = "";
     let verificationResendCooldownUntil = 0;
     let verificationResendTimerId = null;
@@ -6237,6 +6238,7 @@ function stopVerificationResendTimer() {
 
 function hideVerificationResend() {
   stopVerificationResendTimer();
+  awaitingSignupVerification = false;
   verificationResendEmail = "";
   verificationResendCooldownUntil = 0;
   if (loginVerificationResend) loginVerificationResend.style.display = "none";
@@ -6386,6 +6388,7 @@ function setRegisterPinStep(unlocked) {
 
 btnLogin.onclick = () => {
   authMode = "login";
+  awaitingSignupVerification = false;
   registerPinVerified = false;
   registerPinRole = "user";
   if (loginHeadline) loginHeadline.textContent = "Bitte melde dich an";
@@ -6410,6 +6413,7 @@ btnLogin.onclick = () => {
 
 btnRegister.onclick = () => {
   authMode = "register";
+  awaitingSignupVerification = false;
   registerPinRole = "user";
   if (loginPin) {
     loginPin.value = "";
@@ -6430,6 +6434,7 @@ btnRegister.onclick = () => {
 // Passwort vergessen
 forgotPw.onclick = () => {
   authMode = "reset";
+  awaitingSignupVerification = false;
   registerPinVerified = false;
   registerPinRole = "user";
   if (loginHeadline) loginHeadline.textContent = "Passwort zurücksetzen";
@@ -6479,6 +6484,45 @@ forgotPw.onclick = () => {
       const pin      = loginPin?.value.trim() || "";
       const password = loginPassword.value.trim();
       const name     = loginName.value.trim();
+
+      if (authMode === "register" && awaitingSignupVerification) {
+        const { data: sessionData, error: sessionErr } = await supabaseClient.auth.getSession();
+        if (sessionErr) {
+          showLoginMessage(sessionErr.message || "Verifikation konnte nicht geprüft werden.");
+          return;
+        }
+        if (!sessionData?.session?.user) {
+          showLoginMessage("Verifikation noch nicht abgeschlossen.");
+          return;
+        }
+
+        currentUser = sessionData.session.user;
+        if (await enforceUnlockedSessionOrLogout()) {
+          if (loginScreen) {
+            loginScreen.style.display = "flex";
+            loginScreen.style.opacity = "1";
+          }
+          if (typeof btnLogin !== "undefined" && btnLogin) btnLogin.click();
+          showLoginMessage("Dieses Konto ist gesperrt.");
+          return;
+        }
+        await loadUserSettings();
+        refreshBellIcon();
+
+        setupRealtime();
+        setupShakeDetection();
+        renderInitialLoadingSkeletons();
+
+        await checkStreakResetGate();
+        await checkReminderResetDaily();
+        await safeLoadHabits();
+        const subline = document.getElementById("loginSubline");
+        if (subline) subline.style.display = "none";
+        if (loginOkBtn) loginOkBtn.disabled = false;
+        hideVerificationResend();
+        await proceedAfterIntro();
+        return;
+      }
 
       if (authMode === "register" && !registerPinVerified) {
         if (!pin) {
@@ -6539,19 +6583,15 @@ forgotPw.onclick = () => {
         }
 
         if (!error && signUpData?.user && !signUpData?.session) {
+          awaitingSignupVerification = true;
           if (loginHeadline) loginHeadline.textContent = "Bitte E-Mail bestätigen";
-          if (loginOkBtn) loginOkBtn.disabled = true;
-          beginVerificationResendCooldown(email, 120000);
-          showLoginMessage("Wir warten auf deine Verifikation durch Supabase ...", "success");
-
-          const verifiedSession = await waitForSupabaseVerifiedSession();
-
-          if (loginOkBtn) loginOkBtn.disabled = false;
-          if (!verifiedSession?.user) {
-            showLoginMessage("Bitte E-Mail bestätigen. Danach wirst du automatisch weitergeleitet oder kannst dich anmelden.", "success");
-            return;
+          if (loginOkBtn) {
+            loginOkBtn.disabled = false;
+            loginOkBtn.textContent = "Ich habe verifiziert";
           }
-          hideVerificationResend();
+          beginVerificationResendCooldown(email, 120000);
+          showLoginMessage("Bitte verifiziere dich über Supabase und klicke danach auf den Button.", "success");
+          return;
         }
       }
 
