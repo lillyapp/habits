@@ -3823,11 +3823,7 @@
             await enablePushNotifications();
             await refreshNotificationControls();
             const state = await getNotificationSettingsState();
-            if (state.permission === "denied") {
-              setStatus(displayStatus, "Im Browser blockiert. Bitte Benachrichtigungen in den Browser-Einstellungen erlauben.", "error");
-            } else if (state.enabled) {
-              setStatus(displayStatus, "Benachrichtigungen aktiviert.", "success");
-            } else {
+            if (!state.enabled) {
               setStatus(displayStatus, "Benachrichtigungen konnten nicht aktiviert werden.", "error");
             }
           } catch (err) {
@@ -3844,7 +3840,6 @@
           try {
             await disablePushNotifications();
             await refreshNotificationControls();
-            setStatus(displayStatus, "Benachrichtigungen deaktiviert.", "success");
           } catch (err) {
             console.error("disable notifications error:", err);
             setStatus(displayStatus, err?.message || "Benachrichtigungen konnten nicht deaktiviert werden.", "error");
