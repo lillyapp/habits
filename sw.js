@@ -153,7 +153,12 @@ self.addEventListener("fetch", event => {
     caches.match(req).then(cached => cached || fetch(req).then(networkResp => {
       // Cache some same-origin static assets for offline use
       if (req.method === 'GET' && url.origin === location.origin && (ASSETS.includes(url.pathname) || /\.(js|css|png|jpg|svg|json)$/.test(url.pathname))) {
-        caches.open(CACHE_NAME).then(cache => cache.put(req, networkResp.clone()));
+        const responseForCache = networkResp.clone();
+        event.waitUntil(
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(req, responseForCache))
+            .catch(() => {})
+        );
       }
       return networkResp;
     }).catch(() => caches.match('/habits/')))
