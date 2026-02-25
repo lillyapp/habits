@@ -2717,6 +2717,7 @@
     }
 
     const FCM_TOKEN_STORAGE_KEY = "fcm_registration_token_v1";
+    const FCM_TOKEN_REGISTERED_STORAGE_KEY = "fcm_registration_confirmed_v1";
     let firebaseMessagingClient = null;
     let firebaseForegroundListenerAttached = false;
 
@@ -2761,6 +2762,21 @@
       } catch (e) {}
     }
 
+    function isStoredFcmTokenRegistered() {
+      try {
+        return localStorage.getItem(FCM_TOKEN_REGISTERED_STORAGE_KEY) === "1";
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function setStoredFcmTokenRegistered(isRegistered) {
+      try {
+        if (isRegistered) localStorage.setItem(FCM_TOKEN_REGISTERED_STORAGE_KEY, "1");
+        else localStorage.removeItem(FCM_TOKEN_REGISTERED_STORAGE_KEY);
+      } catch (e) {}
+    }
+
     async function upsertFcmTokenInSupabase(token) {
       if (!token || !currentUser?.id) return;
 
@@ -2781,6 +2797,7 @@
       if (error) {
         throw new Error(error.message || "FCM-Token konnte nicht in Supabase gespeichert werden.");
       }
+      setStoredFcmTokenRegistered(true);
     }
 
     async function disableFcmTokenInSupabase(token) {
@@ -2799,6 +2816,7 @@
       if (error) {
         console.error("disableFcmTokenInSupabase error:", error);
       }
+      setStoredFcmTokenRegistered(false);
     }
 
     async function ensureFirebaseMessagingClient() {
@@ -2895,7 +2913,8 @@
 
         const permission = typeof Notification !== "undefined" ? Notification.permission : "default";
         const storedToken = getStoredFcmToken();
-        const optedIn = permission === "granted" && Boolean(storedToken);
+        const tokenRegistered = isStoredFcmTokenRegistered();
+        const optedIn = permission === "granted" && Boolean(storedToken) && tokenRegistered;
 
         let message = "";
         if (permission === "denied") {
@@ -2907,8 +2926,8 @@
               console.error("silent FCM token sync error:", err);
             });
           }
-        } else if (permission === "granted" && !storedToken) {
-          message = "Benachrichtigungen sind erlaubt, aber noch nicht mit FCM registriert.";
+        } else if (permission === "granted" && (!storedToken || !tokenRegistered)) {
+          message = "Benachrichtigungen sind erlaubt, aber noch nicht registriert.";
         } else {
           message = "Benachrichtigungen sind deaktiviert.";
         }
@@ -2955,6 +2974,7 @@
       }
 
       setStoredFcmToken(token);
+      setStoredFcmTokenRegistered(false);
       try {
         await upsertFcmTokenInSupabase(token);
       } catch (err) {
@@ -2977,6 +2997,7 @@
       } finally {
         await disableFcmTokenInSupabase(token);
         setStoredFcmToken("");
+        setStoredFcmTokenRegistered(false);
       }
     }
 

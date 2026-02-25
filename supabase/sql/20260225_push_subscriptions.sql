@@ -14,6 +14,36 @@ create table if not exists public.push_subscriptions (
   unique (user_id, token)
 );
 
+alter table public.push_subscriptions
+  add column if not exists platform text default 'web',
+  add column if not exists user_agent text,
+  add column if not exists permission text,
+  add column if not exists is_active boolean default true,
+  add column if not exists last_seen_at timestamptz default now(),
+  add column if not exists created_at timestamptz default now(),
+  add column if not exists updated_at timestamptz default now();
+
+update public.push_subscriptions
+set
+  platform = coalesce(platform, 'web'),
+  is_active = coalesce(is_active, true),
+  last_seen_at = coalesce(last_seen_at, now()),
+  created_at = coalesce(created_at, now()),
+  updated_at = coalesce(updated_at, now())
+where
+  platform is null
+  or is_active is null
+  or last_seen_at is null
+  or created_at is null
+  or updated_at is null;
+
+alter table public.push_subscriptions
+  alter column platform set default 'web',
+  alter column is_active set default true,
+  alter column last_seen_at set default now(),
+  alter column created_at set default now(),
+  alter column updated_at set default now();
+
 create index if not exists push_subscriptions_user_id_idx
   on public.push_subscriptions (user_id);
 

@@ -43,16 +43,41 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
+type FirebaseServiceAccount = {
+  project_id: string;
+  client_email: string;
+  private_key: string;
+};
+
+function tryGetFirebaseServiceAccountFromJsonEnv(): FirebaseServiceAccount | null {
+  const raw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON")?.trim();
+  if (!raw) return null;
+
+  const parsed = JSON.parse(raw) as Partial<FirebaseServiceAccount>;
+  const project_id = String(parsed.project_id || "").trim();
+  const client_email = String(parsed.client_email || "").trim();
+  const private_key = String(parsed.private_key || "").replace(/\\n/g, "\n");
+
+  if (!project_id || !client_email || !private_key) {
+    throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON is present but missing project_id/client_email/private_key");
+  }
+
+  return { project_id, client_email, private_key };
+}
+
 async function getFcmAccessToken() {
-  const projectId = requireEnv("FIREBASE_PROJECT_ID");
-  const clientEmail = requireEnv("FIREBASE_CLIENT_EMAIL");
-  const privateKey = requireEnv("FIREBASE_PRIVATE_KEY").replace(/\\n/g, "\n");
+  const serviceAccount =
+    tryGetFirebaseServiceAccountFromJsonEnv() || {
+      project_id: requireEnv("FIREBASE_PROJECT_ID"),
+      client_email: requireEnv("FIREBASE_CLIENT_EMAIL"),
+      private_key: requireEnv("FIREBASE_PRIVATE_KEY").replace(/\\n/g, "\n"),
+    };
 
   const auth = new GoogleAuth({
     credentials: {
-      project_id: projectId,
-      client_email: clientEmail,
-      private_key: privateKey,
+      project_id: serviceAccount.project_id,
+      client_email: serviceAccount.client_email,
+      private_key: serviceAccount.private_key,
     },
     scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
   });
@@ -62,7 +87,7 @@ async function getFcmAccessToken() {
   const accessToken = typeof token === "string" ? token : (token?.token || "");
   if (!accessToken) throw new Error("Could not obtain Google access token.");
 
-  return { projectId, accessToken };
+  return { projectId: serviceAccount.project_id, accessToken };
 }
 
 serve(async (req) => {
