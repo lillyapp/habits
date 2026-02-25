@@ -1657,6 +1657,17 @@
       transform: none;
     }
 
+    .settings-lock-gated form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .settings-lock-gated form .settings-action-btn {
+      width: 100%;
+    }
+
     .settings-stack {
       display: flex;
       flex-direction: column;
@@ -1856,6 +1867,10 @@
         grid-column: 2;
       }
 
+      #settingsLogoutSection {
+        display: none;
+      }
+
       .settings-pane > [data-settings-section="security"] {
         grid-column: 2;
       }
@@ -2049,7 +2064,7 @@
       }
 
       .danger-maze-board {
-        max-width: 460px;
+        max-width: min(460px, 100%);
       }
     }
 
@@ -2188,6 +2203,120 @@
       background: rgba(255,255,255,0.9);
       border: 1px solid rgba(0,0,0,0.06);
       line-height: 1;
+    }
+
+    :root[data-theme="dark"] .danger-maze-label,
+    :root[data-theme="dark"] .danger-maze-reset {
+      color: #ff7b7b;
+    }
+
+    :root[data-theme="dark"] .danger-maze-board {
+      border-color: rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+    }
+
+    :root[data-theme="dark"] .danger-maze-cell {
+      border-color: rgba(255,255,255,0.03);
+    }
+
+    :root[data-theme="dark"] .danger-maze-cell.is-wall {
+      background: rgba(239, 68, 68, 0.22);
+    }
+
+    :root[data-theme="dark"] .danger-maze-cell.is-path {
+      background: rgba(255,255,255,0.1);
+    }
+
+    :root[data-theme="dark"] .danger-maze-cell.is-start {
+      background: rgba(34, 197, 94, 0.2);
+    }
+
+    :root[data-theme="dark"] .danger-maze-cell.is-end {
+      background: rgba(96, 165, 250, 0.24);
+    }
+
+    :root[data-theme="dark"] .danger-maze-token {
+      background: #ff6b6b;
+      border-color: rgba(15, 15, 15, 0.95);
+      box-shadow: 0 1px 6px rgba(0,0,0,0.35);
+    }
+
+    :root[data-theme="dark"] .danger-maze-board.is-dragging .danger-maze-token {
+      box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.16), 0 1px 8px rgba(0,0,0,0.35);
+    }
+
+    :root[data-theme="dark"] .danger-maze-markers {
+      color: rgba(255,255,255,0.78);
+    }
+
+    :root[data-theme="dark"] .danger-maze-marker {
+      background: rgba(17,17,17,0.88);
+      border-color: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.9);
+    }
+
+    :root[data-theme="dark"] .settings-section {
+      background: color-mix(in srgb, var(--c-card) 92%, transparent);
+      border-color: rgba(255,255,255,0.08);
+    }
+
+    :root[data-theme="dark"] .settings-subsection {
+      border-top-color: rgba(255,255,255,0.08);
+    }
+
+    :root[data-theme="dark"] .settings-segment-btn,
+    :root[data-theme="dark"] .settings-field input,
+    :root[data-theme="dark"] .settings-action-btn.is-secondary,
+    :root[data-theme="dark"] .settings-subsection-head-search input,
+    :root[data-theme="dark"] .settings-head-icon-btn {
+      background: rgba(255,255,255,0.07);
+    }
+
+    :root[data-theme="dark"] .settings-segment-btn.is-active {
+      background: #ffffff;
+      color: #000000;
+    }
+
+    :root[data-theme="dark"] .settings-segment-btn:not(.is-active):hover,
+    :root[data-theme="dark"] .settings-action-btn.is-secondary:hover,
+    :root[data-theme="dark"] .settings-head-icon-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    :root[data-theme="dark"] .settings-field input::placeholder,
+    :root[data-theme="dark"] .settings-subsection-head-search input::placeholder {
+      color: rgba(255,255,255,0.72);
+      opacity: 0.55;
+    }
+
+    :root[data-theme="dark"] .settings-admin-row {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.07);
+    }
+
+    :root[data-theme="dark"] .settings-admin-row:hover {
+      background: rgba(255,255,255,0.065);
+    }
+
+    :root[data-theme="dark"] .settings-admin-row.is-pending {
+      opacity: 0.52;
+    }
+
+    :root[data-theme="dark"] .settings-admin-row.is-pending:hover {
+      background: rgba(255,255,255,0.055);
+    }
+
+    :root[data-theme="dark"] .settings-admin-icon-btn {
+      background: rgba(255,255,255,0.07);
+    }
+
+    :root[data-theme="dark"] .settings-admin-icon-btn.is-danger {
+      background: rgba(239, 68, 68, 0.16);
+      color: #ff8b8b;
+    }
+
+    :root[data-theme="dark"] #settingsAdminUsersStatus:empty {
+      display: none;
     }
 
     .stats-name { font-size:var(--stats-name-size); font-weight:800; margin-bottom:20px; }
@@ -5156,24 +5285,65 @@
       const deleteMazeResetBtn = settingsViewEl.querySelector("#settingsDeleteMazeResetBtn");
       if (deleteBtn) {
         let deleteMazeSolved = false;
-
-        const mazeRows = [
-          "1110000000",
-          "1010111110",
-          "1010100010",
-          "1011101010",
-          "1000001010",
-          "1111101010",
-          "0000101010",
-          "0111101010",
-          "0100000011",
-          "0111111111"
-        ];
-        const mazeMap = mazeRows.map(row => row.split("").map(ch => ch === "1"));
-        const mazeRowCount = mazeMap.length;
-        const mazeColCount = mazeMap[0]?.length || 0;
+        let mazeMap = [];
+        let mazeRowCount = 11;
+        let mazeColCount = 11;
         const mazeStart = { row: 0, col: 0 };
-        const mazeEnd = { row: 9, col: 9 };
+        let mazeEnd = { row: mazeRowCount - 1, col: mazeColCount - 1 };
+
+        function buildRandomMaze(rows = 11, cols = 11) {
+          const rCount = Math.max(7, rows | 1);
+          const cCount = Math.max(7, cols | 1);
+          const map = Array.from({ length: rCount }, () => Array.from({ length: cCount }, () => false));
+          const dirs = [
+            { dr: -2, dc: 0 },
+            { dr: 2, dc: 0 },
+            { dr: 0, dc: -2 },
+            { dr: 0, dc: 2 }
+          ];
+
+          const shuffle = (arr) => {
+            for (let i = arr.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+          };
+
+          function carve(row, col) {
+            map[row][col] = true;
+            const nextDirs = shuffle(dirs.slice());
+            for (const { dr, dc } of nextDirs) {
+              const nr = row + dr;
+              const nc = col + dc;
+              if (nr <= 0 || nr >= rCount - 1 || nc <= 0 || nc >= cCount - 1) continue;
+              if (map[nr][nc]) continue;
+              map[row + dr / 2][col + dc / 2] = true;
+              carve(nr, nc);
+            }
+          }
+
+          carve(1, 1);
+
+          // Open start/end corners and connect them to the carved maze.
+          map[0][0] = true;
+          map[1][0] = true;
+          map[0][1] = true;
+
+          map[rCount - 1][cCount - 1] = true;
+          map[rCount - 2][cCount - 1] = true;
+          map[rCount - 1][cCount - 2] = true;
+
+          // Add a few extra openings so each run feels less uniform.
+          const extraOpenings = Math.floor((rCount * cCount) * 0.04);
+          for (let i = 0; i < extraOpenings; i++) {
+            const rr = 1 + Math.floor(Math.random() * (rCount - 2));
+            const cc = 1 + Math.floor(Math.random() * (cCount - 2));
+            if ((rr + cc) % 2 === 1) map[rr][cc] = true;
+          }
+
+          return map;
+        }
 
         function mazeCellCenter(row, col, rect) {
           const cellW = rect.width / mazeColCount;
@@ -5205,7 +5375,38 @@
           deleteMazeToken.style.top = `${y}px`;
         }
 
-        function mazeReset(message = "Nicht gelöst.") {
+        let placeMazeMarkers = () => {};
+
+        function renderMazeVisuals() {
+          if (deleteMazeGrid && deleteMazeBoard) {
+            deleteMazeGrid.style.setProperty("--maze-cols", String(mazeColCount));
+            deleteMazeGrid.style.setProperty("--maze-rows", String(mazeRowCount));
+            deleteMazeGrid.innerHTML = mazeMap.flatMap((row, r) =>
+              row.map((walkable, c) => {
+                const classes = [
+                  "danger-maze-cell",
+                  walkable ? "is-path" : "is-wall",
+                  r === mazeStart.row && c === mazeStart.col ? "is-start" : "",
+                  r === mazeEnd.row && c === mazeEnd.col ? "is-end" : ""
+                ].filter(Boolean).join(" ");
+                return `<div class="${classes}"></div>`;
+              })
+            ).join("");
+          }
+          placeMazeMarkers();
+        }
+
+        function mazeRandomize() {
+          mazeMap = buildRandomMaze(11, 11);
+          mazeRowCount = mazeMap.length;
+          mazeColCount = mazeMap[0]?.length || 11;
+          mazeEnd = { row: mazeRowCount - 1, col: mazeColCount - 1 };
+          renderMazeVisuals();
+        }
+
+        function mazeReset(message = "Nicht gelöst.", opts = {}) {
+          const { regenerate = false } = opts || {};
+          if (regenerate) mazeRandomize();
           deleteMazeSolved = false;
           if (deleteMazeBoard) deleteMazeBoard.classList.remove("is-dragging");
           if (deleteMazeInfo) deleteMazeInfo.textContent = message;
@@ -5252,24 +5453,8 @@
           wasSecurityUnlocked = unlocked;
         }
 
-        if (deleteMazeGrid && deleteMazeBoard) {
-          deleteMazeGrid.style.setProperty("--maze-cols", String(mazeColCount));
-          deleteMazeGrid.style.setProperty("--maze-rows", String(mazeRowCount));
-          deleteMazeGrid.innerHTML = mazeMap.flatMap((row, r) =>
-            row.map((walkable, c) => {
-              const classes = [
-                "danger-maze-cell",
-                walkable ? "is-path" : "is-wall",
-                r === mazeStart.row && c === mazeStart.col ? "is-start" : "",
-                r === mazeEnd.row && c === mazeEnd.col ? "is-end" : ""
-              ].filter(Boolean).join(" ");
-              return `<div class="${classes}"></div>`;
-            })
-          ).join("");
-        }
-
         if (deleteMazeMarkers && deleteMazeBoard) {
-          const placeMarkers = () => {
+          placeMazeMarkers = () => {
             const rect = deleteMazeBoard.getBoundingClientRect();
             const startPos = mazeCellCenter(mazeStart.row, mazeStart.col, rect);
             const endPos = mazeCellCenter(mazeEnd.row, mazeEnd.col, rect);
@@ -5278,13 +5463,57 @@
               <div class="danger-maze-marker" style="left:${endPos.x}px;top:${endPos.y}px;">Ziel</div>
             `;
           };
-          placeMarkers();
-          window.addEventListener("resize", placeMarkers);
+          window.addEventListener("resize", placeMazeMarkers);
         }
+        mazeRandomize();
 
         let mazeDragging = false;
         let mazePointerId = null;
         let mazePrevPoint = null;
+        let fitDesktopMazeBoardRaf = null;
+
+        const fitDesktopMazeBoard = () => {
+          if (!deleteMazeBoard || !securityGateSection || !settingsViewEl) return;
+          if (!window.matchMedia("(min-width: 980px)").matches) {
+            deleteMazeBoard.style.width = "";
+            deleteMazeBoard.style.maxWidth = "";
+            placeMazeMarkers();
+            return;
+          }
+
+          const displaySection = settingsViewEl.querySelector('[data-settings-section="display"]');
+          if (!displaySection) return;
+
+          const displayRect = displaySection.getBoundingClientRect();
+          const securityRect = securityGateSection.getBoundingClientRect();
+          const boardRect = deleteMazeBoard.getBoundingClientRect();
+          if (!displayRect.height || !securityRect.height || !boardRect.height) return;
+
+          const nonBoardHeight = securityRect.height - boardRect.height;
+          const availableBoard = Math.floor(displayRect.bottom - securityRect.top - nonBoardHeight);
+          const containerWidth = Math.floor(deleteMazeBoard.parentElement?.clientWidth || securityRect.width);
+          const nextSize = Math.max(220, Math.min(containerWidth, availableBoard));
+          if (!Number.isFinite(nextSize) || nextSize <= 0) return;
+
+          deleteMazeBoard.style.width = `${nextSize}px`;
+          deleteMazeBoard.style.maxWidth = "100%";
+          placeMazeMarkers();
+
+          if (!deleteMazeSolved) {
+            const rect = deleteMazeBoard.getBoundingClientRect();
+            const startCenter = mazeCellCenter(mazeStart.row, mazeStart.col, rect);
+            mazeSetTokenPosition(startCenter.x, startCenter.y);
+          }
+        };
+
+        const queueFitDesktopMazeBoard = () => {
+          if (fitDesktopMazeBoardRaf) cancelAnimationFrame(fitDesktopMazeBoardRaf);
+          fitDesktopMazeBoardRaf = requestAnimationFrame(() => {
+            fitDesktopMazeBoardRaf = null;
+            fitDesktopMazeBoard();
+          });
+        };
+        window.addEventListener("resize", queueFitDesktopMazeBoard);
 
         function mazeSampleSegmentValid(from, to, rect) {
           const dx = to.x - from.x;
@@ -5364,14 +5593,17 @@
         }
 
         if (deleteMazeResetBtn) {
-          deleteMazeResetBtn.addEventListener("click", () => mazeReset("Nicht gelöst."));
+          deleteMazeResetBtn.addEventListener("click", () => mazeReset("Nicht gelöst.", { regenerate: true }));
         }
 
         const syncDeleteBtn = () => {
           deleteBtn.disabled = !deleteMazeSolved;
           syncSecurityLockUI();
         };
-        requestAnimationFrame(() => mazeReset("Nicht gelöst."));
+        requestAnimationFrame(() => {
+          mazeReset("Nicht gelöst.");
+          queueFitDesktopMazeBoard();
+        });
         syncDeleteBtn();
 
         deleteBtn.addEventListener("click", async () => {
