@@ -3338,6 +3338,9 @@
     const loginPin      = document.getElementById("loginPin");
     const loginEmail    = document.getElementById("loginEmail");
     const loginPassword = document.getElementById("loginPassword");
+    const loginVerificationResend = document.getElementById("loginVerificationResend");
+    const loginVerificationResendBtn = document.getElementById("loginVerificationResendBtn");
+    const loginVerificationResendHint = document.getElementById("loginVerificationResendHint");
     const forgotPw = document.getElementById("forgotPw");
     const addBtnEl      = document.getElementById("addBtn");
     const statsBtnEl    = document.getElementById("statsBtn");
@@ -3498,6 +3501,9 @@
     let habits      = [];
     let currentUser = null;
     let authMode    = "login";
+    let verificationResendEmail = "";
+    let verificationResendCooldownUntil = 0;
+    let verificationResendTimerId = null;
     let registerPinVerified = false;
     let registerPinRole = "user";
     let currentUserIsAdmin = false;
@@ -6222,6 +6228,56 @@ function hideLoginMessage() {
   loginError.textContent = "";
 }
 
+function stopVerificationResendTimer() {
+  if (verificationResendTimerId) {
+    clearInterval(verificationResendTimerId);
+    verificationResendTimerId = null;
+  }
+}
+
+function hideVerificationResend() {
+  stopVerificationResendTimer();
+  verificationResendEmail = "";
+  verificationResendCooldownUntil = 0;
+  if (loginVerificationResend) loginVerificationResend.style.display = "none";
+  if (loginVerificationResendBtn) {
+    loginVerificationResendBtn.disabled = false;
+    loginVerificationResendBtn.textContent = "Code erneut senden";
+  }
+  if (loginVerificationResendHint) loginVerificationResendHint.textContent = "";
+}
+
+function updateVerificationResendUi() {
+  if (!loginVerificationResend || !loginVerificationResendBtn || !loginVerificationResendHint) return;
+  if (!verificationResendEmail) {
+    loginVerificationResend.style.display = "none";
+    return;
+  }
+
+  loginVerificationResend.style.display = "flex";
+  const remainingMs = verificationResendCooldownUntil - Date.now();
+  const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
+  const cooldownActive = remainingSec > 0;
+  loginVerificationResendBtn.disabled = cooldownActive;
+  loginVerificationResendHint.textContent = cooldownActive
+    ? `erneut in ${remainingSec}s`
+    : `für ${verificationResendEmail}`;
+}
+
+function beginVerificationResendCooldown(email, cooldownMs = 120000) {
+  verificationResendEmail = String(email || "").trim();
+  verificationResendCooldownUntil = Date.now() + Math.max(1000, cooldownMs);
+  updateVerificationResendUi();
+  stopVerificationResendTimer();
+  verificationResendTimerId = setInterval(() => {
+    updateVerificationResendUi();
+    if (Date.now() >= verificationResendCooldownUntil) {
+      stopVerificationResendTimer();
+      updateVerificationResendUi();
+    }
+  }, 1000);
+}
+
 async function isRegistrationPinValid(rawPin) {
   const pin = String(rawPin || "").trim();
   if (!pin) return false;
@@ -6348,6 +6404,7 @@ btnLogin.onclick = () => {
   loginForm.style.display = "flex";
   loginEmail.value = "";
   loginPassword.value = "";
+  hideVerificationResend();
   hideLoginMessage();
 };
 
@@ -6366,6 +6423,7 @@ btnRegister.onclick = () => {
   loginPassword.value = "";
   loginName.value = "";
   setRegisterPinStep(false);
+  hideVerificationResend();
   hideLoginMessage();
 };
 
@@ -6388,8 +6446,31 @@ forgotPw.onclick = () => {
   loginEmail.style.display = "";
   loginPassword.style.display = "none";   // Passwort verstecken
   if (loginOkBtn) loginOkBtn.textContent = "OK";
+  hideVerificationResend();
   hideLoginMessage();
 };
+
+    if (loginVerificationResendBtn) {
+      loginVerificationResendBtn.addEventListener("click", async () => {
+        if (!verificationResendEmail) return;
+        if (Date.now() < verificationResendCooldownUntil) return;
+        try {
+          loginVerificationResendBtn.disabled = true;
+          const { error } = await supabaseClient.auth.resend({
+            type: "signup",
+            email: verificationResendEmail,
+            options: { emailRedirectTo: window.location.href }
+          });
+          if (error) throw error;
+          showLoginMessage("Neuer Verifikationscode wurde über Supabase gesendet.", "success");
+          beginVerificationResendCooldown(verificationResendEmail, 120000);
+        } catch (e) {
+          console.error("verification resend error:", e);
+          loginVerificationResendBtn.disabled = false;
+          showLoginMessage(e?.message || "Code konnte nicht erneut gesendet werden.");
+        }
+      });
+    }
     
     loginOkBtn.onclick = async () => {
       hideLoginMessage();
@@ -6460,6 +6541,7 @@ forgotPw.onclick = () => {
         if (!error && signUpData?.user && !signUpData?.session) {
           if (loginHeadline) loginHeadline.textContent = "Bitte E-Mail bestätigen";
           if (loginOkBtn) loginOkBtn.disabled = true;
+          beginVerificationResendCooldown(email, 120000);
           showLoginMessage("Wir warten auf deine Verifikation durch Supabase ...", "success");
 
           const verifiedSession = await waitForSupabaseVerifiedSession();
@@ -6469,6 +6551,7 @@ forgotPw.onclick = () => {
             showLoginMessage("Bitte E-Mail bestätigen. Danach wirst du automatisch weitergeleitet oder kannst dich anmelden.", "success");
             return;
           }
+          hideVerificationResend();
         }
       }
 
@@ -6515,6 +6598,7 @@ forgotPw.onclick = () => {
       const subline = document.getElementById("loginSubline");
       if (subline) subline.style.display = "none";
       if (loginOkBtn) loginOkBtn.disabled = false;
+      hideVerificationResend();
       await proceedAfterIntro();
     };
 
