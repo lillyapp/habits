@@ -2928,6 +2928,23 @@
       }
     }
 
+    async function sendLocalTestNotification() {
+      if (!("Notification" in window)) {
+        throw new Error("Benachrichtigungen werden in diesem Browser nicht unterstützt.");
+      }
+      if (Notification.permission !== "granted") {
+        throw new Error("Benachrichtigungen sind nicht erlaubt.");
+      }
+
+      const reg = await getPushServiceWorkerRegistration();
+      await reg.showNotification("Testnachricht", {
+        body: "Push-Benachrichtigungen funktionieren auf diesem Gerät.",
+        icon: "/habits/3FC2E555-7142-43BE-83DE-E5ED7A123793.png",
+        badge: "/habits/3FC2E555-7142-43BE-83DE-E5ED7A123793.png",
+        data: { url: "/habits/" }
+      });
+    }
+
     function getCardTitleColor(card) {
       if (!card) return "#666";
       const inputEl = card.querySelector(".card-input");
@@ -3397,6 +3414,7 @@
                 <button type="button" class="settings-segment-btn" id="settingsNotificationsOnBtn">Aktivieren</button>
                 <button type="button" class="settings-segment-btn" id="settingsNotificationsOffBtn">Deaktivieren</button>
               </div>
+              <button type="button" class="settings-action-btn" id="settingsNotificationsTestBtn" style="margin-top:10px;">Testnachricht senden</button>
               <div class="settings-inline-note" id="settingsNotificationsInfo"></div>
             </div>
             <div class="settings-status" id="settingsDisplayStatus"></div>
@@ -3449,6 +3467,7 @@
       const notificationsInfo = settingsViewEl.querySelector("#settingsNotificationsInfo");
       const notificationsOnBtn = settingsViewEl.querySelector("#settingsNotificationsOnBtn");
       const notificationsOffBtn = settingsViewEl.querySelector("#settingsNotificationsOffBtn");
+      const notificationsTestBtn = settingsViewEl.querySelector("#settingsNotificationsTestBtn");
 
       function setStatus(el, message = "", type = "") {
         if (!el) return;
@@ -3472,6 +3491,9 @@
 
         notificationsOnBtn.disabled = !state.supported || isEnabled;
         notificationsOffBtn.disabled = !state.supported || !isEnabled;
+        if (notificationsTestBtn) {
+          notificationsTestBtn.disabled = !state.supported || state.permission !== "granted";
+        }
 
         const dimControls = Boolean(state.disableControls || (state.message && /Service-Worker konnte nicht installiert/i.test(state.message)));
         if (notificationModeGroup) {
@@ -3480,6 +3502,9 @@
         }
         notificationsOnBtn.style.opacity = dimControls ? "0.5" : "";
         notificationsOffBtn.style.opacity = dimControls ? "0.5" : "";
+        if (notificationsTestBtn) {
+          notificationsTestBtn.style.opacity = dimControls ? "0.5" : "";
+        }
 
         if (notificationsInfo) {
           notificationsInfo.textContent = state.message || "";
@@ -3519,6 +3544,19 @@
             console.error("disable notifications error:", err);
             setStatus(displayStatus, err?.message || "Benachrichtigungen konnten nicht deaktiviert werden.", "error");
             await refreshNotificationControls();
+          }
+        });
+      }
+
+      if (notificationsTestBtn) {
+        notificationsTestBtn.addEventListener("click", async () => {
+          setStatus(displayStatus, "", "");
+          try {
+            await sendLocalTestNotification();
+            setStatus(displayStatus, "Testnachricht gesendet.", "success");
+          } catch (err) {
+            console.error("test notification error:", err);
+            setStatus(displayStatus, err?.message || "Testnachricht konnte nicht gesendet werden.", "error");
           }
         });
       }
