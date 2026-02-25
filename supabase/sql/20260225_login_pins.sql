@@ -36,6 +36,14 @@ create table if not exists public.app_admins (
 
 alter table public.app_admins enable row level security;
 
+create table if not exists public.app_locked_users (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  reason text null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.app_locked_users enable row level security;
+
 drop policy if exists "app_admins_no_direct_select" on public.app_admins;
 create policy "app_admins_no_direct_select"
 on public.app_admins
@@ -61,6 +69,35 @@ with check (false);
 drop policy if exists "app_admins_no_direct_delete" on public.app_admins;
 create policy "app_admins_no_direct_delete"
 on public.app_admins
+for delete
+to anon, authenticated
+using (false);
+
+drop policy if exists "app_locked_users_no_direct_select" on public.app_locked_users;
+create policy "app_locked_users_no_direct_select"
+on public.app_locked_users
+for select
+to anon, authenticated
+using (false);
+
+drop policy if exists "app_locked_users_no_direct_insert" on public.app_locked_users;
+create policy "app_locked_users_no_direct_insert"
+on public.app_locked_users
+for insert
+to anon, authenticated
+with check (false);
+
+drop policy if exists "app_locked_users_no_direct_update" on public.app_locked_users;
+create policy "app_locked_users_no_direct_update"
+on public.app_locked_users
+for update
+to anon, authenticated
+using (false)
+with check (false);
+
+drop policy if exists "app_locked_users_no_direct_delete" on public.app_locked_users;
+create policy "app_locked_users_no_direct_delete"
+on public.app_locked_users
 for delete
 to anon, authenticated
 using (false);
@@ -165,6 +202,22 @@ $$;
 revoke all on function public.is_current_user_admin() from public;
 grant execute on function public.is_current_user_admin() to authenticated;
 
+create or replace function public.is_current_user_locked()
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.app_locked_users l
+    where l.user_id = auth.uid()
+  );
+$$;
+
+revoke all on function public.is_current_user_locked() from public;
+grant execute on function public.is_current_user_locked() to authenticated;
+
 drop function if exists public.create_login_pin(text, integer);
 
 create or replace function public.create_login_pin(
@@ -262,7 +315,7 @@ revoke all on function public.consume_login_pin(text, uuid) from public;
 grant execute on function public.consume_login_pin(text, uuid) to anon, authenticated;
 
 create or replace function public.admin_list_users()
-returns table(user_id uuid, email text, display_name text, avatar_url text, is_admin boolean)
+returns table(user_id uuid, email text, display_name text, avatar_url text, is_admin boolean, is_locked boolean)
 language plpgsql
 security definer
 set search_path = public, auth
@@ -281,7 +334,8 @@ begin
     u.email::text as email,
     coalesce(up.display_name, u.raw_user_meta_data ->> 'display_name', split_part(coalesce(u.email::text, ''), '@', 1), 'User')::text as display_name,
     coalesce(up.avatar_url, u.raw_user_meta_data ->> 'avatar_url', '')::text as avatar_url,
-    exists (select 1 from public.app_admins a where a.user_id = u.id) as is_admin
+    exists (select 1 from public.app_admins a where a.user_id = u.id) as is_admin,
+    exists (select 1 from public.app_locked_users l where l.user_id = u.id) as is_locked
   from auth.users u
   left join public.users_public up on up.id = u.id
   order by lower(coalesce(up.display_name, u.raw_user_meta_data ->> 'display_name', u.email::text, ''));
@@ -366,6 +420,43 @@ $$;
 revoke all on function public.admin_set_user_role(uuid, text) from public;
 grant execute on function public.admin_set_user_role(uuid, text) to authenticated;
 
+create or replace function public.admin_set_user_lock(p_user_id uuid, p_locked boolean)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  next_locked boolean := coalesce(p_locked, false);
+begin
+  if auth.uid() is null then
+    raise exception 'Unauthorized';
+  end if;
+  if not public.is_current_user_admin() then
+    raise exception 'Forbidden';
+  end if;
+  if p_user_id is null then
+    raise exception 'User required';
+  end if;
+  if p_user_id = auth.uid() then
+    raise exception 'Cannot lock own account here';
+  end if;
+
+  if next_locked then
+    insert into public.app_locked_users (user_id)
+    values (p_user_id)
+    on conflict (user_id) do nothing;
+  else
+    delete from public.app_locked_users where user_id = p_user_id;
+  end if;
+
+  return next_locked;
+end;
+$$;
+
+revoke all on function public.admin_set_user_lock(uuid, boolean) from public;
+grant execute on function public.admin_set_user_lock(uuid, boolean) to authenticated;
+
 create or replace function public.admin_delete_user(p_user_id uuid)
 returns void
 language plpgsql
@@ -387,6 +478,7 @@ begin
   end if;
 
   delete from public.app_admins where user_id = p_user_id;
+  delete from public.app_locked_users where user_id = p_user_id;
   delete from auth.users where id = p_user_id;
 end;
 $$;

@@ -1602,19 +1602,15 @@
     }
 
     .settings-admin-split-block {
-      border-radius: 14px;
-      padding: 10px;
-      background: rgba(0,0,0,0.022);
-      border: 1px solid rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
     .settings-admin-split-block.settings-subsection {
-      margin-top: 0;
-      padding-top: 10px;
-      border-top: none;
+      margin-top: 2px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(0,0,0,0.06);
     }
 
     .settings-invite-output {
@@ -1857,9 +1853,10 @@
       }
 
       #settingsInviteSection .settings-admin-split-block {
-        padding: 12px;
-        border-radius: 16px;
-        background: rgba(0,0,0,0.02);
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        border: none;
       }
 
       #settingsLogoutSection .settings-stack {
@@ -4405,8 +4402,6 @@
               </div>
               <div class="settings-subsection settings-admin-split-block">
                 <div class="settings-subsection-head">
-                  <i data-lucide="users"></i>
-                  <div class="settings-subsection-title">Alle Nutzer</div>
                   <div class="settings-subsection-head-spacer"></div>
                   <div class="settings-subsection-head-actions">
                     <button type="button" class="settings-head-icon-btn" id="settingsAdminUsersSearchToggleBtn" aria-label="Suche öffnen" title="Suche">
@@ -4583,7 +4578,10 @@
               const roleTerms = row?.is_admin
                 ? "admin administrator berechtigung rechte"
                 : "user normal normaler nutzer berechtigung rechte";
-              return name.includes(query) || email.includes(query) || userId.includes(query) || roleTerms.includes(query);
+              const lockTerms = row?.is_locked
+                ? "gesperrt lock locked konto gesperrt"
+                : "aktiv entsperrt unlocked";
+              return name.includes(query) || email.includes(query) || userId.includes(query) || roleTerms.includes(query) || lockTerms.includes(query);
             })
           : rows;
 
@@ -4598,19 +4596,23 @@
             const name = escapeHtml(row.display_name || "User");
             const email = escapeHtml(row.email || "");
             const isAdminRow = Boolean(row.is_admin);
+            const isLockedRow = Boolean(row.is_locked);
             const isSelf = String(currentUser?.id || "") === userId;
             return `
-              <div class="settings-admin-row" data-user-id="${userId}" data-is-admin="${isAdminRow ? "true" : "false"}">
+              <div class="settings-admin-row" data-user-id="${userId}" data-is-admin="${isAdminRow ? "true" : "false"}" data-is-locked="${isLockedRow ? "true" : "false"}">
                 <div class="settings-admin-user">
                   <div class="settings-admin-name">${name}</div>
-                  <div class="settings-admin-meta">${email || userId}${isAdminRow ? " • Admin" : " • User"}${isSelf ? " • Du" : ""}</div>
+                  <div class="settings-admin-meta">${email || userId}${isAdminRow ? " • Admin" : " • User"}${isLockedRow ? " • Gesperrt" : ""}${isSelf ? " • Du" : ""}</div>
                 </div>
                 <div class="settings-admin-actions">
                   <button type="button" class="settings-admin-icon-btn" data-admin-action="rename" title="Umbenennen" aria-label="Umbenennen">
                     <i data-lucide="pencil"></i>
                   </button>
                   <button type="button" class="settings-admin-icon-btn" data-admin-action="role" title="${isAdminRow ? "Zu User machen" : "Zu Admin machen"}" aria-label="Rolle ändern" ${isSelf ? "disabled" : ""}>
-                    <i data-lucide="${isAdminRow ? "shield-check" : "shield"}"></i>
+                    <i data-lucide="${isAdminRow ? "shield-check" : "user"}"></i>
+                  </button>
+                  <button type="button" class="settings-admin-icon-btn${isLockedRow ? " is-danger" : ""}" data-admin-action="lock" title="${isLockedRow ? "Account entsperren" : "Account sperren"}" aria-label="${isLockedRow ? "Account entsperren" : "Account sperren"}" ${isSelf ? "disabled" : ""}>
+                    <i data-lucide="${isLockedRow ? "lock" : "lock-open"}"></i>
                   </button>
                   <button type="button" class="settings-admin-icon-btn is-danger" data-admin-action="delete" title="Löschen" aria-label="Löschen" ${isSelf ? "disabled" : ""}>
                     <i data-lucide="trash-2"></i>
@@ -4691,6 +4693,7 @@
           if (!rowEl) return;
           const userId = rowEl.dataset.userId;
           const isAdminRow = rowEl.dataset.isAdmin === "true";
+          const isLockedRow = rowEl.dataset.isLocked === "true";
           const action = btn.dataset.adminAction;
           if (!userId || !action) return;
 
@@ -4720,6 +4723,20 @@
               dataCache.otherUsers = { value: null, ts: 0 };
               dataCache.otherUser = { value: null, ts: 0 };
               setStatus(adminUsersStatus, `Rolle gesetzt: ${nextRole === "admin" ? "Admin" : "User"}.`, "success");
+              await renderAdminUsersList();
+              return;
+            }
+
+            if (action === "lock") {
+              const nextLocked = !isLockedRow;
+              const { error } = await supabaseClient.rpc("admin_set_user_lock", {
+                p_user_id: userId,
+                p_locked: nextLocked
+              });
+              if (error) throw error;
+              dataCache.otherUsers = { value: null, ts: 0 };
+              dataCache.otherUser = { value: null, ts: 0 };
+              setStatus(adminUsersStatus, nextLocked ? "Account gesperrt." : "Account entsperrt.", "success");
               await renderAdminUsersList();
               return;
             }
@@ -6146,6 +6163,26 @@ async function getRegistrationPinRole(rawPin) {
   }
 }
 
+async function isCurrentAccountLocked() {
+  try {
+    const { data, error } = await supabaseClient.rpc("is_current_user_locked");
+    if (error) throw error;
+    return Boolean(data);
+  } catch (e) {
+    console.error("is_current_user_locked error:", e);
+    return false;
+  }
+}
+
+async function enforceUnlockedSessionOrLogout() {
+  const locked = await isCurrentAccountLocked();
+  if (!locked) return false;
+
+  try { await supabaseClient.auth.signOut(); } catch (e) {}
+  currentUser = null;
+  return true;
+}
+
 function setRegisterPinStep(unlocked) {
   registerPinVerified = Boolean(unlocked);
   if (loginPin) {
@@ -6317,6 +6354,15 @@ forgotPw.onclick = () => {
 
       const { data } = await supabaseClient.auth.getUser();
       currentUser = data.user;
+      if (authMode === "login" && await enforceUnlockedSessionOrLogout()) {
+        if (loginScreen) {
+          loginScreen.style.display = "flex";
+          loginScreen.style.opacity = "1";
+        }
+        if (typeof btnLogin !== "undefined" && btnLogin) btnLogin.click();
+        showLoginMessage("Dieses Konto ist gesperrt.");
+        return;
+      }
       await loadUserSettings();
       refreshBellIcon();
 
@@ -6338,6 +6384,18 @@ forgotPw.onclick = () => {
 
       if (data.user) {
         currentUser = data.user;
+        if (await enforceUnlockedSessionOrLogout()) {
+          const headline = document.getElementById("loginHeadline");
+          const btnBar   = document.getElementById("loginButtonBar");
+          if (loginScreen) {
+            loginScreen.style.display = "flex";
+            loginScreen.style.opacity = "1";
+          }
+          if (headline) headline.textContent = "Bitte melde dich an";
+          if (btnBar)   btnBar.style.display = "flex";
+          showLoginMessage("Dieses Konto ist gesperrt.");
+          return;
+        }
         await loadUserSettings();
         refreshBellIcon();
 
