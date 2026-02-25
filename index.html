@@ -1529,17 +1529,53 @@
       font-weight: 700;
     }
 
+    .settings-security-gate.is-complete {
+      display: none;
+    }
+
+    .settings-maze-gated-section.is-locked {
+      display: none;
+    }
+
+    .settings-lock-gated {
+      position: relative;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      opacity: 1;
+      transform: none;
+    }
+
+    .settings-lock-gated.is-pop-reveal {
+      animation: settingsUnlockPop 320ms cubic-bezier(.2,.85,.2,1);
+      transform-origin: top center;
+    }
+
+    @keyframes settingsUnlockPop {
+      0% {
+        opacity: 0.5;
+        transform: scale(0.975) translateY(4px);
+      }
+      60% {
+        opacity: 1;
+        transform: scale(1.01) translateY(0);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
     .settings-section.is-locked .settings-lock-gated {
-      opacity: 0.45;
-      pointer-events: none;
-      filter: saturate(0.7);
+      display: none;
     }
 
     .danger-maze-wrap {
-      border: 1px solid rgba(181, 54, 54, 0.18);
-      border-radius: 12px;
-      padding: 10px;
-      background: rgba(181, 54, 54, 0.03);
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      background: transparent;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -3578,11 +3614,16 @@
     function scrollSettingsSectionIntoView(target) {
       if (!settingsViewEl || !target) return;
       const el = settingsViewEl.querySelector(`[data-settings-section="${target}"]`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      const isHiddenByMazeLock = el && el.classList && el.classList.contains("settings-maze-gated-section") && el.classList.contains("is-locked");
+      const fallbackGateEl = settingsViewEl.querySelector("#settingsSecurityGateSection");
+      const scrollEl = isHiddenByMazeLock ? fallbackGateEl : el;
+      if (scrollEl) {
+        scrollEl.scrollIntoView({ behavior: "smooth", block: "start" });
       }
       if (target === "account") {
-        const focusEl = settingsViewEl.querySelector("#settingsEmailInput");
+        const focusEl = isHiddenByMazeLock
+          ? settingsViewEl.querySelector("#settingsDeleteMazeBoard")
+          : settingsViewEl.querySelector("#settingsEmailInput");
         if (focusEl) setTimeout(() => focusEl.focus(), 260);
       }
       if (target === "danger") {
@@ -3845,7 +3886,30 @@
             <div class="settings-status" id="settingsDisplayStatus"></div>
           </section>
 
-          <section class="settings-section is-locked" data-settings-section="account" id="settingsAccountSection">
+          <section class="settings-section settings-security-gate" data-settings-section="security" id="settingsSecurityGateSection">
+            <div class="settings-section-head">
+              <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="shield-check"></i></div>
+              <div class="settings-section-head-text">
+                <h3 class="settings-section-title">Sicherheitsfreigabe</h3>
+                <p class="settings-copy">Labyrinth lösen, dann erscheinen Account & Danger</p>
+              </div>
+            </div>
+            <div class="danger-maze-wrap">
+              <div class="danger-maze-top">
+                <div class="danger-maze-label">Labyrinth</div>
+                <button type="button" class="danger-maze-reset" id="settingsDeleteMazeResetBtn">Neu starten</button>
+              </div>
+              <div class="settings-inline-note" id="settingsSecurityLockInfo">Mit dem Labyrinth freischalten.</div>
+              <div class="danger-maze-board" id="settingsDeleteMazeBoard" aria-label="Labyrinth-Challenge" tabindex="0">
+                <div class="danger-maze-grid" id="settingsDeleteMazeGrid"></div>
+                <div class="danger-maze-markers" id="settingsDeleteMazeMarkers"></div>
+                <div class="danger-maze-token" id="settingsDeleteMazeToken"></div>
+              </div>
+              <div class="settings-inline-note" id="settingsDeleteMazeInfo">Nicht gelöst.</div>
+            </div>
+          </section>
+
+          <section class="settings-section settings-maze-gated-section is-locked" data-settings-section="account" id="settingsAccountSection">
             <div class="settings-section-head">
               <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="user"></i></div>
               <div class="settings-section-head-text">
@@ -3853,7 +3917,6 @@
                 <p class="settings-copy">E-Mail & Passwort</p>
               </div>
             </div>
-            <div class="settings-lock-note" id="settingsSecurityLockInfo">Mit dem Labyrinth freischalten.</div>
             <div class="settings-lock-gated">
               <div class="settings-field">
                 <label for="settingsEmailInput">Neue E-Mailadresse</label>
@@ -3878,26 +3941,13 @@
             </div>
           </section>
 
-          <section class="settings-section settings-danger is-locked" data-settings-section="danger" id="settingsDangerSection">
+          <section class="settings-section settings-danger settings-maze-gated-section is-locked" data-settings-section="danger" id="settingsDangerSection">
             <div class="settings-section-head">
               <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="triangle-alert"></i></div>
               <div class="settings-section-head-text">
                 <h3 class="settings-section-title">Danger-Bereich</h3>
                 <p class="settings-copy">Dauerhaft löschen</p>
               </div>
-            </div>
-            <div class="danger-maze-wrap">
-              <div class="danger-maze-top">
-                <div class="danger-maze-label">Labyrinth-Sperre</div>
-                <button type="button" class="danger-maze-reset" id="settingsDeleteMazeResetBtn">Neu starten</button>
-              </div>
-              <div class="settings-inline-note">Führe den roten Kreis vom Start zum Ziel, ohne die Wand zu berühren.</div>
-              <div class="danger-maze-board" id="settingsDeleteMazeBoard" aria-label="Labyrinth-Challenge" tabindex="0">
-                <div class="danger-maze-grid" id="settingsDeleteMazeGrid"></div>
-                <div class="danger-maze-markers" id="settingsDeleteMazeMarkers"></div>
-                <div class="danger-maze-token" id="settingsDeleteMazeToken"></div>
-              </div>
-              <div class="settings-inline-note" id="settingsDeleteMazeInfo">Nicht gelöst.</div>
             </div>
             <div class="settings-lock-gated">
               <button type="button" class="settings-action-btn" id="settingsDeleteAccountBtn" disabled>Konto löschen</button>
@@ -3913,9 +3963,11 @@
       const displayStatus = settingsViewEl.querySelector("#settingsDisplayStatus");
       const accountStatus = settingsViewEl.querySelector("#settingsAccountStatus");
       const deleteStatus = settingsViewEl.querySelector("#settingsDeleteStatus");
+      const securityGateSection = settingsViewEl.querySelector("#settingsSecurityGateSection");
       const accountSection = settingsViewEl.querySelector("#settingsAccountSection");
       const dangerSection = settingsViewEl.querySelector("#settingsDangerSection");
       const securityLockInfo = settingsViewEl.querySelector("#settingsSecurityLockInfo");
+      const securityLockGatedEls = Array.from(settingsViewEl.querySelectorAll("#settingsAccountSection .settings-lock-gated, #settingsDangerSection .settings-lock-gated"));
       const notificationModeGroup = settingsViewEl.querySelector("#notificationModeGroup");
       const notificationsInfo = settingsViewEl.querySelector("#settingsNotificationsInfo");
       const notificationsOnBtn = settingsViewEl.querySelector("#settingsNotificationsOnBtn");
@@ -4214,14 +4266,32 @@
           syncDeleteBtn();
         }
 
+        let wasSecurityUnlocked = false;
+
+        function triggerSecurityUnlockPop() {
+          for (const el of securityLockGatedEls) {
+            el.classList.remove("is-pop-reveal");
+            void el.offsetWidth;
+            el.classList.add("is-pop-reveal");
+          }
+        }
+
         function syncSecurityLockUI() {
           const unlocked = deleteMazeSolved;
+          const justUnlocked = unlocked && !wasSecurityUnlocked;
+          if (securityGateSection) securityGateSection.classList.toggle("is-complete", unlocked);
           if (accountSection) accountSection.classList.toggle("is-locked", !unlocked);
           if (dangerSection) dangerSection.classList.toggle("is-locked", !unlocked);
           if (securityLockInfo) {
             securityLockInfo.textContent = unlocked ? "Freigeschaltet." : "Mit dem Labyrinth freischalten.";
             securityLockInfo.classList.toggle("is-unlocked", unlocked);
           }
+          if (!unlocked) {
+            for (const el of securityLockGatedEls) el.classList.remove("is-pop-reveal");
+          } else if (justUnlocked) {
+            triggerSecurityUnlockPop();
+          }
+          wasSecurityUnlocked = unlocked;
         }
 
         if (deleteMazeGrid && deleteMazeBoard) {
