@@ -1508,6 +1508,37 @@
       min-height: 22px;
     }
 
+    .settings-subsection-head-spacer {
+      flex: 1 1 auto;
+    }
+
+    .settings-subsection-head-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
+    .settings-head-icon-btn {
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 9px;
+      background: rgba(0,0,0,0.045);
+      color: var(--c-text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      flex: 0 0 auto;
+    }
+
+    .settings-head-icon-btn svg {
+      width: 15px;
+      height: 15px;
+    }
+
     .settings-subsection-head i,
     .settings-subsection-head svg {
       width: 16px;
@@ -1570,6 +1601,22 @@
       gap: 10px;
     }
 
+    .settings-admin-split-block {
+      border-radius: 14px;
+      padding: 10px;
+      background: rgba(0,0,0,0.022);
+      border: 1px solid rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .settings-admin-split-block.settings-subsection {
+      margin-top: 0;
+      padding-top: 10px;
+      border-top: none;
+    }
+
     .settings-invite-output {
       display: none;
       margin-top: 2px;
@@ -1608,6 +1655,319 @@
       text-align: center;
       font-size: 0.78rem;
       opacity: 0.7;
+    }
+
+    .settings-admin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .settings-admin-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.035);
+    }
+
+    .settings-admin-user {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .settings-admin-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .settings-admin-meta {
+      font-size: 0.72rem;
+      opacity: 0.65;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .settings-admin-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .settings-admin-icon-btn {
+      width: 30px;
+      height: 30px;
+      border: none;
+      border-radius: 9px;
+      background: rgba(0,0,0,0.05);
+      color: var(--c-text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .settings-admin-icon-btn svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    .settings-admin-icon-btn.is-danger {
+      color: #b53636;
+      background: rgba(181, 54, 54, 0.08);
+    }
+
+    .settings-admin-row:hover {
+      background: rgba(0,0,0,0.045);
+    }
+
+    @media (min-width: 980px) {
+      #settingsView {
+        padding: 24px 32px 56px;
+        align-items: flex-start;
+      }
+
+      .settings-pane {
+        width: min(1180px, calc(100vw - 64px));
+        display: grid;
+        grid-template-columns: minmax(460px, 1fr) minmax(420px, 1fr);
+        gap: 20px;
+        align-items: start;
+      }
+
+      .settings-header {
+        grid-column: 1 / -1;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: 6px 4px 14px;
+        margin-bottom: -2px;
+        border-bottom: 1px solid rgba(0,0,0,0.07);
+        background: color-mix(in srgb, var(--c-bg) 94%, transparent);
+        backdrop-filter: blur(10px);
+      }
+
+      .settings-title {
+        font-size: 2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .settings-close {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: rgba(0,0,0,0.045);
+      }
+
+      .settings-pane > [data-settings-section="display"] {
+        grid-column: 1;
+        grid-row: 2 / span 4;
+        position: sticky;
+        top: 78px;
+      }
+
+      .settings-pane > [data-settings-section="invite"] {
+        grid-column: 2;
+      }
+
+      .settings-pane > [data-settings-section="logout"] {
+        grid-column: 2;
+      }
+
+      .settings-pane > [data-settings-section="security"] {
+        grid-column: 2;
+      }
+
+      .settings-pane > [data-settings-section="account"] {
+        grid-column: 2;
+      }
+
+      .settings-pane > [data-settings-section="danger"] {
+        grid-column: 2;
+      }
+
+      .settings-section {
+        padding: 18px;
+        border-radius: 20px;
+        gap: 12px;
+        border-color: rgba(0,0,0,0.075);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.02);
+      }
+
+      .settings-section-head-text .settings-copy {
+        font-size: 0.82rem;
+        opacity: 0.66;
+      }
+
+      .settings-section-head {
+        gap: 10px;
+      }
+
+      .settings-section-head-icon,
+      .settings-section-head-icon svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .settings-section-title {
+        font-size: 1.05rem;
+      }
+
+      .settings-segment-btn {
+        min-height: 44px;
+        border-radius: 13px;
+      }
+
+      .settings-action-btn {
+        min-height: 46px;
+        border-radius: 13px;
+      }
+
+      .settings-pane > [data-settings-section="display"] .settings-subsection,
+      .settings-pane > [data-settings-section="invite"] .settings-subsection {
+        margin-top: 0;
+        padding: 12px;
+        border-top: none;
+        border-radius: 14px;
+        background: rgba(0,0,0,0.025);
+      }
+
+      .settings-pane > [data-settings-section="display"] .settings-copy {
+        max-width: 44ch;
+      }
+
+      .settings-pane > [data-settings-section="display"] .settings-status {
+        margin-top: 2px;
+      }
+
+      #settingsInviteSection .settings-stack {
+        gap: 12px;
+      }
+
+      #settingsInviteSection .settings-admin-split-block {
+        padding: 12px;
+        border-radius: 16px;
+        background: rgba(0,0,0,0.02);
+      }
+
+      #settingsLogoutSection .settings-stack {
+        gap: 8px;
+      }
+
+      .settings-invite-output.is-visible {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+          "pin pin"
+          "qr note"
+          "qr copy";
+        align-items: center;
+        column-gap: 14px;
+        row-gap: 10px;
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(0,0,0,0.025);
+      }
+
+      .settings-invite-pin {
+        grid-area: pin;
+        font-size: 1.5rem;
+        padding: 10px 12px 8px;
+      }
+
+      .settings-invite-qr {
+        grid-area: qr;
+        width: 150px;
+        margin: 0;
+        justify-self: start;
+        border-radius: 12px;
+      }
+
+      .settings-invite-note {
+        grid-area: note;
+        text-align: left;
+        font-size: 0.8rem;
+        opacity: 0.65;
+      }
+
+      #settingsInviteCopyBtn {
+        grid-area: copy;
+        width: auto;
+        min-width: 170px;
+        justify-self: start;
+      }
+
+      #settingsAdminUsersSearchInput {
+        min-height: 42px;
+        padding: 10px 12px;
+      }
+
+      .settings-admin-list {
+        max-height: 340px;
+        overflow: auto;
+        padding: 2px 4px 2px 0;
+        margin-top: 2px;
+      }
+
+      .settings-admin-row {
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(0,0,0,0.04);
+      }
+
+      .settings-admin-name {
+        font-size: 0.95rem;
+      }
+
+      .settings-admin-meta {
+        font-size: 0.76rem;
+      }
+
+      .settings-admin-actions {
+        gap: 6px;
+      }
+
+      .settings-head-icon-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+      }
+
+      .settings-admin-icon-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+      }
+
+      .settings-admin-icon-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .settings-security-gate {
+        scroll-margin-top: 96px;
+      }
+
+      .settings-danger {
+        border-color: rgba(181, 54, 54, 0.2);
+      }
+
+      .danger-maze-board {
+        max-width: 460px;
+      }
     }
 
     .settings-lock-gated.is-pop-reveal {
@@ -1774,6 +2134,68 @@
     }
     .stats-user-panel.is-collapsed {
       display:none;
+    }
+
+    .stats-extra-users {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .stats-extra-user-item.is-hidden {
+      display: none;
+    }
+
+    .stats-more-users-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: rgba(0,0,0,0.06);
+      color: var(--c-text);
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .stats-user-head {
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .stats-fav-user-btn {
+      border:none;
+      background:transparent;
+      color: var(--c-text);
+      opacity:0.55;
+      width:28px;
+      height:28px;
+      border-radius:8px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      padding:0;
+      flex:0 0 auto;
+    }
+
+    .stats-fav-user-btn:hover {
+      background: rgba(0,0,0,0.05);
+      opacity:0.85;
+    }
+
+    .stats-fav-user-btn.is-active {
+      opacity:1;
+      color:#d4a100;
+      background: rgba(212, 161, 0, 0.1);
+    }
+
+    .stats-fav-user-btn svg {
+      width:16px;
+      height:16px;
     }
     .stat-bar {
       width:100%;
@@ -3012,17 +3434,20 @@
     });
     const CHANGELOG_OVERVIEW_VERSION = 2;
     const CHANGELOG_OVERVIEW_SEEN_KEY = `changes_overview_seen_v${CHANGELOG_OVERVIEW_VERSION}`;
+    const STATS_FAVORITE_SECOND_USER_KEY = "stats_favorite_second_user_id_v1";
     let userSettings = { ...DEFAULT_USER_SETTINGS };
     let didAutoOpenChangesOverview = false;
     const dataCache = {
       habits: new Map(),
       streak: new Map(),
-      otherUser: { value: null, ts: 0 }
+      otherUser: { value: null, ts: 0 },
+      otherUsers: { value: null, ts: 0 }
     };
     const CACHE_TTL = {
       habits: 5000,
       streak: 10000,
-      otherUser: 30000
+      otherUser: 30000,
+      otherUsers: 30000
     };
 
     let unreadNotificationCount = 0;
@@ -3955,6 +4380,67 @@
             <div class="settings-status" id="settingsDisplayStatus"></div>
           </section>
 
+          <section class="settings-section" data-settings-section="invite" id="settingsInviteSection" style="display:none;">
+            <div class="settings-section-head">
+              <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="user-plus"></i></div>
+              <div class="settings-section-head-text">
+                <h3 class="settings-section-title">Nutzerverwaltung</h3>
+                <p class="settings-copy">Verwalten & Einladen</p>
+              </div>
+            </div>
+            <div class="settings-stack">
+              <div class="settings-admin-split-block" id="settingsInviteCreateBlock" style="display:none;">
+                <div class="settings-segment" id="settingsInviteRoleGroup">
+                  <button type="button" class="settings-segment-btn is-active" id="settingsInviteRoleUserBtn" data-invite-role="user">User</button>
+                  <button type="button" class="settings-segment-btn" id="settingsInviteRoleAdminBtn" data-invite-role="admin">Admin</button>
+                </div>
+                <button type="button" class="settings-action-btn is-secondary" id="settingsGenerateInviteBtn">Einladung erzeugen</button>
+                <div class="settings-status" id="settingsInviteStatus"></div>
+                <div class="settings-invite-output" id="settingsInviteOutput">
+                  <div class="settings-invite-pin" id="settingsInvitePinValue">0000</div>
+                  <img class="settings-invite-qr" id="settingsInviteQrImage" alt="QR-Code für Registrierung" />
+                  <div class="settings-invite-note">QR scannen oder Link kopieren</div>
+                  <button type="button" class="settings-action-btn is-secondary" id="settingsInviteCopyBtn">Link kopieren</button>
+                </div>
+              </div>
+              <div class="settings-subsection settings-admin-split-block">
+                <div class="settings-subsection-head">
+                  <i data-lucide="users"></i>
+                  <div class="settings-subsection-title">Alle Nutzer</div>
+                  <div class="settings-subsection-head-spacer"></div>
+                  <div class="settings-subsection-head-actions">
+                    <button type="button" class="settings-head-icon-btn" id="settingsAdminUsersSearchToggleBtn" aria-label="Suche öffnen" title="Suche">
+                      <i data-lucide="search"></i>
+                    </button>
+                    <button type="button" class="settings-head-icon-btn" id="settingsAdminInviteToggleBtn" aria-label="Neuen Nutzer öffnen" title="Neuer Nutzer">
+                      <i data-lucide="plus"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="settings-field" id="settingsAdminUsersSearchWrap" style="display:none;">
+                  <label for="settingsAdminUsersSearchInput">Suche</label>
+                  <input id="settingsAdminUsersSearchInput" type="search" placeholder="Name, E-Mail oder Rolle suchen" autocomplete="off" />
+                </div>
+                <div class="settings-status" id="settingsAdminUsersStatus"></div>
+                <div class="settings-admin-list" id="settingsAdminUsersList"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-section" data-settings-section="logout" id="settingsLogoutSection">
+            <div class="settings-section-head">
+              <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="log-out"></i></div>
+              <div class="settings-section-head-text">
+                <h3 class="settings-section-title">Logout</h3>
+                <p class="settings-copy">Aktuelle Sitzung beenden</p>
+              </div>
+            </div>
+            <div class="settings-stack">
+              <button type="button" class="settings-action-btn is-secondary" id="settingsLogoutBtn">Abmelden</button>
+              <div class="settings-status" id="settingsLogoutStatus"></div>
+            </div>
+          </section>
+
           <section class="settings-section settings-security-gate" data-settings-section="security" id="settingsSecurityGateSection">
             <div class="settings-section-head">
               <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="shield-check"></i></div>
@@ -4010,44 +4496,6 @@
             </div>
           </section>
 
-          <section class="settings-section" data-settings-section="invite" id="settingsInviteSection" style="display:none;">
-            <div class="settings-section-head">
-              <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="user-plus"></i></div>
-              <div class="settings-section-head-text">
-                <h3 class="settings-section-title">Neue Nutzer</h3>
-                <p class="settings-copy">Einladung erstellen</p>
-              </div>
-            </div>
-            <div class="settings-stack">
-              <div class="settings-segment" id="settingsInviteRoleGroup">
-                <button type="button" class="settings-segment-btn is-active" id="settingsInviteRoleUserBtn" data-invite-role="user">User</button>
-                <button type="button" class="settings-segment-btn" id="settingsInviteRoleAdminBtn" data-invite-role="admin">Admin</button>
-              </div>
-              <button type="button" class="settings-action-btn is-secondary" id="settingsGenerateInviteBtn">Einladung erzeugen</button>
-              <div class="settings-status" id="settingsInviteStatus"></div>
-              <div class="settings-invite-output" id="settingsInviteOutput">
-                <div class="settings-invite-pin" id="settingsInvitePinValue">0000</div>
-                <img class="settings-invite-qr" id="settingsInviteQrImage" alt="QR-Code für Registrierung" />
-                <div class="settings-invite-note">QR scannen oder Link kopieren</div>
-                <button type="button" class="settings-action-btn is-secondary" id="settingsInviteCopyBtn">Link kopieren</button>
-              </div>
-            </div>
-          </section>
-
-          <section class="settings-section" data-settings-section="logout" id="settingsLogoutSection">
-            <div class="settings-section-head">
-              <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="log-out"></i></div>
-              <div class="settings-section-head-text">
-                <h3 class="settings-section-title">Logout</h3>
-                <p class="settings-copy">Aktuelle Sitzung beenden</p>
-              </div>
-            </div>
-            <div class="settings-stack">
-              <button type="button" class="settings-action-btn is-secondary" id="settingsLogoutBtn">Abmelden</button>
-              <div class="settings-status" id="settingsLogoutStatus"></div>
-            </div>
-          </section>
-
           <section class="settings-section settings-danger settings-maze-gated-section is-locked" data-settings-section="danger" id="settingsDangerSection">
             <div class="settings-section-head">
               <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="triangle-alert"></i></div>
@@ -4071,6 +4519,7 @@
       const accountStatus = settingsViewEl.querySelector("#settingsAccountStatus");
       const inviteSection = settingsViewEl.querySelector("#settingsInviteSection");
       const inviteStatus = settingsViewEl.querySelector("#settingsInviteStatus");
+      const adminUsersStatus = settingsViewEl.querySelector("#settingsAdminUsersStatus");
       const logoutStatus = settingsViewEl.querySelector("#settingsLogoutStatus");
       const deleteStatus = settingsViewEl.querySelector("#settingsDeleteStatus");
       const securityGateSection = settingsViewEl.querySelector("#settingsSecurityGateSection");
@@ -4089,8 +4538,13 @@
       const inviteOutput = settingsViewEl.querySelector("#settingsInviteOutput");
       const invitePinValue = settingsViewEl.querySelector("#settingsInvitePinValue");
       const inviteQrImage = settingsViewEl.querySelector("#settingsInviteQrImage");
-      const inviteLinkInput = settingsViewEl.querySelector("#settingsInviteLinkInput");
       const inviteCopyBtn = settingsViewEl.querySelector("#settingsInviteCopyBtn");
+      const inviteCreateBlock = settingsViewEl.querySelector("#settingsInviteCreateBlock");
+      const adminUsersList = settingsViewEl.querySelector("#settingsAdminUsersList");
+      const adminUsersSearchInput = settingsViewEl.querySelector("#settingsAdminUsersSearchInput");
+      const adminUsersSearchWrap = settingsViewEl.querySelector("#settingsAdminUsersSearchWrap");
+      const adminUsersSearchToggleBtn = settingsViewEl.querySelector("#settingsAdminUsersSearchToggleBtn");
+      const adminInviteToggleBtn = settingsViewEl.querySelector("#settingsAdminInviteToggleBtn");
 
       function setStatus(el, message = "", type = "") {
         if (!el) return;
@@ -4105,6 +4559,8 @@
       }
 
       let selectedInviteRole = "user";
+      let adminUsersLoading = false;
+      let adminUsersRowsCache = [];
       if (inviteRoleButtons?.length) {
         inviteRoleButtons.forEach(btn => {
           btn.addEventListener("click", () => {
@@ -4116,10 +4572,183 @@
         });
       }
 
+      function renderAdminUsersListRows(rows) {
+        if (!adminUsersList) return;
+        const query = String(adminUsersSearchInput?.value || "").trim().toLowerCase();
+        const filteredRows = query
+          ? rows.filter(row => {
+              const name = String(row?.display_name || "").toLowerCase();
+              const email = String(row?.email || "").toLowerCase();
+              const userId = String(row?.user_id || row?.id || "").toLowerCase();
+              const roleTerms = row?.is_admin
+                ? "admin administrator berechtigung rechte"
+                : "user normal normaler nutzer berechtigung rechte";
+              return name.includes(query) || email.includes(query) || userId.includes(query) || roleTerms.includes(query);
+            })
+          : rows;
+
+        if (!filteredRows.length) {
+          adminUsersList.innerHTML = "";
+          setStatus(adminUsersStatus, query ? "Keine Treffer." : "Keine Nutzer gefunden.");
+          return;
+        }
+
+        adminUsersList.innerHTML = filteredRows.map(row => {
+            const userId = String(row.user_id || row.id || "");
+            const name = escapeHtml(row.display_name || "User");
+            const email = escapeHtml(row.email || "");
+            const isAdminRow = Boolean(row.is_admin);
+            const isSelf = String(currentUser?.id || "") === userId;
+            return `
+              <div class="settings-admin-row" data-user-id="${userId}" data-is-admin="${isAdminRow ? "true" : "false"}">
+                <div class="settings-admin-user">
+                  <div class="settings-admin-name">${name}</div>
+                  <div class="settings-admin-meta">${email || userId}${isAdminRow ? " • Admin" : " • User"}${isSelf ? " • Du" : ""}</div>
+                </div>
+                <div class="settings-admin-actions">
+                  <button type="button" class="settings-admin-icon-btn" data-admin-action="rename" title="Umbenennen" aria-label="Umbenennen">
+                    <i data-lucide="pencil"></i>
+                  </button>
+                  <button type="button" class="settings-admin-icon-btn" data-admin-action="role" title="${isAdminRow ? "Zu User machen" : "Zu Admin machen"}" aria-label="Rolle ändern" ${isSelf ? "disabled" : ""}>
+                    <i data-lucide="${isAdminRow ? "shield-check" : "shield"}"></i>
+                  </button>
+                  <button type="button" class="settings-admin-icon-btn is-danger" data-admin-action="delete" title="Löschen" aria-label="Löschen" ${isSelf ? "disabled" : ""}>
+                    <i data-lucide="trash-2"></i>
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join("");
+        lucide.createIcons({ scope: adminUsersList });
+        setStatus(adminUsersStatus, "", "");
+      }
+
+      async function renderAdminUsersList() {
+        if (!adminUsersList) return;
+        if (adminUsersLoading) return;
+        adminUsersLoading = true;
+        setStatus(adminUsersStatus, "Nutzer werden geladen ...");
+        try {
+          const { data, error } = await supabaseClient.rpc("admin_list_users");
+          if (error) throw error;
+          adminUsersRowsCache = Array.isArray(data) ? data : [];
+          renderAdminUsersListRows(adminUsersRowsCache);
+        } catch (err) {
+          console.error("admin_list_users error:", err);
+          adminUsersList.innerHTML = "";
+          setStatus(adminUsersStatus, err?.message || "Nutzer konnten nicht geladen werden.", "error");
+        } finally {
+          adminUsersLoading = false;
+        }
+      }
+
+      if (adminUsersSearchInput) {
+        adminUsersSearchInput.addEventListener("input", () => {
+          renderAdminUsersListRows(adminUsersRowsCache);
+        });
+      }
+
+      if (adminUsersSearchToggleBtn && adminUsersSearchWrap) {
+        adminUsersSearchToggleBtn.addEventListener("click", () => {
+          const isOpen = adminUsersSearchWrap.style.display !== "none";
+          if (isOpen) {
+            adminUsersSearchWrap.style.display = "none";
+            adminUsersSearchToggleBtn.setAttribute("aria-label", "Suche öffnen");
+            adminUsersSearchToggleBtn.setAttribute("title", "Suche");
+          } else {
+            adminUsersSearchWrap.style.display = "";
+            adminUsersSearchToggleBtn.setAttribute("aria-label", "Suche schließen");
+            adminUsersSearchToggleBtn.setAttribute("title", "Suche schließen");
+            requestAnimationFrame(() => adminUsersSearchInput?.focus());
+          }
+        });
+      }
+
+      if (adminInviteToggleBtn && inviteCreateBlock) {
+        adminInviteToggleBtn.addEventListener("click", () => {
+          const isOpen = inviteCreateBlock.style.display !== "none";
+          if (isOpen) {
+            inviteCreateBlock.style.display = "none";
+            adminInviteToggleBtn.setAttribute("aria-label", "Neuen Nutzer öffnen");
+            adminInviteToggleBtn.setAttribute("title", "Neuer Nutzer");
+            adminInviteToggleBtn.innerHTML = `<i data-lucide="plus"></i>`;
+          } else {
+            inviteCreateBlock.style.display = "";
+            adminInviteToggleBtn.setAttribute("aria-label", "Neuen Nutzer schließen");
+            adminInviteToggleBtn.setAttribute("title", "Neuen Nutzer schließen");
+            adminInviteToggleBtn.innerHTML = `<i data-lucide="x"></i>`;
+            requestAnimationFrame(() => generateInviteBtn?.focus());
+          }
+          lucide.createIcons({ scope: adminInviteToggleBtn });
+        });
+      }
+
+      if (adminUsersList) {
+        adminUsersList.addEventListener("click", async (event) => {
+          const btn = event.target.closest("[data-admin-action]");
+          if (!btn || btn.disabled) return;
+          const rowEl = btn.closest(".settings-admin-row");
+          if (!rowEl) return;
+          const userId = rowEl.dataset.userId;
+          const isAdminRow = rowEl.dataset.isAdmin === "true";
+          const action = btn.dataset.adminAction;
+          if (!userId || !action) return;
+
+          try {
+            if (action === "rename") {
+              const currentName = rowEl.querySelector(".settings-admin-name")?.textContent?.trim() || "";
+              const nextName = prompt("Neuen Namen eingeben:", currentName);
+              if (nextName == null) return;
+              const trimmed = nextName.trim();
+              if (!trimmed) {
+                setStatus(adminUsersStatus, "Name darf nicht leer sein.", "error");
+                return;
+              }
+              const { error } = await supabaseClient.rpc("admin_rename_user", { p_user_id: userId, p_display_name: trimmed });
+              if (error) throw error;
+              dataCache.otherUsers = { value: null, ts: 0 };
+              dataCache.otherUser = { value: null, ts: 0 };
+              setStatus(adminUsersStatus, "Nutzer umbenannt.", "success");
+              await renderAdminUsersList();
+              return;
+            }
+
+            if (action === "role") {
+              const nextRole = isAdminRow ? "user" : "admin";
+              const { error } = await supabaseClient.rpc("admin_set_user_role", { p_user_id: userId, p_role: nextRole });
+              if (error) throw error;
+              dataCache.otherUsers = { value: null, ts: 0 };
+              dataCache.otherUser = { value: null, ts: 0 };
+              setStatus(adminUsersStatus, `Rolle gesetzt: ${nextRole === "admin" ? "Admin" : "User"}.`, "success");
+              await renderAdminUsersList();
+              return;
+            }
+
+            if (action === "delete") {
+              const targetName = rowEl.querySelector(".settings-admin-name")?.textContent?.trim() || "diesen Nutzer";
+              if (!confirm(`${targetName} wirklich löschen?`)) return;
+              const { error } = await supabaseClient.rpc("admin_delete_user", { p_user_id: userId });
+              if (error) throw error;
+              dataCache.otherUsers = { value: null, ts: 0 };
+              dataCache.otherUser = { value: null, ts: 0 };
+              dataCache.habits.delete(userId);
+              dataCache.streak.delete(userId);
+              setStatus(adminUsersStatus, "Nutzer gelöscht.", "success");
+              await renderAdminUsersList();
+              return;
+            }
+          } catch (err) {
+            console.error("admin user action error:", err);
+            setStatus(adminUsersStatus, err?.message || "Aktion fehlgeschlagen.", "error");
+          }
+        });
+      }
+
       (async () => {
         if (!inviteSection) return;
         const isAdmin = await fetchCurrentUserAdminState();
         inviteSection.style.display = isAdmin ? "" : "none";
+        if (isAdmin) await renderAdminUsersList();
       })();
 
       async function refreshNotificationControls() {
@@ -4341,13 +4970,17 @@
             const pin = String(row.pin || "").trim();
             if (!pin) throw new Error("PIN konnte nicht erzeugt werden.");
 
-            const inviteUrl = `${window.location.origin}${window.location.pathname}?registerPin=${encodeURIComponent(pin)}`;
+            const baseUrl = getInviteBaseUrl();
+            const joiner = baseUrl.includes("?") ? "&" : "?";
+            const inviteUrl = `${baseUrl}${joiner}registerPin=${encodeURIComponent(pin)}`;
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(inviteUrl)}`;
 
             if (invitePinValue) invitePinValue.textContent = pin;
-            if (inviteLinkInput) inviteLinkInput.value = inviteUrl;
             if (inviteQrImage) inviteQrImage.src = qrUrl;
-            if (inviteOutput) inviteOutput.classList.add("is-visible");
+            if (inviteOutput) {
+              inviteOutput.dataset.inviteUrl = inviteUrl;
+              inviteOutput.classList.add("is-visible");
+            }
 
             setStatus(inviteStatus, `${selectedInviteRole === "admin" ? "Admin" : "User"}-PIN erstellt. QR-Code kann geteilt werden.`, "success");
           } catch (err) {
@@ -4361,7 +4994,7 @@
 
       if (inviteCopyBtn) {
         inviteCopyBtn.addEventListener("click", async () => {
-          const link = inviteLinkInput?.value?.trim();
+          const link = (inviteOutput?.dataset?.inviteUrl || "").trim();
           if (!link) return;
           try {
             await navigator.clipboard.writeText(link);
@@ -7274,21 +7907,26 @@ forgotPw.onclick = () => {
       refreshAddButtonIcon();
     });
 
-  async function loadOtherUser() {
-    if (!currentUser) return null;
+  async function loadOtherUsers(limit = 50) {
+    if (!currentUser) return [];
 
     const { data, error } = await supabaseClient
       .from("users_public")
       .select("id, display_name, avatar_url")
       .neq("id", currentUser.id)
-      .limit(1);
+      .limit(limit);
 
     if (error) {
-      console.error("loadOtherUser error:", error);
-      return null;
+      console.error("loadOtherUsers error:", error);
+      return [];
     }
 
-    return data && data.length > 0 ? data[0] : null;
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function loadOtherUser() {
+    const users = await loadOtherUsers(1);
+    return users && users.length > 0 ? users[0] : null;
   }
 
   function getCached(map, key, ttl) {
@@ -7315,6 +7953,20 @@ forgotPw.onclick = () => {
     }
     const fresh = await loadOtherUser();
     dataCache.otherUser = { value: fresh, ts: Date.now() };
+    return fresh;
+  }
+
+  async function loadOtherUsersCached() {
+    if (!currentUser) return [];
+    const cached = dataCache.otherUsers.value;
+    if (cached && (Date.now() - dataCache.otherUsers.ts) <= CACHE_TTL.otherUsers) {
+      return cached;
+    }
+    const fresh = await loadOtherUsers();
+    dataCache.otherUsers = { value: fresh, ts: Date.now() };
+    if (!dataCache.otherUser.value || (Array.isArray(fresh) && fresh.length > 0)) {
+      dataCache.otherUser = { value: (fresh && fresh[0]) || null, ts: Date.now() };
+    }
     return fresh;
   }
 
@@ -8205,6 +8857,7 @@ forgotPw.onclick = () => {
     }
 
     async function renderStats(myHabits, otherHabits, otherUserData) {
+      const initialOtherUserId = String(otherUserData?.id || "");
       // --- Ensure otherUserData is loaded before rendering ---
       if (!otherUserData) {
         try {
@@ -8223,6 +8876,40 @@ forgotPw.onclick = () => {
         "Du"
       );
       const myAvatarUrl = getAvatarUrl(currentUser?.user_metadata || {});
+      let allOtherUsers = [];
+      try {
+        allOtherUsers = await loadOtherUsersCached();
+      } catch (e) {
+        console.error("Failed to load other users list for stats:", e);
+        allOtherUsers = [];
+      }
+      const preferredSecondUserId = getPreferredStatsSecondUserId();
+      if (preferredSecondUserId) {
+        allOtherUsers = [...allOtherUsers].sort((a, b) => {
+          const aFav = String(a?.id || "") === preferredSecondUserId ? 1 : 0;
+          const bFav = String(b?.id || "") === preferredSecondUserId ? 1 : 0;
+          return bFav - aFav;
+        });
+      }
+      if (allOtherUsers.length > 0) {
+        otherUserData = allOtherUsers[0];
+      }
+      if (otherUserData) {
+        const selectedOtherUserId = String(otherUserData.id || "");
+        const selectedUserChanged = selectedOtherUserId !== initialOtherUserId;
+        const habitsMatchSelectedUser =
+          Array.isArray(otherHabits) &&
+          otherHabits.length > 0 &&
+          otherHabits.every(h => String(h?.user_id || "") === selectedOtherUserId);
+        if (selectedUserChanged || !habitsMatchSelectedUser) {
+          // Prefer a fresh fetch when switching the preferred comparison user to avoid stale empty caches.
+          const freshOtherHabits = await loadHabitsForUser(selectedOtherUserId);
+          setCached(dataCache.habits, selectedOtherUserId, freshOtherHabits);
+          otherHabits = freshOtherHabits;
+        }
+        otherUser = otherUserData;
+      }
+      const extraUsers = (allOtherUsers || []).filter(u => String(u?.id || "") !== String(otherUserData?.id || ""));
 
       const [myStreak, otherStreak] = await Promise.all([
         loadStreakForUserCached(currentUser.id),
@@ -8288,26 +8975,24 @@ forgotPw.onclick = () => {
       // === Optional: anderer User ===
       if (otherUserData) {
         const otherName = otherUserData.display_name || "Freund:in";
+        const otherUserId = String(otherUserData.id || "");
         const otherAvatarUrl = getAvatarUrl(otherUserData || {});
         // otherStreak already loaded above
 
         html += `<div style="height:40px"></div>`;
 
         html += `
-          <div style="
-            display:flex;
-            justify-content:space-between;
-            align-items:flex-end;
-            margin-bottom:20px;
-          ">
-          <div class="stats-name-row">
+          <div class="stats-user-head">
+            <div class="stats-name-row">
               <div class="stats-name" style="
                 line-height:1;
                 margin:0;
                 padding:0;
               ">${otherName}</div>
             </div>
-
+            <button type="button" class="stats-fav-user-btn is-active" data-stats-favorite-user="${otherUserId}" aria-label="Als zweiten Nutzer merken" title="Als zweiten Nutzer merken">
+              <i data-lucide="star"></i>
+            </button>
           </div>
         `;
 
@@ -8315,7 +9000,52 @@ forgotPw.onclick = () => {
         html += barsHtml(otherHabits, "other");
         html += `</div>`;
 
-        const reliabilityChartHtml = await buildReliabilityChartHtml(myHabits, otherHabits, otherName);
+        var reliabilityChartHtml = await buildReliabilityChartHtml(myHabits, otherHabits, otherName);
+
+      }
+
+      if (extraUsers.length > 0) {
+        const extraVisibleStep = 0;
+        const extraChunkSize = 2;
+        const extraHabitsByUser = await Promise.all(
+          extraUsers.map(async user => ({
+            user,
+            habits: await loadHabitsForUserCached(user.id)
+          }))
+        );
+
+        html += `<div style="height:16px"></div>`;
+
+        html += `<div class="stats-extra-users" id="statsExtraUsersList">`;
+        extraHabitsByUser.forEach((entry, idx) => {
+          const name = entry.user?.display_name || "User";
+          const userId = String(entry.user?.id || "");
+          html += `
+            <div class="stats-extra-user-item${idx >= extraVisibleStep ? " is-hidden" : ""}" data-extra-user-index="${idx}">
+              <div class="stats-user-head">
+                <div class="stats-name-row">
+                  <div class="stats-name" style="line-height:1; margin:0; padding:0; font-size:1.35rem;">${escapeHtml(name)}</div>
+                </div>
+                <button type="button" class="stats-fav-user-btn" data-stats-favorite-user="${userId}" aria-label="Als zweiten Nutzer merken" title="Als zweiten Nutzer merken">
+                  <i data-lucide="star"></i>
+                </button>
+              </div>
+              <div class="stats-user-panel">
+                ${barsHtml(entry.habits || [], `otherList-${idx}`)}
+              </div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+
+        html += `
+          <button type="button" class="stats-more-users-btn" id="statsMoreUsersBtn" data-visible-count="${extraVisibleStep}" data-chunk-size="${extraChunkSize}">
+            Weitere Nutzer anzeigen (+2)
+          </button>
+        `;
+      }
+
+      if (otherUserData && typeof reliabilityChartHtml === "string" && reliabilityChartHtml) {
         html += `
           <div style="
             display:flex;
@@ -8332,7 +9062,6 @@ forgotPw.onclick = () => {
         html += `<div class="stats-user-panel" data-panel="diagram">`;
         html += reliabilityChartHtml;
         html += `</div>`;
-
       }
 
       statsViewEl.innerHTML = html;
@@ -8485,6 +9214,40 @@ forgotPw.onclick = () => {
           alignDesktopDividerHeight();
         });
       });
+
+      const moreUsersBtn = statsViewEl.querySelector("#statsMoreUsersBtn");
+      if (moreUsersBtn) {
+        moreUsersBtn.addEventListener("click", () => {
+          const items = Array.from(statsViewEl.querySelectorAll(".stats-extra-user-item"));
+          let visibleCount = parseInt(moreUsersBtn.dataset.visibleCount || "2", 10);
+          const chunkSize = parseInt(moreUsersBtn.dataset.chunkSize || "2", 10) || 2;
+          const nextVisibleCount = visibleCount + chunkSize;
+          items.forEach((item, idx) => {
+            item.classList.toggle("is-hidden", idx >= nextVisibleCount);
+          });
+          moreUsersBtn.dataset.visibleCount = String(nextVisibleCount);
+          const hiddenLeft = items.filter(item => item.classList.contains("is-hidden")).length;
+          if (hiddenLeft <= 0) {
+            moreUsersBtn.remove();
+          } else {
+            moreUsersBtn.textContent = `Weitere Nutzer anzeigen (+${Math.min(chunkSize, hiddenLeft)})`;
+          }
+          updateDesktopLayoutHeights();
+          alignDesktopStatsTop();
+          alignDesktopDividerHeight();
+        });
+      }
+
+      statsViewEl.querySelectorAll("[data-stats-favorite-user]").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const userId = btn.dataset.statsFavoriteUser || "";
+          if (!userId) return;
+          setPreferredStatsSecondUserId(userId);
+          await refreshStatsLive();
+        });
+      });
       lucide.createIcons();
     }
 
@@ -8510,7 +9273,7 @@ forgotPw.onclick = () => {
     ]);
     otherUser = otherUserData;
     const otherHabits = otherUserData ? await loadHabitsForUserCached(otherUserData.id) : [];
-    renderStats(myHabits, otherHabits, otherUserData);
+    await renderStats(myHabits, otherHabits, otherUserData);
   }
 
     statsBtnEl.addEventListener("click", async () => {
@@ -8812,6 +9575,26 @@ forgotPw.onclick = () => {
     function getRegisterPinParam() {
       const params = new URLSearchParams(window.location.search);
       return params.get("registerPin") || params.get("register_pin");
+    }
+
+    function getInviteBaseUrl() {
+      if (window.location.protocol === "file:") return "https://lillyapp.github.io/habits/";
+      return `${window.location.origin}${window.location.pathname}`;
+    }
+
+    function getPreferredStatsSecondUserId() {
+      try {
+        return localStorage.getItem(STATS_FAVORITE_SECOND_USER_KEY) || "";
+      } catch (e) {
+        return "";
+      }
+    }
+
+    function setPreferredStatsSecondUserId(userId) {
+      try {
+        if (userId) localStorage.setItem(STATS_FAVORITE_SECOND_USER_KEY, String(userId));
+        else localStorage.removeItem(STATS_FAVORITE_SECOND_USER_KEY);
+      } catch (e) {}
     }
 
     async function fetchCurrentUserAdminState() {

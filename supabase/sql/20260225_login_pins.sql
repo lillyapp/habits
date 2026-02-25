@@ -261,6 +261,139 @@ $$;
 revoke all on function public.consume_login_pin(text, uuid) from public;
 grant execute on function public.consume_login_pin(text, uuid) to anon, authenticated;
 
+create or replace function public.admin_list_users()
+returns table(user_id uuid, email text, display_name text, avatar_url text, is_admin boolean)
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Unauthorized';
+  end if;
+  if not public.is_current_user_admin() then
+    raise exception 'Forbidden';
+  end if;
+
+  return query
+  select
+    u.id as user_id,
+    u.email::text as email,
+    coalesce(up.display_name, u.raw_user_meta_data ->> 'display_name', split_part(coalesce(u.email::text, ''), '@', 1), 'User')::text as display_name,
+    coalesce(up.avatar_url, u.raw_user_meta_data ->> 'avatar_url', '')::text as avatar_url,
+    exists (select 1 from public.app_admins a where a.user_id = u.id) as is_admin
+  from auth.users u
+  left join public.users_public up on up.id = u.id
+  order by lower(coalesce(up.display_name, u.raw_user_meta_data ->> 'display_name', u.email::text, ''));
+end;
+$$;
+
+revoke all on function public.admin_list_users() from public;
+grant execute on function public.admin_list_users() to authenticated;
+
+create or replace function public.admin_rename_user(p_user_id uuid, p_display_name text)
+returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  next_name text := nullif(trim(p_display_name), '');
+begin
+  if auth.uid() is null then
+    raise exception 'Unauthorized';
+  end if;
+  if not public.is_current_user_admin() then
+    raise exception 'Forbidden';
+  end if;
+  if p_user_id is null then
+    raise exception 'User required';
+  end if;
+  if next_name is null then
+    raise exception 'Display name required';
+  end if;
+
+  update public.users_public
+  set display_name = next_name
+  where id = p_user_id;
+
+  update auth.users
+  set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object('display_name', next_name)
+  where id = p_user_id;
+end;
+$$;
+
+revoke all on function public.admin_rename_user(uuid, text) from public;
+grant execute on function public.admin_rename_user(uuid, text) to authenticated;
+
+create or replace function public.admin_set_user_role(p_user_id uuid, p_role text)
+returns text
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  normalized_role text := case when lower(coalesce(trim(p_role), 'user')) = 'admin' then 'admin' else 'user' end;
+begin
+  if auth.uid() is null then
+    raise exception 'Unauthorized';
+  end if;
+  if not public.is_current_user_admin() then
+    raise exception 'Forbidden';
+  end if;
+  if p_user_id is null then
+    raise exception 'User required';
+  end if;
+  if p_user_id = auth.uid() then
+    raise exception 'Cannot change own role here';
+  end if;
+
+  if normalized_role = 'admin' then
+    insert into public.app_admins (user_id) values (p_user_id)
+    on conflict (user_id) do nothing;
+  else
+    delete from public.app_admins where user_id = p_user_id;
+  end if;
+
+  update auth.users
+  set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object('app_role', normalized_role)
+  where id = p_user_id;
+
+  return normalized_role;
+end;
+$$;
+
+revoke all on function public.admin_set_user_role(uuid, text) from public;
+grant execute on function public.admin_set_user_role(uuid, text) to authenticated;
+
+create or replace function public.admin_delete_user(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Unauthorized';
+  end if;
+  if not public.is_current_user_admin() then
+    raise exception 'Forbidden';
+  end if;
+  if p_user_id is null then
+    raise exception 'User required';
+  end if;
+  if p_user_id = auth.uid() then
+    raise exception 'Cannot delete own account here';
+  end if;
+
+  delete from public.app_admins where user_id = p_user_id;
+  delete from auth.users where id = p_user_id;
+end;
+$$;
+
+revoke all on function public.admin_delete_user(uuid) from public;
+grant execute on function public.admin_delete_user(uuid) to authenticated;
+
 -- Beispiele:
 -- Ersten Admin manuell setzen:
 -- insert into public.app_admins (user_id) values ('<DEINE_USER_UUID>');
