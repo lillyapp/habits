@@ -15,6 +15,12 @@ create table if not exists public.push_subscriptions (
 );
 
 alter table public.push_subscriptions
+  add column if not exists id uuid default gen_random_uuid(),
+  add column if not exists user_id uuid references auth.users(id) on delete cascade,
+  add column if not exists token text,
+  add column if not exists endpoint text,
+  add column if not exists p256dh text,
+  add column if not exists auth text,
   add column if not exists platform text default 'web',
   add column if not exists user_agent text,
   add column if not exists permission text,
@@ -43,6 +49,14 @@ alter table public.push_subscriptions
   alter column last_seen_at set default now(),
   alter column created_at set default now(),
   alter column updated_at set default now();
+
+alter table public.push_subscriptions
+  alter column endpoint drop not null,
+  alter column p256dh drop not null,
+  alter column auth drop not null;
+
+create unique index if not exists push_subscriptions_user_token_uidx
+  on public.push_subscriptions (user_id, token);
 
 create index if not exists push_subscriptions_user_id_idx
   on public.push_subscriptions (user_id);

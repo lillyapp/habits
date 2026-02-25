@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>. 
-  <meta charset="UTF-8" />. 
+<head>
+  <meta charset="UTF-8" />
   <title>Consistency</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/lillyapp/habits/refs/heads/main/3FC2E555-7142-43BE-83DE-E5ED7A123793.png">
@@ -435,10 +435,12 @@
       background: var(--c-card);
       padding:24px;
       transform-style:preserve-3d;
+      -webkit-transform-style:preserve-3d;
       cursor:pointer;
       opacity:0;
       transition:transform 0.25s linear;
       height:100%;
+      overflow:hidden;
     }
 
     .card-face {
@@ -455,6 +457,8 @@
         display:flex;
         flex-direction:column;
         justify-content:flex-start;
+        transform: translateZ(1px);
+        -webkit-transform: translateZ(1px);
       }
 
     .card-face.front .front-header,
@@ -468,7 +472,8 @@
 
     .back {
       background: var(--c-card);
-      transform:rotateY(180deg);
+      transform:rotateY(180deg) translateZ(1px);
+      -webkit-transform:rotateY(180deg) translateZ(1px);
       display:flex;
       flex-direction:row;
       justify-content:space-between;
@@ -2780,9 +2785,28 @@
     async function upsertFcmTokenInSupabase(token) {
       if (!token || !currentUser?.id) return;
 
+      let endpoint = "";
+      let p256dh = "";
+      let auth = "";
+      try {
+        const reg = await getPushServiceWorkerRegistration();
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          endpoint = String(sub.endpoint || "");
+          const keys = sub.toJSON?.().keys || {};
+          p256dh = String(keys.p256dh || "");
+          auth = String(keys.auth || "");
+        }
+      } catch (e) {
+        console.warn("Could not read PushSubscription details for Supabase upsert:", e);
+      }
+
       const payload = {
         user_id: currentUser.id,
         token,
+        endpoint,
+        p256dh,
+        auth,
         platform: "web",
         is_active: true,
         permission: (typeof Notification !== "undefined" ? Notification.permission : "default"),
@@ -2988,17 +3012,41 @@
       const token = getStoredFcmToken();
       if (!token) return;
 
+      let deleteTokenError = null;
       try {
-        const { messaging } = await ensureFirebaseMessagingClient();
-        const deleted = await messaging.deleteToken();
-        if (deleted === false) {
-          throw new Error("FCM-Token konnte nicht gelöscht werden.");
+        const reg = await getPushServiceWorkerRegistration();
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          try {
+            await sub.unsubscribe();
+          } catch (err) {
+            console.warn("push subscription unsubscribe warning:", err);
+          }
+        }
+
+        try {
+          const { messaging } = await ensureFirebaseMessagingClient();
+          const deleted = await messaging.deleteToken();
+          if (deleted === false) {
+            deleteTokenError = new Error("FCM-Token konnte nicht gelöscht werden.");
+          }
+        } catch (err) {
+          deleteTokenError = err;
         }
       } finally {
         await disableFcmTokenInSupabase(token);
         setStoredFcmToken("");
         setStoredFcmTokenRegistered(false);
       }
+
+      const deleteMessage = String(deleteTokenError?.message || deleteTokenError || "");
+      // Firebase compat may try to register the default root worker on deleteToken().
+      // We already unsubscribed from the active push subscription and disabled the token in Supabase.
+      if (deleteTokenError && /firebase-messaging-sw\.js|failed-service-worker-registration/i.test(deleteMessage)) {
+        console.warn("Ignoring Firebase deleteToken default SW registration error:", deleteTokenError);
+        return;
+      }
+      if (deleteTokenError) throw deleteTokenError;
     }
 
     async function sendLocalTestNotification() {
