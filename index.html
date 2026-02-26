@@ -524,6 +524,8 @@
         justify-content:flex-start;
         transform: translateZ(1px);
         -webkit-transform: translateZ(1px);
+        visibility: visible;
+        pointer-events: auto;
       }
 
     .card-face.front .front-header,
@@ -543,6 +545,11 @@
       flex-direction:row;
       justify-content:space-between;
       padding:24px;
+    }
+
+    .card.is-flipped .card-face.front {
+      visibility: hidden;
+      pointer-events: none;
     }
 
     .half {
@@ -1452,6 +1459,21 @@
       gap: 8px;
     }
 
+    .settings-preset-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .settings-preset-item:not(.has-actions) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .settings-preset-item.is-custom {
+      grid-column: 1 / -1;
+    }
+
     .settings-preset-btn {
       border: none;
       border-radius: 12px;
@@ -1469,6 +1491,84 @@
     .settings-preset-btn.is-active {
       background: var(--c-text);
       color: var(--c-bg);
+    }
+
+    .settings-preset-icon-btn {
+      width: 46px;
+      height: 46px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.045);
+      color: var(--c-text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+
+    .settings-preset-icon-btn svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    .settings-preset-icon-btn:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+
+    .settings-preset-palette {
+      display: none;
+      margin-top: 4px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.03);
+      border: 1px solid rgba(0,0,0,0.04);
+      grid-column: 1 / -1;
+    }
+
+    .settings-preset-palette.is-open {
+      display: block;
+    }
+
+    .settings-preset-palette-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      justify-items: start;
+    }
+
+    .settings-preset-palette-dot {
+      border: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+      position: relative;
+      padding: 0;
+    }
+
+    .settings-preset-palette-dot.is-active {
+      box-shadow: 0 0 0 2px #000, 0 0 0 4px rgba(255,255,255,0.7);
+    }
+
+    .settings-preset-palette-dot.is-active::after {
+      content: attr(data-selected-order);
+      position: absolute;
+      right: -5px;
+      bottom: -5px;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: #000;
+      color: #fff;
+      font-size: 0.62rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .settings-preset-btn-label {
@@ -1582,11 +1682,17 @@
       gap: 10px;
     }
 
+    .settings-subsection.settings-subsection-no-divider {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+
     .settings-subsection-title {
-      font-size: 0.9rem;
+      font-size: 1.02rem;
       font-weight: 800;
       margin: 0;
-      line-height: 1.15;
+      line-height: 1.12;
     }
 
     .settings-subsection-head {
@@ -2034,8 +2140,8 @@
       }
 
       .settings-subsection-title {
-        font-size: 0.9rem;
-        line-height: 1.15;
+        font-size: 1.02rem;
+        line-height: 1.12;
       }
 
       .settings-subsection-head i,
@@ -2054,9 +2160,32 @@
         gap: 10px;
       }
 
+      .settings-preset-item {
+        gap: 8px;
+      }
+
+      .settings-preset-item.is-custom {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+      }
+
       .settings-preset-btn {
         min-height: 48px;
         border-radius: 13px;
+      }
+
+      .settings-preset-icon-btn {
+        width: 48px;
+        height: 48px;
+        border-radius: 13px;
+      }
+
+      .settings-preset-palette {
+        padding: 12px;
+        border-radius: 13px;
+      }
+
+      .settings-preset-palette-grid {
+        grid-template-columns: repeat(10, minmax(0, 1fr));
       }
 
       .settings-action-btn {
@@ -2444,14 +2573,35 @@
       background: rgba(255,255,255,0.07);
     }
 
+    :root[data-theme="dark"] .settings-preset-icon-btn {
+      background: rgba(255,255,255,0.07);
+    }
+
+    :root[data-theme="dark"] .settings-preset-palette {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.06);
+    }
+
     :root[data-theme="dark"] .settings-preset-btn.is-active {
       background: #ffffff;
       color: #000000;
     }
 
+    :root[data-theme="dark"] .settings-preset-icon-btn:hover:not(:disabled) {
+      background: rgba(255,255,255,0.1);
+    }
+
     :root[data-theme="dark"] .settings-preset-swatch {
       border-color: rgba(17,17,17,0.9);
       box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
+    }
+
+    :root[data-theme="dark"] .settings-preset-palette-dot {
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.12);
+    }
+
+    :root[data-theme="dark"] .settings-preset-palette-dot.is-active {
+      box-shadow: 0 0 0 2px #000, 0 0 0 4px rgba(255,255,255,0.18);
     }
 
     :root[data-theme="dark"] .settings-segment-btn:not(.is-active):hover,
@@ -3829,6 +3979,7 @@
     let statsRealtimeChannel = null;
     let statsRefreshInFlight = false;
     let statsRefreshQueued = false;
+    let settingsCustomPaletteOpen = false;
     let introFlowDone = false;
     let suppressNextLegacyAddHandler = false;
     const DEFAULT_USER_SETTINGS = Object.freeze({
@@ -3836,13 +3987,20 @@
       cookie_mode_enabled: false
     });
     const HABIT_COLOR_PRESET_STORAGE_KEY = "habit_color_preset_v1";
+    const HABIT_CUSTOM_COLOR_SELECTION_STORAGE_KEY = "habit_custom_color_selection_v1";
     const HABIT_COLOR_PRESETS = Object.freeze([
       { id: "sunset", label: "Sunset", colors: ["#ef4444", "#f59e0b", "#eab308"] },
       { id: "forest", label: "Forest", colors: ["#22c55e", "#10b981", "#14b8a6"] },
       { id: "ocean", label: "Ocean", colors: ["#06b6d4", "#0ea5e9", "#3b82f6"] },
-      { id: "berry", label: "Berry", colors: ["#8b5cf6", "#d946ef", "#ec4899"] }
+      { id: "berry", label: "Shorty", colors: ["#8b5cf6", "#d946ef", "#ec4899"] },
+      { id: "custom", label: "Benutzerdefiniert", colors: ["#ef4444", "#f59e0b", "#eab308"] }
     ]);
-    const CHANGELOG_OVERVIEW_VERSION = 2;
+    const HABIT_CUSTOM_COLOR_SWATCHES = Object.freeze([
+      "#ef4444", "#f97316", "#eab308", "#84cc16", "#22c55e",
+      "#14b8a6", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"
+    ]);
+    const HABIT_CUSTOM_COLOR_SELECTION_DEFAULT = Object.freeze(["#ef4444", "#f59e0b", "#eab308"]);
+    const CHANGELOG_OVERVIEW_VERSION = 3;
     const CHANGELOG_OVERVIEW_SEEN_KEY = `changes_overview_seen_v${CHANGELOG_OVERVIEW_VERSION}`;
     const STATS_FAVORITE_SECOND_USER_KEY = "stats_favorite_second_user_id_v1";
     let userSettings = { ...DEFAULT_USER_SETTINGS };
@@ -3892,6 +4050,52 @@
     function normalizeHabitColorPresetId(value) {
       const fallback = HABIT_COLOR_PRESETS[0]?.id || "sunset";
       return HABIT_COLOR_PRESETS.some(p => p.id === value) ? value : fallback;
+    }
+
+    function normalizeHabitCustomColorSelection(value) {
+      const arr = Array.isArray(value) ? value : [];
+      const out = [null, null, null];
+      const used = new Set();
+      for (let i = 0; i < 3; i += 1) {
+        const normalized = typeof arr[i] === "string" ? String(arr[i]).toLowerCase() : null;
+        if (!normalized || !HABIT_CUSTOM_COLOR_SWATCHES.includes(normalized)) continue;
+        if (used.has(normalized)) continue;
+        out[i] = normalized;
+        used.add(normalized);
+      }
+      return out;
+    }
+
+    function getStoredHabitCustomColorSelection() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(HABIT_CUSTOM_COLOR_SELECTION_STORAGE_KEY) || "[]");
+        const normalized = normalizeHabitCustomColorSelection(parsed);
+        return normalized.some(Boolean) ? normalized : [...HABIT_CUSTOM_COLOR_SELECTION_DEFAULT];
+      } catch (_) {
+        return [...HABIT_CUSTOM_COLOR_SELECTION_DEFAULT];
+      }
+    }
+
+    function setStoredHabitCustomColorSelection(colors) {
+      const normalized = normalizeHabitCustomColorSelection(colors);
+      const next = normalized.some(Boolean) ? normalized : [...HABIT_CUSTOM_COLOR_SELECTION_DEFAULT];
+      try {
+        localStorage.setItem(HABIT_CUSTOM_COLOR_SELECTION_STORAGE_KEY, JSON.stringify(next));
+      } catch (_) {}
+      return next;
+    }
+
+    function getResolvedCustomPresetColors() {
+      const selected = getStoredHabitCustomColorSelection();
+      return [0, 1, 2].map(i => selected[i] || HABIT_CUSTOM_COLOR_SELECTION_DEFAULT[i]);
+    }
+
+    function getResolvedHabitColorPresets() {
+      const customColors = getResolvedCustomPresetColors();
+      return HABIT_COLOR_PRESETS.map(preset => ({
+        ...preset,
+        colors: preset.id === "custom" ? customColors : preset.colors
+      }));
     }
 
     function getStoredHabitColorPresetId() {
@@ -4602,8 +4806,8 @@
           </div>
 
           <div class="changes-card">
-            <h3>Neue Settings-Navigation</h3>
-            <p>Es gibt jetzt ein eigenes Settings-Symbol (mobil unten rechts, desktop oben links im Header).</p>
+            <h3>Design-Update in den Einstellungen</h3>
+            <p>Die Einstellungen wurden aufgeräumt: klarere Bereiche, bessere Desktop-Ansicht, Verknüpfungen und Nutzerverwaltung mit Admin-Aktionen.</p>
             <div class="changes-actions">
               <button type="button" class="changes-action-btn is-primary" id="changesOpenSettingsBtn">
                 <i data-lucide="settings-2"></i>
@@ -4613,8 +4817,8 @@
           </div>
 
           <div class="changes-card">
-            <h3>Habit-Anzeige: Text oder Symbol</h3>
-            <p>Die großen Habit-Karten können jetzt statt Beschriftung das gewählte Symbol anzeigen. Das Symbol nutzt die dunklere Habit-Farbe.</p>
+            <h3>Farben & Anzeige erweitert</h3>
+            <p>Neu: Hell/Dunkel/System, Design-Presets für Habit-Farben und verbesserte Farbkombinationen. Dunklere Signalflächen greifen jetzt nur im Dark Mode.</p>
             <div class="settings-segment" id="changesDisplayModeGroup">
               <button type="button" class="settings-segment-btn ${mode === "label" ? "is-active" : ""}" data-changes-display-mode="label">Beschriftung testen</button>
               <button type="button" class="settings-segment-btn ${mode === "icon" ? "is-active" : ""}" data-changes-display-mode="icon">Symbol testen</button>
@@ -4630,8 +4834,8 @@
           </div>
 
           <div class="changes-card">
-            <h3>Account-Bereich erweitert</h3>
-            <p>E-Mailadresse und Passwort können jetzt direkt in den Settings geändert werden.</p>
+            <h3>Account, Sicherheit & Registrierung</h3>
+            <p>Account-Verwaltung in den Settings, Sicherheitsfreigabe per Labyrinth sowie PIN-basierte Registrierung mit Verifikations-Flow über Supabase wurden ergänzt.</p>
             <div class="changes-actions">
               <button type="button" class="changes-action-btn" data-open-settings-target="account">
                 <i data-lucide="mail"></i>
@@ -4641,23 +4845,23 @@
           </div>
 
           <div class="changes-card">
-            <h3>Cookie-Modus für Bulking-Tracking</h3>
-            <p>Neu in den Einstellungen: Cookie-Modus aktivieren/deaktivieren. Damit kannst du deine Nahrungsaufnahme zum Bulken tracken.</p>
+            <h3>Benachrichtigungen & Admin-Tools</h3>
+            <p>FCM-Benachrichtigungen, Testnachricht, Admin-Nutzerverwaltung (Rollen, Sperren, Umbenennen, Löschen) und Einladungen per PIN + QR-Code sind integriert.</p>
             <div class="changes-actions">
-              <button type="button" class="changes-action-btn" data-open-settings-target="display">
-                <i data-lucide="cookie"></i>
-                <span>Cookie-Modus ansehen</span>
+              <button type="button" class="changes-action-btn" data-open-settings-target="invite">
+                <i data-lucide="user-cog"></i>
+                <span>Nutzerverwaltung öffnen</span>
               </button>
             </div>
           </div>
 
           <div class="changes-card">
-            <h3>Danger-Bereich</h3>
-            <p>Ein eigener Danger-Bereich wurde ergänzt, in dem das Konto gelöscht werden kann (mit Bestätigung).</p>
+            <h3>Fehlerbehebungen & Feinschliff</h3>
+            <p>Mehrere Anzeigeprobleme wurden behoben: Icon-/Titelgrößen vereinheitlicht, Karten-/Farbkombinationen verbessert, Passwortfelder korrigiert und Stats-Updates live stabilisiert.</p>
             <div class="changes-actions">
-              <button type="button" class="changes-action-btn" data-open-settings-target="danger">
-                <i data-lucide="triangle-alert"></i>
-                <span>Danger-Bereich öffnen</span>
+              <button type="button" class="changes-action-btn" data-open-settings-target="security">
+                <i data-lucide="shield-check"></i>
+                <span>Sicherheitsbereich öffnen</span>
               </button>
             </div>
           </div>
@@ -4751,6 +4955,8 @@
       const currentEmail = currentUser?.email || "";
       const themeMode = getStoredThemeMode();
       const habitColorPresetId = getStoredHabitColorPresetId();
+      const resolvedHabitColorPresets = getResolvedHabitColorPresets();
+      const customColorSelection = getStoredHabitCustomColorSelection();
 
       settingsViewEl.innerHTML = `
         <div class="settings-pane">
@@ -4762,16 +4968,16 @@
           </div>
 
           <section class="settings-section" data-settings-section="display">
-            <div class="settings-section-head">
-              <div class="settings-section-head-icon" aria-hidden="true"><i data-lucide="layout-grid"></i></div>
-              <div class="settings-section-head-text">
-                <h3 class="settings-section-title">Anzeige der Habits</h3>
-                <p class="settings-copy">Darstellung wählen</p>
+            <div class="settings-subsection settings-subsection-no-divider">
+              <div class="settings-subsection-head">
+                <i data-lucide="type"></i>
+                <div class="settings-subsection-title">Karteninhalt</div>
               </div>
-            </div>
-            <div class="settings-segment" id="habitDisplayModeGroup">
-              <button type="button" class="settings-segment-btn ${mode === "label" ? "is-active" : ""}" data-display-mode="label">Beschriftung</button>
-              <button type="button" class="settings-segment-btn ${mode === "icon" ? "is-active" : ""}" data-display-mode="icon">Symbol</button>
+              <p class="settings-copy">Beschriftung oder Symbol</p>
+              <div class="settings-segment" id="habitDisplayModeGroup">
+                <button type="button" class="settings-segment-btn ${mode === "label" ? "is-active" : ""}" data-display-mode="label">Beschriftung</button>
+                <button type="button" class="settings-segment-btn ${mode === "icon" ? "is-active" : ""}" data-display-mode="icon">Symbol</button>
+              </div>
             </div>
             <div class="settings-subsection">
               <div class="settings-subsection-head">
@@ -4792,16 +4998,44 @@
               </div>
               <p class="settings-copy">Farben für Gewohnheiten</p>
               <div class="settings-preset-grid" id="habitColorPresetGroup">
-                ${HABIT_COLOR_PRESETS.map(preset => `
-                  <button type="button" class="settings-preset-btn ${habitColorPresetId === preset.id ? "is-active" : ""}" data-habit-color-preset="${preset.id}" aria-label="Preset ${escapeHtml(preset.label)}">
-                    <span class="settings-preset-btn-label">${escapeHtml(preset.label)}</span>
-                    <span class="settings-preset-swatches" aria-hidden="true">
-                      <span class="settings-preset-swatch" style="background:${preset.colors[0]};"></span>
-                      <span class="settings-preset-swatch" style="background:${preset.colors[1]};"></span>
-                      <span class="settings-preset-swatch" style="background:${preset.colors[2]};"></span>
-                    </span>
-                  </button>
+                ${resolvedHabitColorPresets.map(preset => `
+                  <div class="settings-preset-item ${preset.id === "custom" ? "has-actions is-custom" : ""}" data-habit-color-preset-item="${preset.id}">
+                    <button type="button" class="settings-preset-btn ${habitColorPresetId === preset.id ? "is-active" : ""}" data-habit-color-preset="${preset.id}" aria-label="Preset ${escapeHtml(preset.label)}">
+                      <span class="settings-preset-btn-label">${escapeHtml(preset.label)}</span>
+                      <span class="settings-preset-swatches" aria-hidden="true">
+                        <span class="settings-preset-swatch" style="background:${preset.colors[0]};"></span>
+                        <span class="settings-preset-swatch" style="background:${preset.colors[1]};"></span>
+                        <span class="settings-preset-swatch" style="background:${preset.colors[2]};"></span>
+                      </span>
+                    </button>
+                    ${preset.id === "custom" ? `
+                    <button type="button" class="settings-preset-icon-btn" data-habit-color-preset-edit="custom" aria-label="Benutzerdefiniert bearbeiten" title="Benutzerdefiniert bearbeiten">
+                      <i data-lucide="pencil"></i>
+                    </button>
+                    <button type="button" class="settings-preset-icon-btn" data-habit-color-preset-reset="custom" aria-label="Benutzerdefiniert zurücksetzen" title="Auf Werkseinstellungen zurücksetzen">
+                      <i data-lucide="eraser"></i>
+                    </button>
+                    ` : ``}
+                  </div>
                 `).join("")}
+                <div class="settings-preset-palette" id="habitCustomPalettePanel" style="display:none;">
+                  <div class="settings-preset-palette-grid">
+                    ${HABIT_CUSTOM_COLOR_SWATCHES.map(color => {
+                      const selectedIndex = customColorSelection.findIndex(c => c === color.toLowerCase());
+                      const isActive = selectedIndex >= 0;
+                      return `
+                      <button
+                        type="button"
+                        class="settings-preset-palette-dot ${isActive ? "is-active" : ""}"
+                        data-habit-custom-color="${color}"
+                        data-selected-order="${isActive ? (selectedIndex + 1) : ""}"
+                        aria-label="Farbe ${color}${isActive ? `, Auswahl ${selectedIndex + 1}` : ""}"
+                        title="Farbe wählen"
+                        style="background:${color};"
+                      ></button>
+                    `}).join("")}
+                  </div>
+                </div>
               </div>
             </div>
             <div class="settings-subsection">
@@ -5027,6 +5261,11 @@
       const adminUsersSearchWrap = settingsViewEl.querySelector("#settingsAdminUsersSearchWrap");
       const adminUsersSearchToggleBtn = settingsViewEl.querySelector("#settingsAdminUsersSearchToggleBtn");
       const adminInviteToggleBtn = settingsViewEl.querySelector("#settingsAdminInviteToggleBtn");
+      const customPalettePanel = settingsViewEl.querySelector("#habitCustomPalettePanel");
+      if (customPalettePanel) {
+        customPalettePanel.style.display = settingsCustomPaletteOpen ? "block" : "none";
+        customPalettePanel.classList.toggle("is-open", settingsCustomPaletteOpen);
+      }
 
       function setStatus(el, message = "", type = "") {
         if (!el) return;
@@ -5037,7 +5276,7 @@
       }
 
       async function applyHabitColorPreset(presetId) {
-        const preset = HABIT_COLOR_PRESETS.find(p => p.id === normalizeHabitColorPresetId(presetId));
+        const preset = getResolvedHabitColorPresets().find(p => p.id === normalizeHabitColorPresetId(presetId));
         if (!preset) throw new Error("Preset nicht gefunden.");
 
         setStoredHabitColorPresetId(preset.id);
@@ -5072,6 +5311,14 @@
         });
 
         await Promise.allSettled(saveTasks);
+      }
+
+      function rerenderSettingsPanePreservingScroll() {
+        const prevScrollTop = settingsViewEl?.scrollTop || 0;
+        renderSettingsPane();
+        requestAnimationFrame(() => {
+          if (settingsViewEl) settingsViewEl.scrollTop = prevScrollTop;
+        });
       }
 
       if (closeBtn) {
@@ -5435,6 +5682,67 @@
             console.error("applyHabitColorPreset error:", err);
             setStatus(displayStatus, err?.message || "Preset konnte nicht angewendet werden.", "error");
           }
+        });
+      });
+
+      settingsViewEl.querySelectorAll("[data-habit-color-preset-edit]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (!customPalettePanel) return;
+          const isOpen = customPalettePanel.style.display !== "none";
+          settingsCustomPaletteOpen = !isOpen;
+          customPalettePanel.style.display = settingsCustomPaletteOpen ? "block" : "none";
+          customPalettePanel.classList.toggle("is-open", settingsCustomPaletteOpen);
+        });
+      });
+
+      settingsViewEl.querySelectorAll("[data-habit-color-preset-reset]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          setStoredHabitCustomColorSelection(HABIT_CUSTOM_COLOR_SELECTION_DEFAULT);
+          if (getStoredHabitColorPresetId() === "custom") {
+            try {
+              await applyHabitColorPreset("custom");
+            } catch (err) {
+              console.error("reset custom preset error:", err);
+              setStatus(displayStatus, err?.message || "Benutzerdefiniert konnte nicht zurückgesetzt werden.", "error");
+              return;
+            }
+          }
+          setStatus(displayStatus, "Benutzerdefiniert zurückgesetzt.", "success");
+          rerenderSettingsPanePreservingScroll();
+        });
+      });
+
+      settingsViewEl.querySelectorAll("[data-habit-custom-color]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const color = String(btn.dataset.habitCustomColor || "").toLowerCase();
+          if (!HABIT_CUSTOM_COLOR_SWATCHES.includes(color)) return;
+
+          const currentSelection = getStoredHabitCustomColorSelection();
+          const existsIdx = currentSelection.findIndex(c => c === color);
+          let nextSelection;
+          if (existsIdx >= 0) {
+            nextSelection = [...currentSelection];
+            nextSelection[existsIdx] = null;
+          } else {
+            const freeIdx = currentSelection.findIndex(c => !c);
+            if (freeIdx === -1) {
+              setStatus(displayStatus, "Maximal 3 Farben auswählbar.", "error");
+              return;
+            }
+            nextSelection = [...currentSelection];
+            nextSelection[freeIdx] = color;
+          }
+          setStoredHabitCustomColorSelection(nextSelection);
+          try {
+            if (getStoredHabitColorPresetId() === "custom") {
+              await applyHabitColorPreset("custom");
+            }
+            setStatus(displayStatus, "Benutzerdefinierte Farben gespeichert.", "success");
+          } catch (err) {
+            console.error("custom palette apply error:", err);
+            setStatus(displayStatus, err?.message || "Palette konnte nicht angewendet werden.", "error");
+          }
+          rerenderSettingsPanePreservingScroll();
         });
       });
 
@@ -6212,12 +6520,14 @@
 
     function getHabitActiveCardBackgroundColor(base) {
       if (!/^#([0-9a-f]{6})$/i.test(base || "")) return "#2a2a2a";
-      return darken(base, 0.38);
+      const isDarkThemeActive = document?.documentElement?.dataset?.theme === "dark";
+      return isDarkThemeActive ? darken(base, 0.38) : base;
     }
 
     function getHabitActiveLabelColor(base) {
       if (!/^#([0-9a-f]{6})$/i.test(base || "")) return "#666";
-      return base;
+      const isDarkThemeActive = document?.documentElement?.dataset?.theme === "dark";
+      return isDarkThemeActive ? base : darken(base);
     }
 
     function updateLoginOrbsFromHabits() {
@@ -7819,6 +8129,9 @@ forgotPw.onclick = () => {
 
       let swipeStartX = 0;
       let swipeEndX   = 0;
+      const setCardFlipped = (isFlipped) => {
+        card.classList.toggle("is-flipped", !!isFlipped);
+      };
 
       // ======================================
       // SWIPE FRONT/BACK
@@ -7836,9 +8149,11 @@ forgotPw.onclick = () => {
         const dx = swipeEndX - swipeStartX;
 
         if (dx < -40 && !card.style.transform.includes("180deg")){
+          setCardFlipped(true);
           gsap.to(card,{ rotationY:180, duration:0.48, ease:"sine.inOut" });
         }
         if (dx > 40 && card.style.transform.includes("180deg")){
+          setCardFlipped(false);
           gsap.to(card,{ rotationY:0, duration:0.48, ease:"sine.inOut" });
         }
       });
@@ -7846,6 +8161,7 @@ forgotPw.onclick = () => {
       if (flipBtn) {
         flipBtn.addEventListener("click", (e) => {
           e.stopPropagation();
+          setCardFlipped(true);
           if (isDesktopView()) {
             card.style.transform = "rotateY(180deg)";
           } else {
@@ -7857,6 +8173,7 @@ forgotPw.onclick = () => {
       if (flipBackBtn) {
         flipBackBtn.addEventListener("click", (e) => {
           e.stopPropagation();
+          setCardFlipped(false);
           if (isDesktopView()) {
             card.style.transform = "rotateY(0deg)";
           } else {
@@ -7906,6 +8223,7 @@ forgotPw.onclick = () => {
       gpsArea.addEventListener("click", (e) => {
         e.stopPropagation();
 
+        setCardFlipped(true);
         gsap.to(card, { rotationY:180, duration:0.48, ease:"sine.inOut" });
 
         gpsInput.style.display = "block";
