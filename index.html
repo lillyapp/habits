@@ -1446,6 +1446,61 @@
       color: var(--c-bg);
     }
 
+    .settings-preset-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .settings-preset-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.045);
+      color: var(--c-text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 46px;
+    }
+
+    .settings-preset-btn.is-active {
+      background: var(--c-text);
+      color: var(--c-bg);
+    }
+
+    .settings-preset-btn-label {
+      font-size: 0.84rem;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .settings-preset-swatches {
+      position: relative;
+      width: 38px;
+      height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .settings-preset-swatch {
+      position: absolute;
+      top: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1.5px solid rgba(255,255,255,0.8);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+    }
+
+    .settings-preset-swatch:nth-child(1) { left: 0; z-index: 1; }
+    .settings-preset-swatch:nth-child(2) { left: 10px; z-index: 2; }
+    .settings-preset-swatch:nth-child(3) { left: 20px; z-index: 3; }
+
     .settings-field {
       display: flex;
       flex-direction: column;
@@ -1995,6 +2050,15 @@
         border-radius: 13px;
       }
 
+      .settings-preset-grid {
+        gap: 10px;
+      }
+
+      .settings-preset-btn {
+        min-height: 48px;
+        border-radius: 13px;
+      }
+
       .settings-action-btn {
         min-height: 46px;
         border-radius: 13px;
@@ -2374,6 +2438,20 @@
     :root[data-theme="dark"] .settings-segment-btn.is-active {
       background: #ffffff;
       color: #000000;
+    }
+
+    :root[data-theme="dark"] .settings-preset-btn {
+      background: rgba(255,255,255,0.07);
+    }
+
+    :root[data-theme="dark"] .settings-preset-btn.is-active {
+      background: #ffffff;
+      color: #000000;
+    }
+
+    :root[data-theme="dark"] .settings-preset-swatch {
+      border-color: rgba(17,17,17,0.9);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
     }
 
     :root[data-theme="dark"] .settings-segment-btn:not(.is-active):hover,
@@ -3757,6 +3835,13 @@
       habit_card_display_mode: "label",
       cookie_mode_enabled: false
     });
+    const HABIT_COLOR_PRESET_STORAGE_KEY = "habit_color_preset_v1";
+    const HABIT_COLOR_PRESETS = Object.freeze([
+      { id: "sunset", label: "Sunset", colors: ["#ef4444", "#f59e0b", "#eab308"] },
+      { id: "forest", label: "Forest", colors: ["#22c55e", "#10b981", "#14b8a6"] },
+      { id: "ocean", label: "Ocean", colors: ["#06b6d4", "#0ea5e9", "#3b82f6"] },
+      { id: "berry", label: "Berry", colors: ["#8b5cf6", "#d946ef", "#ec4899"] }
+    ]);
     const CHANGELOG_OVERVIEW_VERSION = 2;
     const CHANGELOG_OVERVIEW_SEEN_KEY = `changes_overview_seen_v${CHANGELOG_OVERVIEW_VERSION}`;
     const STATS_FAVORITE_SECOND_USER_KEY = "stats_favorite_second_user_id_v1";
@@ -3802,6 +3887,27 @@
 
     function normalizeCookieModeEnabled(value) {
       return value === true;
+    }
+
+    function normalizeHabitColorPresetId(value) {
+      const fallback = HABIT_COLOR_PRESETS[0]?.id || "sunset";
+      return HABIT_COLOR_PRESETS.some(p => p.id === value) ? value : fallback;
+    }
+
+    function getStoredHabitColorPresetId() {
+      try {
+        return normalizeHabitColorPresetId(localStorage.getItem(HABIT_COLOR_PRESET_STORAGE_KEY));
+      } catch (_) {
+        return normalizeHabitColorPresetId(null);
+      }
+    }
+
+    function setStoredHabitColorPresetId(presetId) {
+      const normalized = normalizeHabitColorPresetId(presetId);
+      try {
+        localStorage.setItem(HABIT_COLOR_PRESET_STORAGE_KEY, normalized);
+      } catch (_) {}
+      return normalized;
     }
 
     async function loadUserSettings() {
@@ -4207,7 +4313,7 @@
       if (inputEl?.style?.color) return inputEl.style.color;
       const base = card.dataset.color || "#e4e4e4";
       if (card.dataset.active === "true" && /^#([0-9a-f]{6})$/i.test(base)) {
-        return darken(base);
+        return base;
       }
       return "#666";
     }
@@ -4644,6 +4750,7 @@
       const cookieModeEnabled = normalizeCookieModeEnabled(userSettings?.cookie_mode_enabled);
       const currentEmail = currentUser?.email || "";
       const themeMode = getStoredThemeMode();
+      const habitColorPresetId = getStoredHabitColorPresetId();
 
       settingsViewEl.innerHTML = `
         <div class="settings-pane">
@@ -4676,6 +4783,25 @@
                 <button type="button" class="settings-segment-btn ${themeMode === "light" ? "is-active" : ""}" data-theme-mode="light"><i data-lucide="sun"></i><span>Hell</span></button>
                 <button type="button" class="settings-segment-btn ${themeMode === "dark" ? "is-active" : ""}" data-theme-mode="dark"><i data-lucide="moon"></i><span>Dunkel</span></button>
                 <button type="button" class="settings-segment-btn ${themeMode === "system" ? "is-active" : ""}" data-theme-mode="system"><i data-lucide="monitor"></i><span>System</span></button>
+              </div>
+            </div>
+            <div class="settings-subsection">
+              <div class="settings-subsection-head">
+                <i data-lucide="swatch-book"></i>
+                <div class="settings-subsection-title">Design-Presets</div>
+              </div>
+              <p class="settings-copy">Farben für Gewohnheiten</p>
+              <div class="settings-preset-grid" id="habitColorPresetGroup">
+                ${HABIT_COLOR_PRESETS.map(preset => `
+                  <button type="button" class="settings-preset-btn ${habitColorPresetId === preset.id ? "is-active" : ""}" data-habit-color-preset="${preset.id}" aria-label="Preset ${escapeHtml(preset.label)}">
+                    <span class="settings-preset-btn-label">${escapeHtml(preset.label)}</span>
+                    <span class="settings-preset-swatches" aria-hidden="true">
+                      <span class="settings-preset-swatch" style="background:${preset.colors[0]};"></span>
+                      <span class="settings-preset-swatch" style="background:${preset.colors[1]};"></span>
+                      <span class="settings-preset-swatch" style="background:${preset.colors[2]};"></span>
+                    </span>
+                  </button>
+                `).join("")}
               </div>
             </div>
             <div class="settings-subsection">
@@ -4908,6 +5034,44 @@
         el.classList.remove("is-error", "is-success");
         if (type === "error") el.classList.add("is-error");
         if (type === "success") el.classList.add("is-success");
+      }
+
+      async function applyHabitColorPreset(presetId) {
+        const preset = HABIT_COLOR_PRESETS.find(p => p.id === normalizeHabitColorPresetId(presetId));
+        if (!preset) throw new Error("Preset nicht gefunden.");
+
+        setStoredHabitColorPresetId(preset.id);
+
+        const cards = Array.from(document.querySelectorAll(".card[data-habit-id]"));
+        const saveTasks = [];
+        cards.forEach((card, index) => {
+          const nextColor = preset.colors[index % preset.colors.length];
+          card.dataset.color = nextColor;
+
+          const inputEl = card.querySelector(".card-input");
+          if (card.dataset.active === "true") {
+            card.style.background = getHabitActiveCardBackgroundColor(nextColor);
+            if (inputEl) inputEl.style.color = getHabitActiveLabelColor(nextColor);
+          } else {
+            if (inputEl && (!inputEl.style.color || inputEl.style.color !== "#666")) {
+              inputEl.style.color = "#666";
+            }
+          }
+
+          try {
+            updateCardDisplayModeUI(card);
+          } catch (_) {}
+
+          const habitId = String(card.dataset.habitId || "");
+          if (habitId) {
+            const habitRow = habits.find(h => String(h?.id || "") === habitId);
+            if (habitRow) habitRow.color = nextColor;
+          }
+
+          saveTasks.push(saveHabit(card));
+        });
+
+        await Promise.allSettled(saveTasks);
       }
 
       if (closeBtn) {
@@ -5252,6 +5416,25 @@
             `Design: ${nextThemeMode === "system" ? "System" : nextThemeMode === "dark" ? "Dunkel" : "Hell"}.`,
             "success"
           );
+        });
+      });
+
+      settingsViewEl.querySelectorAll("[data-habit-color-preset]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const presetId = normalizeHabitColorPresetId(btn.dataset.habitColorPreset);
+          if (presetId === getStoredHabitColorPresetId()) return;
+          try {
+            await applyHabitColorPreset(presetId);
+            settingsViewEl.querySelectorAll("[data-habit-color-preset]").forEach(b => {
+              b.classList.toggle("is-active", b.dataset.habitColorPreset === presetId);
+            });
+            setStatus(displayStatus, "Design-Preset gespeichert.", "success");
+            invalidateHabitsCache(currentUser?.id);
+            if (statsOpen) refreshStatsLive();
+          } catch (err) {
+            console.error("applyHabitColorPreset error:", err);
+            setStatus(displayStatus, err?.message || "Preset konnte nicht angewendet werden.", "error");
+          }
         });
       });
 
@@ -6025,6 +6208,16 @@
       let g = parseInt(hex.slice(3,5),16)*f|0;
       let b = parseInt(hex.slice(5,7),16)*f|0;
       return `rgb(${r},${g},${b})`;
+    }
+
+    function getHabitActiveCardBackgroundColor(base) {
+      if (!/^#([0-9a-f]{6})$/i.test(base || "")) return "#2a2a2a";
+      return darken(base, 0.38);
+    }
+
+    function getHabitActiveLabelColor(base) {
+      if (!/^#([0-9a-f]{6})$/i.test(base || "")) return "#666";
+      return base;
     }
 
     function updateLoginOrbsFromHabits() {
@@ -7572,8 +7765,8 @@ forgotPw.onclick = () => {
       const progValue = parseInt(progress) || 0;
 
       if (progValue > 0) {
-        card.style.background = dbColor;
-        input.style.color     = darken(dbColor);
+        card.style.background = getHabitActiveCardBackgroundColor(dbColor);
+        input.style.color     = getHabitActiveLabelColor(dbColor);
         card.dataset.active   = "true";
       } else {
         card.style.background = "#e4e4e4";
@@ -7912,10 +8105,10 @@ forgotPw.onclick = () => {
                 const idx = parseInt(cardEl.dataset.index);
                 let col = cardEl.dataset.color;
                 if (!col || col === '#e4e4e4') col = cycleColors[idx % cycleColors.length];
-                cardEl.style.background = col;
+                cardEl.style.background = getHabitActiveCardBackgroundColor(col);
                 cardEl.dataset.color = col;
                 const inputElTitle = cardEl.querySelector('.card-input');
-                if (inputElTitle) inputElTitle.style.color = darken(col);
+                if (inputElTitle) inputElTitle.style.color = getHabitActiveLabelColor(col);
               }
             } else {
               if (progress < goal) {
@@ -7924,10 +8117,10 @@ forgotPw.onclick = () => {
                 const idx = parseInt(cardEl.dataset.index);
                 let col = cardEl.dataset.color;
                 if (!col || col === '#e4e4e4') col = cycleColors[idx % cycleColors.length];
-                cardEl.style.background = col;
+                cardEl.style.background = getHabitActiveCardBackgroundColor(col);
                 cardEl.dataset.color = col;
                 const inputElTitle = cardEl.querySelector('.card-input');
-                if (inputElTitle) inputElTitle.style.color = darken(col);
+                if (inputElTitle) inputElTitle.style.color = getHabitActiveLabelColor(col);
               }
             }
           }
@@ -8113,9 +8306,9 @@ forgotPw.onclick = () => {
             let i = 0;
             pressInterval = setInterval(()=>{
               const col = cycleColors[i % cycleColors.length];
-              card.style.background = col;
+              card.style.background = getHabitActiveCardBackgroundColor(col);
               card.dataset.color    = col;
-              input.style.color     = darken(col);
+              input.style.color     = getHabitActiveLabelColor(col);
               syncSubtaskColors();
               updateCardDisplayModeUI(card);
               lastColor = col;
@@ -8445,9 +8638,9 @@ forgotPw.onclick = () => {
           let col = card.dataset.color;
           if (!col || col === "#e4e4e4") col = cycleColors[idx % cycleColors.length];
 
-          card.style.background = col;
+          card.style.background = getHabitActiveCardBackgroundColor(col);
           card.dataset.color    = col;
-          input.style.color     = darken(col);
+          input.style.color     = getHabitActiveLabelColor(col);
         }
       } else {
         if (progress < goal) {
@@ -8457,9 +8650,9 @@ forgotPw.onclick = () => {
           let col = card.dataset.color;
           if (!col || col === "#e4e4e4") col = cycleColors[idx % cycleColors.length];
 
-          card.style.background = col;
+          card.style.background = getHabitActiveCardBackgroundColor(col);
           card.dataset.color    = col;
-          input.style.color     = darken(col);
+          input.style.color     = getHabitActiveLabelColor(col);
         } else {
           return;
         }
