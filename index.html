@@ -499,8 +499,8 @@
       border-radius:24px;
       background: var(--c-card);
       padding:24px;
-      transform-style:preserve-3d;
-      -webkit-transform-style:preserve-3d;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
       cursor:pointer;
       opacity:0;
       transition:transform 0.25s linear;
@@ -508,13 +508,30 @@
       overflow:hidden;
     }
 
+    .card-flip-shell {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+      transform: rotateY(0deg);
+      -webkit-transform: rotateY(0deg);
+      transition: transform 0.46s cubic-bezier(0.22, 0.61, 0.36, 1);
+      will-change: transform;
+    }
+
+    .card.is-flipped .card-flip-shell {
+      transform: rotateY(180deg);
+      -webkit-transform: rotateY(180deg);
+    }
+
     .card-face {
       position:absolute;
       inset:0;
-      backface-visibility:hidden;
-      -webkit-backface-visibility:hidden;
       border-radius:24px;
       padding:24px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
     }
 
       .card-face.front {
@@ -522,34 +539,39 @@
         display:flex;
         flex-direction:column;
         justify-content:flex-start;
-        transform: translateZ(1px);
-        -webkit-transform: translateZ(1px);
-        visibility: visible;
+        transform: rotateY(0deg) translateZ(1px);
+        -webkit-transform: rotateY(0deg) translateZ(1px);
         pointer-events: auto;
+        z-index: 2;
       }
 
-    .card-face.front .front-header,
-    .card-face.front .card-title-display,
-    .card-face.front .card-input,
-    .card-face.front .card-display-icon,
-    .card-face.front .card-display-icon * {
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-    }
-
-    .back {
+    .card-face.back {
       background: var(--c-card);
-      transform:rotateY(180deg) translateZ(1px);
-      -webkit-transform:rotateY(180deg) translateZ(1px);
       display:flex;
       flex-direction:row;
       justify-content:space-between;
-      padding:24px;
+      transform: rotateY(180deg) translateZ(1px);
+      -webkit-transform: rotateY(180deg) translateZ(1px);
+      pointer-events: auto;
+      z-index: 2;
+    }
+
+    .card:not(.is-flipped) .card-face.back {
+      pointer-events: none;
     }
 
     .card.is-flipped .card-face.front {
-      visibility: hidden;
       pointer-events: none;
+    }
+
+    .card.is-flip-animating .card-face {
+      pointer-events: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card-flip-shell {
+        transition: none;
+      }
     }
 
     .half {
@@ -3852,6 +3874,10 @@
     const reminderChecklistState = new Set();
     const HABIT_ICON_TYPES = ["brain", "dumbbell", "shapes"];
     const THEME_MODE_STORAGE_KEY = "app_theme_mode_v1";
+    const ENABLE_VERBOSE_CONSOLE = false;
+    const debugLog = (...args) => {
+      if (ENABLE_VERBOSE_CONSOLE) console.debug(...args);
+    };
 
     const isDesktopView = () => window.matchMedia("(min-width: 768px)").matches;
 
@@ -4244,7 +4270,7 @@
           auth = String(keys.auth || "");
         }
       } catch (e) {
-        console.warn("Could not read PushSubscription details for Supabase upsert:", e);
+        debugLog("Could not read PushSubscription details for Supabase upsert:", e);
       }
 
       const payload = {
@@ -4322,7 +4348,7 @@
 
       if (!firebaseForegroundListenerAttached && typeof firebaseMessagingClient.onMessage === "function") {
         firebaseMessagingClient.onMessage((payload) => {
-          console.info("FCM foreground message:", payload);
+          debugLog("FCM foreground message:", payload);
         });
         firebaseForegroundListenerAttached = true;
       }
@@ -4393,7 +4419,7 @@
           message = "Benachrichtigungen sind aktiviert.";
           if (currentUser?.id && storedToken) {
             upsertFcmTokenInSupabase(storedToken).catch((err) => {
-              console.error("silent FCM token sync error:", err);
+              debugLog("silent FCM token sync error:", err);
             });
           }
         } else if (permission === "granted" && (!storedToken || !tokenRegistered)) {
@@ -4466,7 +4492,7 @@
           try {
             await sub.unsubscribe();
           } catch (err) {
-            console.warn("push subscription unsubscribe warning:", err);
+            debugLog("push subscription unsubscribe warning:", err);
           }
         }
 
@@ -4489,7 +4515,7 @@
       // Firebase compat may try to register the default root worker on deleteToken().
       // We already unsubscribed from the active push subscription and disabled the token in Supabase.
       if (deleteTokenError && /firebase-messaging-sw\.js|failed-service-worker-registration/i.test(deleteMessage)) {
-        console.warn("Ignoring Firebase deleteToken default SW registration error:", deleteTokenError);
+        debugLog("Ignoring Firebase deleteToken default SW registration error:", deleteTokenError);
         return;
       }
       if (deleteTokenError) throw deleteTokenError;
@@ -7187,7 +7213,7 @@ async function getRegistrationPinRole(rawPin) {
     const role = String(Array.isArray(data) ? (data[0]?.target_role || data[0]) : data || "").trim().toLowerCase();
     return role === "admin" ? "admin" : "user";
   } catch (e) {
-    console.error("get_login_pin_role error:", e);
+    debugLog("get_login_pin_role error:", e);
     return "user";
   }
 }
@@ -7198,7 +7224,7 @@ async function isCurrentAccountLocked() {
     if (error) throw error;
     return Boolean(data);
   } catch (e) {
-    console.error("is_current_user_locked error:", e);
+    debugLog("is_current_user_locked error:", e);
     return false;
   }
 }
@@ -7234,7 +7260,7 @@ async function waitForSupabaseVerifiedSession(timeoutMs = 10 * 60 * 1000, pollMs
       });
       authSub = subRes?.data || subRes;
     } catch (e) {
-      console.error("onAuthStateChange subscribe error:", e);
+      debugLog("onAuthStateChange subscribe error:", e);
     }
 
     intervalId = setInterval(async () => {
@@ -7928,30 +7954,31 @@ forgotPw.onclick = () => {
 
       // --- HTML ---
       card.innerHTML = `
-      <div class="card-face front">
-        <div class="front-header">
-          <div class="card-title-display">
-            <div class="card-input" contenteditable="true" data-placeholder="Titel eingeben..."></div>
-            <div class="card-display-icon" aria-hidden="true">
-              <i data-lucide="${iconType}"></i>
+      <div class="card-flip-shell">
+        <div class="card-face front">
+          <div class="front-header">
+            <div class="card-title-display">
+              <div class="card-input" contenteditable="true" data-placeholder="Titel eingeben..."></div>
+              <div class="card-display-icon" aria-hidden="true">
+                <i data-lucide="${iconType}"></i>
+              </div>
+            </div>
+            <div class="counter-wrap">
+              <div class="counter counter-kcal" style="display:none;"></div>
+              <button class="card-flip-btn" aria-label="Karte umdrehen">
+                <i data-lucide="eye"></i>
+              </button>
             </div>
           </div>
-          <div class="counter-wrap">
-            <div class="counter counter-kcal" style="display:none;"></div>
-            <button class="card-flip-btn" aria-label="Karte umdrehen">
-              <i data-lucide="eye"></i>
-            </button>
-          </div>
-        </div>
 
-        <div class="expand-area" style="display:none;">
-          <div class="expand-divider"></div>
-          <div class="subtasks"></div>
-          <div class="add-subtask">
-            <i data-lucide="plus-circle"></i>
+          <div class="expand-area" style="display:none;">
+            <div class="expand-divider"></div>
+            <div class="subtasks"></div>
+            <div class="add-subtask">
+              <i data-lucide="plus-circle"></i>
+            </div>
           </div>
         </div>
-      </div>
 
         <div class="card-face back">
           <button class="card-flip-back" aria-label="Zurück">
@@ -8015,6 +8042,7 @@ forgotPw.onclick = () => {
           </div>
 
         </div>
+      </div>
       `;
 
       slot.appendChild(card);
@@ -8127,12 +8155,27 @@ forgotPw.onclick = () => {
       const collapseArea = card.querySelector("#collapseArea");
       const flipBtn = card.querySelector(".card-flip-btn");
       const flipBackBtn = card.querySelector(".card-flip-back");
+      const FLIP_DURATION_MS = 460;
 
       let swipeStartX = 0;
       let swipeEndX   = 0;
-      const setCardFlipped = (isFlipped) => {
-        card.classList.toggle("is-flipped", !!isFlipped);
+      let flipLockUntil = 0;
+      const setCardFlipped = (isFlipped, { force = false } = {}) => {
+        const nextState = !!isFlipped;
+        const now = Date.now();
+        if (!force && now < flipLockUntil) return;
+        const currentState = card.classList.contains("is-flipped");
+        if (currentState === nextState && !force) return;
+
+        card.classList.add("is-flip-animating");
+        card.classList.toggle("is-flipped", nextState);
+        flipLockUntil = now + FLIP_DURATION_MS + 40;
+
+        window.setTimeout(() => {
+          card.classList.remove("is-flip-animating");
+        }, FLIP_DURATION_MS);
       };
+      setCardFlipped(false, { force: true });
 
       // ======================================
       // SWIPE FRONT/BACK
@@ -8148,14 +8191,13 @@ forgotPw.onclick = () => {
 
       card.addEventListener("touchend",()=>{
         const dx = swipeEndX - swipeStartX;
+        const currentlyFlipped = card.classList.contains("is-flipped");
 
-        if (dx < -40 && !card.style.transform.includes("180deg")){
+        if (dx < -40 && !currentlyFlipped){
           setCardFlipped(true);
-          gsap.to(card,{ rotationY:180, duration:0.48, ease:"sine.inOut" });
         }
-        if (dx > 40 && card.style.transform.includes("180deg")){
+        if (dx > 40 && currentlyFlipped){
           setCardFlipped(false);
-          gsap.to(card,{ rotationY:0, duration:0.48, ease:"sine.inOut" });
         }
       });
 
@@ -8163,11 +8205,6 @@ forgotPw.onclick = () => {
         flipBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           setCardFlipped(true);
-          if (isDesktopView()) {
-            card.style.transform = "rotateY(180deg)";
-          } else {
-            gsap.to(card,{ rotationY:180, duration:0.48, ease:"sine.inOut" });
-          }
         });
       }
 
@@ -8175,11 +8212,6 @@ forgotPw.onclick = () => {
         flipBackBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           setCardFlipped(false);
-          if (isDesktopView()) {
-            card.style.transform = "rotateY(0deg)";
-          } else {
-            gsap.to(card,{ rotationY:0, duration:0.48, ease:"sine.inOut" });
-          }
         });
       }
 
@@ -8225,7 +8257,6 @@ forgotPw.onclick = () => {
         e.stopPropagation();
 
         setCardFlipped(true);
-        gsap.to(card, { rotationY:180, duration:0.48, ease:"sine.inOut" });
 
         gpsInput.style.display = "block";
         numArea.style.display = "none";
@@ -8305,11 +8336,8 @@ forgotPw.onclick = () => {
       if (collapseArea) {
         collapseArea.addEventListener("click", (e) => {
           e.stopPropagation();
-
-            // rotate to front then delegate to expandCard which handles minimize/button behavior
-            gsap.to(card, { rotationY: 0, duration: 0.45, ease: "sine.inOut", onComplete: () => {
-              expandCard(card);
-            }});
+          setCardFlipped(false, { force: true });
+          expandCard(card);
         });
       }
 
@@ -11126,7 +11154,7 @@ if ("serviceWorker" in navigator) {
         if (swDisabled && navigator.serviceWorker) {
           const regs = await navigator.serviceWorker.getRegistrations();
           for (const r of regs) await r.unregister();
-          console.info('Service workers unregistered (dev override)');
+          debugLog('Service workers unregistered (dev override)');
           return;
         }
 
@@ -11165,7 +11193,7 @@ if ("serviceWorker" in navigator) {
       }
     });
   } else {
-    console.info('Service worker not registered: insecure origin', location.protocol);
+    debugLog('Service worker not registered: insecure origin', location.protocol);
   }
 }
     
