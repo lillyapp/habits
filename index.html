@@ -516,13 +516,7 @@
       -webkit-transform-style: preserve-3d;
       transform: rotateY(0deg);
       -webkit-transform: rotateY(0deg);
-      transition: transform 0.46s cubic-bezier(0.22, 0.61, 0.36, 1);
       will-change: transform;
-    }
-
-    .card.is-flipped .card-flip-shell {
-      transform: rotateY(180deg);
-      -webkit-transform: rotateY(180deg);
     }
 
     .card-face {
@@ -8155,6 +8149,7 @@ forgotPw.onclick = () => {
       const collapseArea = card.querySelector("#collapseArea");
       const flipBtn = card.querySelector(".card-flip-btn");
       const flipBackBtn = card.querySelector(".card-flip-back");
+      const flipShell = card.querySelector(".card-flip-shell");
       const FLIP_DURATION_MS = 460;
 
       let swipeStartX = 0;
@@ -8169,11 +8164,31 @@ forgotPw.onclick = () => {
 
         card.classList.add("is-flip-animating");
         card.classList.toggle("is-flipped", nextState);
-        flipLockUntil = now + FLIP_DURATION_MS + 40;
+        const reducedMotion = Boolean(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        const durationMs = reducedMotion ? 0 : FLIP_DURATION_MS;
+        flipLockUntil = now + durationMs + 40;
 
-        window.setTimeout(() => {
+        if (!flipShell || !window.gsap || durationMs <= 0) {
+          if (flipShell) flipShell.style.transform = nextState ? "rotateY(180deg)" : "rotateY(0deg)";
           card.classList.remove("is-flip-animating");
-        }, FLIP_DURATION_MS);
+          return;
+        }
+
+        gsap.killTweensOf(flipShell);
+        gsap.set(flipShell, {
+          transformPerspective: 1200,
+          transformOrigin: "50% 50%",
+          force3D: true
+        });
+        gsap.to(flipShell, {
+          rotationY: nextState ? 180 : 0,
+          duration: durationMs / 1000,
+          ease: "power2.inOut",
+          overwrite: "auto",
+          onComplete: () => {
+            card.classList.remove("is-flip-animating");
+          }
+        });
       };
       setCardFlipped(false, { force: true });
 
