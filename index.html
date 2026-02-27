@@ -3456,50 +3456,174 @@
         text-align: center;
       }
 
-      .reminder-list {
+      .reminder-game {
+        width: 100%;
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-        text-align: left;
+        gap: 14px;
       }
 
-      .reminder-item {
+      .reminder-drop-zone {
+        --drop-c1: #22c55e;
+        --drop-c2: #10b981;
+        --drop-c3: #14b8a6;
+        min-height: 96px;
+        border-radius: 20px;
+        border: 2px dashed color-mix(in srgb, var(--c-text) 26%, transparent);
+        background: color-mix(in srgb, var(--c-card) 85%, transparent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 12px;
+        box-shadow: none;
+        transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+      }
+
+      .reminder-drop-zone.is-active {
+        border-color: color-mix(in srgb, var(--drop-c1) 70%, #ffffff 30%);
+        background:
+          linear-gradient(
+            130deg,
+            color-mix(in srgb, var(--drop-c1) 18%, var(--c-card)) 0%,
+            color-mix(in srgb, var(--drop-c2) 18%, var(--c-card)) 50%,
+            color-mix(in srgb, var(--drop-c3) 18%, var(--c-card)) 100%
+          );
+        box-shadow: none;
+        transform: translateY(-1px);
+      }
+
+      .reminder-drop-items {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
         width: 100%;
+      }
+
+      .reminder-drop-token {
+        position: relative;
+        width: 52px;
+        height: 52px;
+        border: none;
+        border-radius: 14px;
+        padding: 0;
+        background: transparent;
+        cursor: grab;
+        touch-action: none;
         display: inline-flex;
         align-items: center;
-        gap: 12px;
-        padding: 8px 0;
-        border: none;
-        background: transparent;
-        color: var(--c-text);
-        font-size: 1.05rem;
-        font-weight: 600;
-        cursor: pointer;
-        opacity: 0.5;
+        justify-content: center;
       }
 
-      .reminder-item.is-selected {
-        color: var(--c-text);
-        opacity: 1;
+      .reminder-drop-token img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        pointer-events: none;
       }
 
-      .reminder-item.is-partial {
-        color: var(--c-text);
-        opacity: 0.8;
-      }
-
-      .reminder-emoji {
-        font-size: 1.35rem;
-        line-height: 1;
-      }
-
-      .reminder-count {
-        margin-left: auto;
+      .reminder-drop-hint {
         font-size: 0.95rem;
-        font-weight: 700;
+        font-weight: 600;
+        opacity: 0.75;
+      }
+
+      .reminder-playfield {
+        position: relative;
+        min-height: 330px;
+        border-radius: 22px;
+        background: color-mix(in srgb, var(--c-card) 90%, transparent);
+        border: 1px solid color-mix(in srgb, var(--c-text) 8%, transparent);
+        overflow: hidden;
+      }
+
+      .reminder-token {
+        position: absolute;
+        width: 88px;
+        height: 88px;
+        border-radius: 22px;
+        border: none;
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
+        cursor: grab;
+        touch-action: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+        -webkit-user-select: none;
+        transform: translate3d(0,0,0);
+        animation: reminderFloat 4.8s ease-in-out infinite;
+        animation-delay: var(--float-delay, 0s);
+      }
+
+      .reminder-token-badge {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        border-radius: 999px;
+        border: 2px solid var(--c-bg);
+        background: var(--c-text);
+        color: var(--c-bg);
+        font-size: 0.78rem;
+        font-weight: 900;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      .reminder-token img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        pointer-events: none;
+      }
+
+      .reminder-token.is-dragging {
+        cursor: grabbing;
+        animation: none;
+        box-shadow: none;
+        z-index: 6;
+      }
+
+      .reminder-token.is-dragging-source,
+      .reminder-drop-token.is-dragging-source {
+        opacity: 0.28;
+      }
+
+      .reminder-token.reminder-token-ghost,
+      .reminder-drop-token.reminder-token-ghost,
+      .reminder-token-ghost {
+        position: fixed !important;
+        margin: 0 !important;
+        left: 0;
+        top: 0;
+        z-index: 1200 !important;
+        pointer-events: none !important;
+        animation: none !important;
+        transform: none !important;
+        cursor: grabbing !important;
+        opacity: 1 !important;
+      }
+
+      .reminder-progress {
+        text-align: center;
+        font-size: 1.08rem;
+        font-weight: 800;
         letter-spacing: 0.02em;
-        opacity: 0.8;
+      }
+
+      @keyframes reminderFloat {
+        0%, 100% { transform: translate3d(0, 0, 0) rotate(-1.2deg); }
+        50% { transform: translate3d(0, -8px, 0) rotate(1.2deg); }
       }
 
       .notification-title {
@@ -3855,13 +3979,19 @@
       "Du bist näher dran, als du denkst."
     ];
    
+    const getAppAssetPath = (fileName) => {
+      if (!fileName) return "";
+      if (window.location?.protocol === "file:") return fileName;
+      return `/habits/${fileName}`;
+    };
+
     const reminderChecklistItems = [
-      { id: "salmon", emoji: "🍣", label: "Lachsfilet" },
-      { id: "bread-1", emoji: "🍞", label: "2x Brot mit Belag (Frühstück)" },
-      { id: "soup", emoji: "🍲", label: "Mittagessen" },
-      { id: "bread-2", emoji: "🍞", label: "2x Brot mit Belag (Abendessen)" },
-      { id: "quark", emoji: "🥛", label: "Speisequark", target: 2, dbIds: ["quark", "quark-2"] },
-      { id: "creatine", emoji: "🍚", label: "5g Kreatin" }
+      { id: "salmon", label: "Lachsfilet", imageFile: "bento.png" },
+      { id: "bread-1", label: "Brot morgens", imageFile: "bread.png" },
+      { id: "soup", label: "Mittagessen", imageFile: "sandwich.png" },
+      { id: "bread-2", label: "Brot abends", imageFile: "bread.png" },
+      { id: "quark", label: "Speisequark", target: 2, dbIds: ["quark", "quark-2"], imageFile: "quark.png" },
+      { id: "creatine", label: "Kreatin", imageFile: "creatine.png" }
     ];
     const reminderChecklistState = new Set();
     const HABIT_ICON_TYPES = ["brain", "dumbbell", "shapes"];
@@ -4116,6 +4246,15 @@
         ...preset,
         colors: preset.id === "custom" ? customColors : preset.colors
       }));
+    }
+
+    function getActiveHabitPresetColors() {
+      const presets = getResolvedHabitColorPresets();
+      const activeId = getStoredHabitColorPresetId();
+      const activePreset = presets.find(p => p.id === activeId) || presets[0];
+      return Array.isArray(activePreset?.colors) && activePreset.colors.length >= 3
+        ? activePreset.colors.slice(0, 3)
+        : ["#22c55e", "#10b981", "#14b8a6"];
     }
 
     function getStoredHabitColorPresetId() {
@@ -10023,14 +10162,6 @@ forgotPw.onclick = () => {
       return fresh;
     }
 
-  function updateReminderCompletion() {
-      if (!notificationsViewEl) return;
-      const statusEl = notificationsViewEl.querySelector("#reminderStatus");
-      if (!statusEl) return;
-      const isComplete = reminderChecklistItems.every(item => isReminderComplete(item));
-      statusEl.classList.toggle("is-complete", isComplete);
-    }
-
     function getReminderTarget(item) {
       return parseInt(item?.target) > 0 ? parseInt(item.target) : 1;
     }
@@ -10049,8 +10180,86 @@ forgotPw.onclick = () => {
       return getReminderCount(item) >= getReminderTarget(item);
     }
 
+    function getReminderTokens() {
+      const tokens = [];
+      reminderChecklistItems.forEach(item => {
+        const ids = getReminderIds(item);
+        const target = getReminderTarget(item);
+        for (let i = 0; i < target; i++) {
+          const dbId = ids[i] || `${item.id}-${i + 1}`;
+          tokens.push({
+            dbId,
+            itemId: item.id,
+            label: item.label || item.id,
+            imageSrc: getAppAssetPath(item.imageFile),
+            slot: i + 1
+          });
+        }
+      });
+      return tokens;
+    }
+
+    function groupReminderTokens(tokens) {
+      const groups = new Map();
+      tokens.forEach((token) => {
+        const key = token.imageSrc || token.itemId || token.dbId;
+        if (!groups.has(key)) {
+          groups.set(key, {
+            imageSrc: token.imageSrc,
+            label: token.label || token.itemId || "Eintrag",
+            dbIds: [],
+            count: 0
+          });
+        }
+        const group = groups.get(key);
+        group.dbIds.push(token.dbId);
+        group.count += 1;
+      });
+      return Array.from(groups.values());
+    }
+
+    function getReminderCompletedCount(tokens = getReminderTokens()) {
+      return tokens.reduce((sum, token) => sum + (reminderChecklistState.has(token.dbId) ? 1 : 0), 0);
+    }
+
     function getReminderTotalTarget() {
-      return reminderChecklistItems.reduce((sum, item) => sum + getReminderTarget(item), 0);
+      return getReminderTokens().length;
+    }
+
+    async function persistReminderTokenState(dbId, done) {
+      if (!dbId) return;
+      if (done) reminderChecklistState.add(dbId);
+      else reminderChecklistState.delete(dbId);
+
+      if (!currentUser?.id) return;
+      const day = getLocalDateString();
+      if (done) {
+        const { error } = await supabaseClient
+          .from("reminder_clicks")
+          .upsert(
+            { user_id: currentUser.id, day, position_id: dbId },
+            { onConflict: "user_id,day,position_id" }
+          );
+        if (error) console.error("reminder_clicks upsert error:", error);
+      } else {
+        const { error } = await supabaseClient
+          .from("reminder_clicks")
+          .delete()
+          .eq("user_id", currentUser.id)
+          .eq("day", day)
+          .eq("position_id", dbId);
+        if (error) console.error("reminder_clicks delete error:", error);
+      }
+    }
+
+    function getReminderTokenSeedPosition(index) {
+      const spots = [
+        [10, 10], [38, 7], [67, 12],
+        [16, 34], [46, 31], [74, 37],
+        [9, 61], [33, 69], [60, 66], [80, 58],
+        [22, 50], [54, 52]
+      ];
+      return spots[index % spots.length];
     }
     
     async function renderNotifications() {
@@ -10058,122 +10267,186 @@ forgotPw.onclick = () => {
         await checkReminderResetDaily();
         await loadReminderClicksForDay(currentUser.id);
       }
+      const tokens = getReminderTokens();
+      const completedTokens = tokens.filter(token => reminderChecklistState.has(token.dbId));
+      const pendingTokens = tokens.filter(token => !reminderChecklistState.has(token.dbId));
+      const completedGroups = groupReminderTokens(completedTokens);
+      const pendingGroups = groupReminderTokens(pendingTokens);
+      const completedCount = completedTokens.length;
+      const totalTarget = tokens.length || 7;
 
-      const itemsHtml = reminderChecklistItems.map(item => `
-        <button class="reminder-item${isReminderComplete(item) ? " is-selected" : (getReminderCount(item) > 0 ? " is-partial" : "")}" data-reminder-id="${item.id}" type="button">
-          <span class="reminder-emoji">${item.emoji}</span>
-          <span class="reminder-text">${item.label}</span>
-          ${getReminderTarget(item) > 1 ? `<span class="reminder-count">${getReminderCount(item)}/${getReminderTarget(item)}</span>` : ""}
+      const pendingHtml = pendingGroups.map((group, idx) => {
+        const [x, y] = getReminderTokenSeedPosition(idx);
+        const firstDbId = group.dbIds[0] || "";
+        const dbIdsAttr = group.dbIds.join(",");
+        return `
+          <button
+            class="reminder-token"
+            type="button"
+            data-reminder-db-id="${firstDbId}"
+            data-reminder-db-ids="${dbIdsAttr}"
+            data-reminder-label="${escapeHtml(group.label)}"
+            style="left:${x}%;top:${y}%;--float-delay:${(idx * 0.22).toFixed(2)}s;"
+            aria-label="${escapeHtml(group.count > 1 ? `${group.label} (${group.count})` : group.label)}"
+          >
+            <img src="${group.imageSrc}" alt="${escapeHtml(group.label)}" loading="lazy" draggable="false" />
+            ${group.count > 1 ? `<span class="reminder-token-badge">${group.count}</span>` : ""}
+          </button>
+        `;
+      }).join("") || `<div class="reminder-drop-hint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">Alles erledigt</div>`;
+
+      const completedHtml = completedGroups.map(group => `
+        <button
+          class="reminder-drop-token"
+          type="button"
+          data-reminder-db-id="${group.dbIds[0] || ""}"
+          data-reminder-db-ids="${group.dbIds.join(",")}"
+          data-reminder-label="${escapeHtml(group.label)}"
+          aria-label="${escapeHtml(group.count > 1 ? `${group.label} (${group.count})` : group.label)}"
+        >
+          <img src="${group.imageSrc}" alt="${escapeHtml(group.label)}" loading="lazy" draggable="false" />
+          ${group.count > 1 ? `<span class="reminder-token-badge">${group.count}</span>` : ""}
         </button>
       `).join("");
 
-      const isComplete = reminderChecklistItems.every(item => isReminderComplete(item));
-
       notificationsViewEl.innerHTML = `
         <div class="reminder-pane">
-          <div class="reminder-header">
-            <div class="reminder-status${isComplete ? " is-complete" : ""}" id="reminderStatus">
-              <i data-lucide="check-circle"></i>
-              <div class="reminder-status-title">Heute alles erledigt</div>
+          <div class="reminder-game">
+            <div class="reminder-drop-zone" id="reminderDropZone">
+              <div class="reminder-drop-items" id="reminderDropItems">
+                ${completedHtml || `<div class="reminder-drop-hint">Hierher ziehen</div>`}
+              </div>
             </div>
-          </div>
-          <div class="reminder-list" id="reminderList">
-            ${itemsHtml}
+            <div class="reminder-playfield" id="reminderPlayfield">
+              ${pendingHtml}
+            </div>
+            <div class="reminder-progress" id="reminderProgressLabel">${completedCount}/${totalTarget}</div>
           </div>
         </div>
       `;
 
-      const reminderList = notificationsViewEl.querySelector("#reminderList");
-      if (reminderList) {
-        reminderList.querySelectorAll(".reminder-item").forEach(btn => {
-          btn.addEventListener("click", () => {
-            const id = btn.dataset.reminderId;
-            if (!id) return;
-            const item = reminderChecklistItems.find(it => it.id === id);
-            if (!item) return;
-
-            const target = getReminderTarget(item);
-            const ids = getReminderIds(item);
-            const count = getReminderCount(item);
-
-            if (target <= 1) {
-              const dbId = ids[0] || id;
-              if (reminderChecklistState.has(dbId)) {
-                reminderChecklistState.delete(dbId);
-                if (currentUser?.id) {
-                  const day = getLocalDateString();
-                  supabaseClient
-                    .from("reminder_clicks")
-                    .delete()
-                    .eq("user_id", currentUser.id)
-                    .eq("day", day)
-                    .eq("position_id", dbId)
-                    .then(({ error }) => {
-                      if (error) console.error("reminder_clicks delete error:", error);
-                    });
-                }
-              } else {
-                reminderChecklistState.add(dbId);
-                if (currentUser?.id) {
-                  const day = getLocalDateString();
-                  supabaseClient
-                    .from("reminder_clicks")
-                    .upsert(
-                      { user_id: currentUser.id, day, position_id: dbId },
-                      { onConflict: "user_id,day,position_id" }
-                    )
-                    .then(({ error }) => {
-                      if (error) console.error("reminder_clicks upsert error:", error);
-                    });
-                }
-              }
-            } else {
-              if (count < target) {
-                const nextId = ids.find(dbId => !reminderChecklistState.has(dbId)) || ids[ids.length - 1];
-                if (nextId && !reminderChecklistState.has(nextId)) {
-                  reminderChecklistState.add(nextId);
-                  if (currentUser?.id) {
-                    const day = getLocalDateString();
-                    supabaseClient
-                      .from("reminder_clicks")
-                      .upsert(
-                        { user_id: currentUser.id, day, position_id: nextId },
-                        { onConflict: "user_id,day,position_id" }
-                      )
-                      .then(({ error }) => {
-                        if (error) console.error("reminder_clicks upsert error:", error);
-                      });
-                  }
-                }
-              } else {
-                const removeId = ids.slice().reverse().find(dbId => reminderChecklistState.has(dbId));
-                if (removeId) {
-                  reminderChecklistState.delete(removeId);
-                  if (currentUser?.id) {
-                    const day = getLocalDateString();
-                    supabaseClient
-                      .from("reminder_clicks")
-                      .delete()
-                      .eq("user_id", currentUser.id)
-                      .eq("day", day)
-                      .eq("position_id", removeId)
-                      .then(({ error }) => {
-                        if (error) console.error("reminder_clicks delete error:", error);
-                      });
-                  }
-                }
-              }
-            }
-
-            const newCount = getReminderCount(item);
-            btn.classList.toggle("is-selected", newCount >= target);
-            btn.classList.toggle("is-partial", newCount > 0 && newCount < target);
-            const countEl = btn.querySelector(".reminder-count");
-            if (countEl && target > 1) countEl.textContent = `${newCount}/${target}`;
-            updateReminderCompletion();
-          });
-        });
+      const playfieldEl = notificationsViewEl.querySelector("#reminderPlayfield");
+      const dropZoneEl = notificationsViewEl.querySelector("#reminderDropZone");
+      if (dropZoneEl) {
+        const [c1, c2, c3] = getActiveHabitPresetColors();
+        dropZoneEl.style.setProperty("--drop-c1", c1);
+        dropZoneEl.style.setProperty("--drop-c2", c2);
+        dropZoneEl.style.setProperty("--drop-c3", c3);
       }
+      const attachReminderTokenDrag = (tokenEl, { fromDropZone = false } = {}) => {
+        const onPointerDown = (event) => {
+          if (!dropZoneEl) return;
+          event.preventDefault();
+          const pointerId = event.pointerId;
+          const tokenRect = tokenEl.getBoundingClientRect();
+          const offsetX = event.clientX - tokenRect.left;
+          const offsetY = event.clientY - tokenRect.top;
+          const dragGhost = tokenEl.cloneNode(true);
+          dragGhost.classList.add("reminder-token-ghost");
+          dragGhost.classList.remove("is-dragging-source");
+          dragGhost.style.width = `${tokenRect.width}px`;
+          dragGhost.style.height = `${tokenRect.height}px`;
+          dragGhost.style.left = `${tokenRect.left}px`;
+          dragGhost.style.top = `${tokenRect.top}px`;
+          document.body.appendChild(dragGhost);
+
+          tokenEl.classList.add("is-dragging-source");
+          try { tokenEl.setPointerCapture(pointerId); } catch (e) {}
+
+          let lastClientX = event.clientX;
+          let lastClientY = event.clientY;
+          const updateGhostPosition = (clientX, clientY) => {
+            const nextLeft = clientX - offsetX;
+            const nextTop = clientY - offsetY;
+            dragGhost.style.left = `${nextLeft}px`;
+            dragGhost.style.top = `${nextTop}px`;
+          };
+          const getGhostCenter = () => {
+            const rect = dragGhost.getBoundingClientRect();
+            return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+          };
+          const isPointInRect = (x, y, rect) => (
+            x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
+          );
+
+          const onPointerMove = (moveEvent) => {
+            lastClientX = moveEvent.clientX;
+            lastClientY = moveEvent.clientY;
+            updateGhostPosition(lastClientX, lastClientY);
+
+            const center = getGhostCenter();
+            const dropRect = dropZoneEl.getBoundingClientRect();
+            const ghostOverDrop = isPointInRect(center.x, center.y, dropRect);
+            dropZoneEl.classList.toggle("is-active", ghostOverDrop);
+          };
+
+          let dragFinished = false;
+          const cleanupDrag = () => {
+            tokenEl.classList.remove("is-dragging-source");
+            dropZoneEl.classList.remove("is-active");
+            tokenEl.removeEventListener("pointermove", onPointerMove);
+            tokenEl.removeEventListener("pointerup", onPointerUp);
+            tokenEl.removeEventListener("pointercancel", onPointerCancel);
+            window.removeEventListener("pointermove", onPointerMove);
+            window.removeEventListener("pointerup", onPointerUp);
+            window.removeEventListener("pointercancel", onPointerCancel);
+            try { tokenEl.releasePointerCapture(pointerId); } catch (e) {}
+          };
+
+          const onPointerUp = async (upEvent) => {
+            if (dragFinished) return;
+            dragFinished = true;
+            cleanupDrag();
+            const safeClientX = Number.isFinite(upEvent?.clientX) ? upEvent.clientX : lastClientX;
+            const safeClientY = Number.isFinite(upEvent?.clientY) ? upEvent.clientY : lastClientY;
+            updateGhostPosition(safeClientX, safeClientY);
+
+            const center = getGhostCenter();
+            const dropRect = dropZoneEl.getBoundingClientRect();
+            const droppedInDropZone = isPointInRect(center.x, center.y, dropRect);
+            dragGhost.remove();
+
+            const dbIds = String(tokenEl.dataset.reminderDbIds || "")
+              .split(",")
+              .map((id) => id.trim())
+              .filter(Boolean);
+            const dbId = dbIds[0] || tokenEl.dataset.reminderDbId;
+            if (!dbId) return;
+
+            if (!fromDropZone && droppedInDropZone) {
+              await persistReminderTokenState(dbId, true);
+              await renderNotifications();
+              return;
+            }
+            if (fromDropZone && !droppedInDropZone) {
+              await persistReminderTokenState(dbId, false);
+              await renderNotifications();
+            }
+          };
+
+          const onPointerCancel = () => {
+            if (dragFinished) return;
+            dragFinished = true;
+            cleanupDrag();
+            dragGhost.remove();
+          };
+
+          tokenEl.addEventListener("pointermove", onPointerMove);
+          tokenEl.addEventListener("pointerup", onPointerUp);
+          tokenEl.addEventListener("pointercancel", onPointerCancel);
+          window.addEventListener("pointermove", onPointerMove);
+          window.addEventListener("pointerup", onPointerUp);
+          window.addEventListener("pointercancel", onPointerCancel);
+        };
+
+        tokenEl.addEventListener("pointerdown", onPointerDown);
+      };
+
+      const pendingTokenEls = playfieldEl ? Array.from(playfieldEl.querySelectorAll(".reminder-token")) : [];
+      pendingTokenEls.forEach(tokenEl => attachReminderTokenDrag(tokenEl, { fromDropZone: false }));
+
+      const completedTokenEls = dropZoneEl ? Array.from(dropZoneEl.querySelectorAll(".reminder-drop-token")) : [];
+      completedTokenEls.forEach(tokenEl => attachReminderTokenDrag(tokenEl, { fromDropZone: true }));
 
       const closeBtn = notificationsViewEl.querySelector("#reminderCloseBtn");
       if (closeBtn) {
