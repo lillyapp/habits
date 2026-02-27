@@ -4023,6 +4023,7 @@
     const HABIT_CUSTOM_COLOR_SELECTION_DEFAULT = Object.freeze(["#ef4444", "#f59e0b", "#eab308"]);
     const CHANGELOG_OVERVIEW_VERSION = 3;
     const CHANGELOG_OVERVIEW_SEEN_KEY = `changes_overview_seen_v${CHANGELOG_OVERVIEW_VERSION}`;
+    const CHANGELOG_OVERVIEW_SEEN_VERSION_KEY = "changes_overview_seen_version_v1";
     const STATS_FAVORITE_SECOND_USER_KEY = "stats_favorite_second_user_id_v1";
     let userSettings = { ...DEFAULT_USER_SETTINGS };
     let didAutoOpenChangesOverview = false;
@@ -4782,16 +4783,65 @@
       }
     }
 
-    function hasSeenChangesOverview() {
-      try {
-        return localStorage.getItem(CHANGELOG_OVERVIEW_SEEN_KEY) === "1";
-      } catch (e) {
-        return false;
-      }
+    function parseVersionNumber(value) {
+      const n = Number.parseFloat(String(value ?? "").trim());
+      return Number.isFinite(n) ? n : null;
     }
 
-    function markChangesOverviewSeen() {
+    function getKnownLatestVersionForChangesOverview() {
+      let best = parseVersionNumber(CHANGELOG_OVERVIEW_VERSION) || 0;
       try {
+        const fromUrl = parseVersionNumber(new URL(window.location.href).searchParams.get("v"));
+        if (fromUrl !== null) best = Math.max(best, fromUrl);
+      } catch (e) {}
+      try {
+        const fromStorage = parseVersionNumber(localStorage.getItem("update_notice_version"));
+        if (fromStorage !== null) best = Math.max(best, fromStorage);
+      } catch (e) {}
+      return best;
+    }
+
+    async function getLatestVersionForChangesOverview() {
+      let best = getKnownLatestVersionForChangesOverview();
+      if (!supabaseClient || window.location?.protocol === "file:") return best;
+      try {
+        const { data, error } = await supabaseClient
+          .from("version")
+          .select("version_number")
+          .order("version_number", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!error && data) {
+          const remoteVersion = parseVersionNumber(data.version_number);
+          if (remoteVersion !== null) {
+            best = Math.max(best, remoteVersion);
+            try { localStorage.setItem("update_notice_version", String(remoteVersion)); } catch (e) {}
+          }
+        }
+      } catch (e) {}
+      return best;
+    }
+
+    function getSeenChangesOverviewVersion() {
+      try {
+        const seenVersion = parseVersionNumber(localStorage.getItem(CHANGELOG_OVERVIEW_SEEN_VERSION_KEY));
+        if (seenVersion !== null) return seenVersion;
+        // Migration from old boolean-per-release key.
+        if (localStorage.getItem(CHANGELOG_OVERVIEW_SEEN_KEY) === "1") {
+          return parseVersionNumber(CHANGELOG_OVERVIEW_VERSION) || 0;
+        }
+      } catch (e) {}
+      return 0;
+    }
+
+    function hasSeenChangesOverview(latestVersion = getKnownLatestVersionForChangesOverview()) {
+      return getSeenChangesOverviewVersion() >= latestVersion;
+    }
+
+    function markChangesOverviewSeen(latestVersion = getKnownLatestVersionForChangesOverview()) {
+      try {
+        localStorage.setItem(CHANGELOG_OVERVIEW_SEEN_VERSION_KEY, String(latestVersion));
+        // Keep old key for backward compatibility with previous release logic.
         localStorage.setItem(CHANGELOG_OVERVIEW_SEEN_KEY, "1");
       } catch (e) {}
     }
@@ -4799,14 +4849,19 @@
     async function maybeAutoOpenChangesOverview() {
       if (didAutoOpenChangesOverview) return;
       if (!currentUser) return;
-      if (hasSeenChangesOverview()) return;
       if (!appPage || appPage.style.display === "none") return;
-
-      didAutoOpenChangesOverview = true;
-      markChangesOverviewSeen();
+      const latestVersion = await getLatestVersionForChangesOverview();
+      if (hasSeenChangesOverview(latestVersion)) return;
 
       setTimeout(() => {
-        if (statsOpen || settingsOpen || changesOpen || addBtnEl.dataset.mode === "notifications") return;
+        if (statsOpen || settingsOpen || changesOpen || addBtnEl.dataset.mode === "notifications") {
+          setTimeout(() => {
+            maybeAutoOpenChangesOverview().catch(() => {});
+          }, 900);
+          return;
+        }
+        didAutoOpenChangesOverview = true;
+        markChangesOverviewSeen(latestVersion);
         openChangesOverview().catch(err => {
           console.error("auto open changes overview error:", err);
         });
