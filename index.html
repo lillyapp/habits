@@ -6101,6 +6101,7 @@
             `Design: ${nextThemeMode === "system" ? "System" : nextThemeMode === "dark" ? "Dunkel" : "Hell"}.`,
             "success"
           );
+          if (statsOpen) refreshStatsLive();
         });
       });
 
@@ -6972,16 +6973,31 @@
       return `rgb(${r},${g},${b})`;
     }
 
+    function isDarkThemeActive() {
+      const explicitTheme = document?.documentElement?.dataset?.theme;
+      if (explicitTheme === "dark") return true;
+      if (explicitTheme === "light") return false;
+      return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
+    }
+
     function getHabitActiveCardBackgroundColor(base) {
       if (!/^#([0-9a-f]{6})$/i.test(base || "")) return "#2a2a2a";
-      const isDarkThemeActive = document?.documentElement?.dataset?.theme === "dark";
-      return isDarkThemeActive ? darken(base, 0.38) : base;
+      return isDarkThemeActive() ? darken(base, 0.38) : base;
     }
 
     function getHabitActiveLabelColor(base) {
       if (!/^#([0-9a-f]{6})$/i.test(base || "")) return "#666";
-      const isDarkThemeActive = document?.documentElement?.dataset?.theme === "dark";
-      return isDarkThemeActive ? base : darken(base);
+      return isDarkThemeActive() ? base : darken(base);
+    }
+
+    function getHabitStatsFillColor(base) {
+      if (!/^#([0-9a-f]{6})$/i.test(base || "")) return "var(--c-card)";
+      return getHabitActiveCardBackgroundColor(base);
+    }
+
+    function getHabitStatsLabelColor(base) {
+      if (!/^#([0-9a-f]{6})$/i.test(base || "")) return "var(--c-text)";
+      return getHabitActiveLabelColor(base);
     }
 
     function updateLoginOrbsFromHabits() {
@@ -8537,6 +8553,7 @@ forgotPw.onclick = () => {
           if (error) {
             console.error("decrement progress error:", error);
           } else {
+            syncLocalHabitRecord(habitId, { progress });
             syncHabitDayForProgress(habitId, progress);
           }
         });
@@ -9123,6 +9140,7 @@ forgotPw.onclick = () => {
 
           renderHabitCounter(card);
 
+          syncLocalHabitRecord(habitId, { progress: 0 });
           syncHabitDayForProgress(habitId, 0);
           updateCardDisplayModeUI(card);
         }
@@ -9289,7 +9307,7 @@ forgotPw.onclick = () => {
         .eq("id", habitId);
 
       if (error) console.error("saveHabit error:", error);
-      invalidateHabitsCache(currentUser?.id);
+      else syncLocalHabitRecord(habitId, updates);
     }
 
     // Add-Button: erstellt nur DB-Datensatz, niemals lokal
@@ -9378,6 +9396,18 @@ forgotPw.onclick = () => {
   function invalidateHabitsCache(userId) {
     if (!userId) return;
     dataCache.habits.delete(userId);
+  }
+
+  function syncLocalHabitRecord(habitId, patch = {}) {
+    if (!habitId || !patch || typeof patch !== "object") return;
+    const id = String(habitId);
+    const idx = Array.isArray(habits)
+      ? habits.findIndex(h => String(h?.id || "") === id)
+      : -1;
+    if (idx >= 0) {
+      habits[idx] = { ...habits[idx], ...patch };
+    }
+    invalidateHabitsCache(currentUser?.id);
   }
 
   async function loadOtherUserCached() {
@@ -9636,8 +9666,8 @@ forgotPw.onclick = () => {
       `;
     }
 
-    const myAccent = myTop3.find(Boolean)?.color || "#8bb6ff";
-    const otherAccent = otherTop3.find(Boolean)?.color || "#ff8b9e";
+      const myAccent = getHabitStatsFillColor(myTop3.find(Boolean)?.color || "#8bb6ff");
+      const otherAccent = getHabitStatsFillColor(otherTop3.find(Boolean)?.color || "#ff8b9e");
 
     return `
       <div class="reliability-chart">
@@ -10000,7 +10030,9 @@ forgotPw.onclick = () => {
       const y = Math.max(0, parseInt(h.goal) || 0);
       const rawTitle = h.title || "";
       const hasTitle = rawTitle.trim().length > 0;
-      const color = h.color || "#e5e7eb";
+      const baseColor = h.color || "#e5e7eb";
+      const fillColor = getHabitStatsFillColor(baseColor);
+      const labelColor = getHabitStatsLabelColor(baseColor);
       const iconType = normalizeHabitIcon(h.icon_type);
       const iconOptions = HABIT_ICON_TYPES.filter(type => type !== iconType)
         .map(type => `
@@ -10029,7 +10061,7 @@ forgotPw.onclick = () => {
 
       html += `
         <div class="stat-item">
-        <div class="stat-bar is-clickable" data-habit-id="${h.id}" data-color="${color}" data-owner="${keyPrefix}" data-icon="${iconType}" style="position:relative;">
+        <div class="stat-bar is-clickable" data-habit-id="${h.id}" data-color="${fillColor}" data-owner="${keyPrefix}" data-icon="${iconType}" style="position:relative;">
           <div class="stat-bar-inner">
             <button class="stat-icon-btn" type="button" aria-label="Symbol wählen">
               <i data-lucide="${iconType}"></i>
@@ -10043,19 +10075,19 @@ forgotPw.onclick = () => {
                 position:absolute;
                 inset:0;
                 width:0%;
-                background:${color};
+                background:${fillColor};
                 border-radius:12px;
                 z-index:1;
               "></div>
               <!-- Text nur wenn vorhanden -->
-              <div class="stat-bar-label">
+              <div class="stat-bar-label" style="color:${labelColor};">
                 ${hasTitle ? rawTitle : ""}
                 ${overflow > 0 ? `<span class="stat-overflow-chip">+${overflow}</span>` : ""}
               </div>
             </div>
           </div>
         </div>
-        <div class="stat-calendar" data-habit-id="${h.id}" data-color="${color}">
+        <div class="stat-calendar" data-habit-id="${h.id}" data-color="${fillColor}">
           <div class="stat-calendar-header-row">
             <button class="stat-cal-nav" data-dir="-1" aria-label="Vorheriger Monat">‹</button>
             <div class="stat-calendar-header"></div>
@@ -10846,6 +10878,9 @@ forgotPw.onclick = () => {
       if (reminderClicksCount > 0) {
         const reminderTotal = getReminderTotalTarget() || 1;
         const reminderPercent = Math.min(100, Math.round((reminderClicksCount / reminderTotal) * 100));
+        const [presetPrimary] = getActiveHabitPresetColors();
+        const reminderFillColor = getHabitStatsFillColor(presetPrimary || "#8bb6ff");
+        const reminderLabelColor = getHabitStatsLabelColor(presetPrimary || "#8bb6ff");
         html += `
           <div class="stat-item">
             <div class="stat-bar" style="position:relative;">
@@ -10859,11 +10894,11 @@ forgotPw.onclick = () => {
                     position:absolute;
                     inset:0;
                     width:0%;
-                    background:#8bb6ff;
+                    background:${reminderFillColor};
                     border-radius:12px;
                     z-index:1;
                   "></div>
-                  <div class="stat-bar-label">Ernährung</div>
+                  <div class="stat-bar-label" style="color:${reminderLabelColor};">Ernährung</div>
                 </div>
               </div>
             </div>
@@ -11212,7 +11247,7 @@ forgotPw.onclick = () => {
       settingsOpen = false;
       changesOpen = false;
 
-      const myHabits = habits;
+      const myHabits = await loadHabitsForUserCached(currentUser.id);
       let otherHabits = [];
       let otherUserData = otherUser;
 
@@ -11629,7 +11664,8 @@ async function processQRFlow(qrId) {
       .eq("id", habit.id);
 
     if (updErr) return;
-    syncHabitDayForProgress(habit.id, newProgress, currentUser.id);
+    syncLocalHabitRecord(habit.id, { progress: newProgress });
+    syncHabitDayForProgress(habit.id, newProgress);
 
     // Update last scanned
     const today = new Date().toISOString().substring(0, 10);
