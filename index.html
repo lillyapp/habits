@@ -3300,50 +3300,46 @@
         --drop-c1: #22c55e;
         --drop-c2: #10b981;
         --drop-c3: #14b8a6;
-        min-height: 96px;
-        border-radius: 20px;
-        border: 2px dashed color-mix(in srgb, var(--c-text) 26%, transparent);
-        background: color-mix(in srgb, var(--c-card) 85%, transparent);
+        min-height: 0;
+        border-radius: 0;
+        border: none;
+        background: transparent;
         display: flex;
-        flex-direction: column;
+        position: relative;
+        z-index: 1;
         align-items: center;
         justify-content: center;
-        gap: 10px;
-        padding: 10px 12px;
+        gap: 0;
+        padding: 0;
+        margin-bottom: -34px;
         box-shadow: none;
-        transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+        transition: transform 0.18s ease;
       }
 
       .reminder-drop-zone.is-active {
-        border-color: color-mix(in srgb, var(--drop-c1) 70%, #ffffff 30%);
-        background:
-          linear-gradient(
-            130deg,
-            color-mix(in srgb, var(--drop-c1) 18%, var(--c-card)) 0%,
-            color-mix(in srgb, var(--drop-c2) 18%, var(--c-card)) 50%,
-            color-mix(in srgb, var(--drop-c3) 18%, var(--c-card)) 100%
-          );
+        border-color: transparent;
+        background: transparent;
         box-shadow: none;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
       }
 
       .reminder-drop-mascot-wrap {
-        width: min(160px, 48vw);
+        width: min(180px, 56vw);
         aspect-ratio: 1 / 1;
-        border-radius: 18px;
-        padding: 6px;
+        border-radius: 0;
+        padding: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: color-mix(in srgb, var(--c-bg) 58%, transparent);
-        border: 1px solid color-mix(in srgb, var(--c-text) 8%, transparent);
-        transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+        background: transparent;
+        border: none;
+        transform: translateY(24px);
+        transition: transform 0.18s ease, filter 0.18s ease;
       }
 
       .reminder-drop-zone.is-active .reminder-drop-mascot-wrap {
-        transform: scale(1.02);
-        background: color-mix(in srgb, var(--drop-c1) 12%, var(--c-bg));
-        border-color: color-mix(in srgb, var(--drop-c1) 40%, transparent);
+        transform: translateY(24px) scale(1.04);
+        filter: none;
       }
 
       .reminder-drop-mascot-img {
@@ -3356,13 +3352,13 @@
       }
 
       .reminder-drop-items {
-        display: flex;
+        display: none;
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
         gap: 8px;
         width: 100%;
-        min-height: 54px;
+        min-height: 0;
       }
 
       .reminder-drop-token {
@@ -3395,9 +3391,10 @@
 
       .reminder-playfield {
         position: relative;
+        z-index: 2;
         min-height: 330px;
         border-radius: 22px;
-        background: color-mix(in srgb, var(--c-card) 90%, transparent);
+        background: var(--c-card);
         border: 1px solid color-mix(in srgb, var(--c-text) 8%, transparent);
         overflow: hidden;
       }
@@ -3418,8 +3415,12 @@
         justify-content: center;
         user-select: none;
         -webkit-user-select: none;
+        will-change: left, top, transform;
+        transition:
+          left 3200ms cubic-bezier(0.22, 0.8, 0.25, 1),
+          top 3200ms cubic-bezier(0.22, 0.8, 0.25, 1);
         transform: translate3d(0,0,0);
-        animation: reminderFloat 4.8s ease-in-out infinite;
+        animation: reminderFloat var(--float-duration, 4.8s) ease-in-out infinite;
         animation-delay: var(--float-delay, 0s);
       }
 
@@ -3488,6 +3489,44 @@
         font-size: 1.08rem;
         font-weight: 800;
         letter-spacing: 0.02em;
+      }
+
+      .reminder-progress-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .reminder-undo-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--c-text) 18%, transparent);
+        background: color-mix(in srgb, var(--c-card) 88%, transparent);
+        color: var(--c-text);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.16s ease, opacity 0.16s ease, background 0.16s ease;
+      }
+
+      .reminder-undo-btn svg,
+      .reminder-undo-btn i {
+        width: 16px;
+        height: 16px;
+      }
+
+      .reminder-undo-btn:not(:disabled):hover {
+        transform: translateY(-1px);
+        background: color-mix(in srgb, var(--c-card) 76%, transparent);
+      }
+
+      .reminder-undo-btn:disabled,
+      .reminder-undo-btn.is-disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
       }
 
       .reminder-progress.reminder-pop {
@@ -3887,25 +3926,21 @@
     const reminderChecklistState = new Set();
     let reminderLastCompletedCount = null;
     let reminderPendingAction = "";
+    let reminderActionHistory = [];
+    let reminderActionHistoryDay = "";
     const REMINDER_MASCOT_FRAMES = Object.freeze({
       idle: getAppAssetPath("pep_normal.png"),
       open: getAppAssetPath("pep_smile.png"),
       chew1: getAppAssetPath("pep_chew1.png"),
       chew2: getAppAssetPath("pep_chew2.png"),
-      chew3: getAppAssetPath("pep_chew3.png")
+      chew3: getAppAssetPath("pep_chew3.png"),
+      twink: getAppAssetPath("pep_twink.png")
     });
-    const REMINDER_MASCOT_CHEW_SEQUENCE = Object.freeze([
-      REMINDER_MASCOT_FRAMES.open,
-      REMINDER_MASCOT_FRAMES.chew1,
-      REMINDER_MASCOT_FRAMES.chew2,
-      REMINDER_MASCOT_FRAMES.chew3,
-      REMINDER_MASCOT_FRAMES.chew2
-    ]);
     let reminderMascotHoverState = false;
     let reminderMascotIsChewing = false;
-    let reminderMascotChewIntervalId = null;
-    let reminderMascotChewTimeoutId = null;
+    let reminderMascotChewTimers = [];
     let reminderMascotFramesPreloaded = false;
+    let reminderTokenDriftTimers = [];
     const HABIT_ICON_TYPES = ["brain", "dumbbell", "shapes"];
     const THEME_MODE_STORAGE_KEY = "app_theme_mode_v1";
     const ENABLE_VERBOSE_CONSOLE = false;
@@ -4717,6 +4752,7 @@
     function closeNotificationsPane() {
       if (addBtnEl.dataset.mode !== "notifications") return;
       addBtnEl.dataset.mode = "main";
+      clearReminderTokenDrift();
       const closeBtn = document.getElementById("reminderCloseBtn");
       if (closeBtn) {
         closeBtn.style.opacity = "0";
@@ -9810,8 +9846,10 @@ forgotPw.onclick = () => {
       return getReminderTokens().length;
     }
 
-    async function persistReminderTokenState(dbId, done) {
+    async function persistReminderTokenState(dbId, done, { trackHistory = false } = {}) {
       if (!dbId) return;
+      const prevDone = reminderChecklistState.has(dbId);
+      if (prevDone === done) return;
       if (done) reminderChecklistState.add(dbId);
       else reminderChecklistState.delete(dbId);
 
@@ -9834,6 +9872,19 @@ forgotPw.onclick = () => {
           .eq("position_id", dbId);
         if (error) console.error("reminder_clicks delete error:", error);
       }
+
+      if (trackHistory) {
+        reminderActionHistory.push({ dbId, from: prevDone, to: done, at: Date.now() });
+        if (reminderActionHistory.length > 60) reminderActionHistory = reminderActionHistory.slice(-60);
+      }
+    }
+
+    async function undoLastReminderAction() {
+      const lastAction = reminderActionHistory.pop();
+      if (!lastAction?.dbId) return;
+      reminderPendingAction = lastAction.from ? "complete" : "undo";
+      await persistReminderTokenState(lastAction.dbId, lastAction.from, { trackHistory: false });
+      await runReminderRenderTransition(renderNotifications);
     }
 
     function getReminderTokenSeedPosition(index) {
@@ -9844,6 +9895,53 @@ forgotPw.onclick = () => {
         [22, 50], [54, 52]
       ];
       return spots[index % spots.length];
+    }
+
+    function clearReminderTokenDrift() {
+      if (!reminderTokenDriftTimers.length) return;
+      reminderTokenDriftTimers.forEach((timerId) => clearTimeout(timerId));
+      reminderTokenDriftTimers = [];
+    }
+
+    function queueReminderTokenDrift(tokenEl, playfieldEl, delayMs = 0) {
+      if (!tokenEl || !playfieldEl) return;
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      if (reduceMotion) return;
+
+      const timerId = setTimeout(() => {
+        if (!tokenEl.isConnected || !playfieldEl.isConnected) return;
+        if (tokenEl.classList.contains("is-dragging-source")) {
+          queueReminderTokenDrift(tokenEl, playfieldEl, 420 + Math.random() * 380);
+          return;
+        }
+
+        const tokenW = tokenEl.offsetWidth || 88;
+        const tokenH = tokenEl.offsetHeight || 88;
+        const padding = 8;
+        const maxX = Math.max(padding, playfieldEl.clientWidth - tokenW - padding);
+        const maxY = Math.max(padding, playfieldEl.clientHeight - tokenH - padding);
+        const nextX = Math.round(padding + Math.random() * Math.max(0, maxX - padding));
+        const nextY = Math.round(padding + Math.random() * Math.max(0, maxY - padding));
+        const duration = Math.round(2600 + Math.random() * 3200);
+
+        tokenEl.style.transitionDuration = `${duration}ms, ${duration}ms`;
+        tokenEl.style.left = `${nextX}px`;
+        tokenEl.style.top = `${nextY}px`;
+        tokenEl.style.setProperty("--float-duration", `${(4.2 + Math.random() * 2.4).toFixed(2)}s`);
+
+        queueReminderTokenDrift(tokenEl, playfieldEl, duration + 80);
+      }, Math.max(0, delayMs));
+
+      reminderTokenDriftTimers.push(timerId);
+    }
+
+    function startReminderTokenDrift(playfieldEl) {
+      if (!playfieldEl) return;
+      clearReminderTokenDrift();
+      const tokens = Array.from(playfieldEl.querySelectorAll(".reminder-token"));
+      tokens.forEach((tokenEl, idx) => {
+        queueReminderTokenDrift(tokenEl, playfieldEl, 260 + idx * 170 + Math.random() * 260);
+      });
     }
 
     function getReminderMascotImgEl() {
@@ -9858,7 +9956,8 @@ forgotPw.onclick = () => {
         REMINDER_MASCOT_FRAMES.open,
         REMINDER_MASCOT_FRAMES.chew1,
         REMINDER_MASCOT_FRAMES.chew2,
-        REMINDER_MASCOT_FRAMES.chew3
+        REMINDER_MASCOT_FRAMES.chew3,
+        REMINDER_MASCOT_FRAMES.twink
       ];
       frameUrls.forEach((src) => {
         if (!src) return;
@@ -9875,13 +9974,9 @@ forgotPw.onclick = () => {
     }
 
     function stopReminderMascotChew({ keepHoverState = true } = {}) {
-      if (reminderMascotChewIntervalId) {
-        clearInterval(reminderMascotChewIntervalId);
-        reminderMascotChewIntervalId = null;
-      }
-      if (reminderMascotChewTimeoutId) {
-        clearTimeout(reminderMascotChewTimeoutId);
-        reminderMascotChewTimeoutId = null;
+      if (reminderMascotChewTimers.length) {
+        reminderMascotChewTimers.forEach((timerId) => clearTimeout(timerId));
+        reminderMascotChewTimers = [];
       }
       reminderMascotIsChewing = false;
       const shouldOpen = keepHoverState && reminderMascotHoverState;
@@ -9904,19 +9999,30 @@ forgotPw.onclick = () => {
       preloadReminderMascotFrames();
       stopReminderMascotChew({ keepHoverState: false });
       reminderMascotIsChewing = true;
-      let frameIndex = 0;
+      const timeline = [
+        { src: REMINDER_MASCOT_FRAMES.open, duration: 120 },
+        { src: REMINDER_MASCOT_FRAMES.chew1, duration: 105 },
+        { src: REMINDER_MASCOT_FRAMES.chew2, duration: 105 },
+        { src: REMINDER_MASCOT_FRAMES.chew3, duration: 110 },
+        { src: REMINDER_MASCOT_FRAMES.chew2, duration: 120 },
+        // Slow final wink phase
+        { src: REMINDER_MASCOT_FRAMES.twink, duration: 340 },
+        { src: REMINDER_MASCOT_FRAMES.open, duration: 220 }
+      ];
 
-      const tick = () => {
-        const frameSrc = REMINDER_MASCOT_CHEW_SEQUENCE[frameIndex % REMINDER_MASCOT_CHEW_SEQUENCE.length];
-        setReminderMascotFrame(frameSrc, "chew");
-        frameIndex += 1;
-      };
+      let elapsed = 0;
+      timeline.forEach((step) => {
+        const timerId = setTimeout(() => {
+          setReminderMascotFrame(step.src, "chew");
+        }, elapsed);
+        reminderMascotChewTimers.push(timerId);
+        elapsed += step.duration;
+      });
 
-      tick();
-      reminderMascotChewIntervalId = setInterval(tick, 120);
-      reminderMascotChewTimeoutId = setTimeout(() => {
+      const finishTimerId = setTimeout(() => {
         stopReminderMascotChew({ keepHoverState: true });
-      }, 950);
+      }, elapsed + 20);
+      reminderMascotChewTimers.push(finishTimerId);
     }
 
     async function runReminderRenderTransition(renderFn) {
@@ -9994,17 +10100,23 @@ forgotPw.onclick = () => {
     }
     
     async function renderNotifications() {
+      clearReminderTokenDrift();
       if (currentUser?.id) {
         await checkReminderResetDaily();
         await loadReminderClicksForDay(currentUser.id);
       }
+      const currentHistoryDay = getLocalDateString();
+      if (reminderActionHistoryDay !== currentHistoryDay) {
+        reminderActionHistoryDay = currentHistoryDay;
+        reminderActionHistory = [];
+      }
       const tokens = getReminderTokens();
       const completedTokens = tokens.filter(token => reminderChecklistState.has(token.dbId));
       const pendingTokens = tokens.filter(token => !reminderChecklistState.has(token.dbId));
-      const completedGroups = groupReminderTokens(completedTokens);
       const pendingGroups = groupReminderTokens(pendingTokens);
       const completedCount = completedTokens.length;
       const totalTarget = tokens.length || 7;
+      const hasUndoAction = reminderActionHistory.length > 0;
 
       const pendingHtml = pendingGroups.map((group, idx) => {
         const [x, y] = getReminderTokenSeedPosition(idx);
@@ -10017,7 +10129,7 @@ forgotPw.onclick = () => {
             data-reminder-db-id="${firstDbId}"
             data-reminder-db-ids="${dbIdsAttr}"
             data-reminder-label="${escapeHtml(group.label)}"
-            style="left:${x}%;top:${y}%;--float-delay:${(idx * 0.22).toFixed(2)}s;"
+            style="left:${x}%;top:${y}%;--float-delay:${(idx * 0.22).toFixed(2)}s;--float-duration:${(4.1 + Math.random() * 2.3).toFixed(2)}s;"
             aria-label="${escapeHtml(group.count > 1 ? `${group.label} (${group.count})` : group.label)}"
           >
             <img src="${group.imageSrc}" alt="${escapeHtml(group.label)}" loading="lazy" draggable="false" />
@@ -10025,20 +10137,6 @@ forgotPw.onclick = () => {
           </button>
         `;
       }).join("") || `<div class="reminder-drop-hint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">Alles erledigt</div>`;
-
-      const completedHtml = completedGroups.map(group => `
-        <button
-          class="reminder-drop-token"
-          type="button"
-          data-reminder-db-id="${group.dbIds[0] || ""}"
-          data-reminder-db-ids="${group.dbIds.join(",")}"
-          data-reminder-label="${escapeHtml(group.label)}"
-          aria-label="${escapeHtml(group.count > 1 ? `${group.label} (${group.count})` : group.label)}"
-        >
-          <img src="${group.imageSrc}" alt="${escapeHtml(group.label)}" loading="lazy" draggable="false" />
-          ${group.count > 1 ? `<span class="reminder-token-badge">${group.count}</span>` : ""}
-        </button>
-      `).join("");
 
       notificationsViewEl.innerHTML = `
         <div class="reminder-pane">
@@ -10054,14 +10152,24 @@ forgotPw.onclick = () => {
                   loading="eager"
                 />
               </div>
-              <div class="reminder-drop-items" id="reminderDropItems">
-                ${completedHtml || `<div class="reminder-drop-hint">Hierher ziehen</div>`}
-              </div>
+              <div class="reminder-drop-items" id="reminderDropItems" aria-hidden="true"></div>
             </div>
             <div class="reminder-playfield" id="reminderPlayfield">
               ${pendingHtml}
             </div>
-            <div class="reminder-progress" id="reminderProgressLabel">${completedCount}/${totalTarget}</div>
+            <div class="reminder-progress-row">
+              <div class="reminder-progress" id="reminderProgressLabel">${completedCount}/${totalTarget}</div>
+              <button
+                type="button"
+                class="reminder-undo-btn ${hasUndoAction ? "" : "is-disabled"}"
+                id="reminderUndoBtn"
+                aria-label="Letzte Aktion rückgängig"
+                title="Letzte Aktion rückgängig"
+                ${hasUndoAction ? "" : "disabled"}
+              >
+                <i data-lucide="undo-2"></i>
+              </button>
+            </div>
           </div>
         </div>
       `;
@@ -10080,6 +10188,7 @@ forgotPw.onclick = () => {
         const onPointerDown = (event) => {
           if (!dropZoneEl) return;
           event.preventDefault();
+          tokenEl.style.transitionDuration = "0ms, 0ms";
           const pointerId = event.pointerId;
           const tokenRect = tokenEl.getBoundingClientRect();
           const offsetX = event.clientX - tokenRect.left;
@@ -10129,6 +10238,7 @@ forgotPw.onclick = () => {
             tokenEl.classList.remove("is-dragging-source");
             dropZoneEl.classList.remove("is-active");
             updateReminderMascotHoverState(false);
+            tokenEl.style.transitionDuration = "";
             tokenEl.removeEventListener("pointermove", onPointerMove);
             tokenEl.removeEventListener("pointerup", onPointerUp);
             tokenEl.removeEventListener("pointercancel", onPointerCancel);
@@ -10160,14 +10270,18 @@ forgotPw.onclick = () => {
 
             if (!fromDropZone && droppedInDropZone) {
               reminderPendingAction = "complete";
-              await persistReminderTokenState(dbId, true);
+              await persistReminderTokenState(dbId, true, { trackHistory: true });
               await runReminderRenderTransition(renderNotifications);
               return;
             }
             if (fromDropZone && !droppedInDropZone) {
               reminderPendingAction = "undo";
-              await persistReminderTokenState(dbId, false);
+              await persistReminderTokenState(dbId, false, { trackHistory: true });
               await runReminderRenderTransition(renderNotifications);
+              return;
+            }
+            if (tokenEl.isConnected && playfieldEl?.isConnected) {
+              queueReminderTokenDrift(tokenEl, playfieldEl, 220 + Math.random() * 180);
             }
           };
 
@@ -10191,11 +10305,17 @@ forgotPw.onclick = () => {
 
       const pendingTokenEls = playfieldEl ? Array.from(playfieldEl.querySelectorAll(".reminder-token")) : [];
       pendingTokenEls.forEach(tokenEl => attachReminderTokenDrag(tokenEl, { fromDropZone: false }));
-
-      const completedTokenEls = dropZoneEl ? Array.from(dropZoneEl.querySelectorAll(".reminder-drop-token")) : [];
-      completedTokenEls.forEach(tokenEl => attachReminderTokenDrag(tokenEl, { fromDropZone: true }));
+      startReminderTokenDrift(playfieldEl);
 
       animateReminderRender(completedCount);
+
+      const undoBtn = notificationsViewEl.querySelector("#reminderUndoBtn");
+      if (undoBtn) {
+        undoBtn.addEventListener("click", async () => {
+          if (undoBtn.disabled) return;
+          await undoLastReminderAction();
+        });
+      }
 
       const closeBtn = notificationsViewEl.querySelector("#reminderCloseBtn");
       if (closeBtn) {
@@ -10203,6 +10323,8 @@ forgotPw.onclick = () => {
           closeNotificationsPane();
         });
       }
+
+      try { lucide.createIcons({ scope: notificationsViewEl }); } catch (e) {}
     }
 
     async function renderStats(myHabits, otherHabits, otherUserData) {
