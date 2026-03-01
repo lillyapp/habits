@@ -4867,8 +4867,15 @@
       const goal = Math.max(0, parseInt(card.dataset.goal) || 0);
 
       if (isQR) {
+        const nextSignature = `qr:${progress}`;
+        const prevSignature = counter.dataset.counterSignature || "";
         counter.style.display = "inline-flex";
         counter.innerHTML = `<span class="counter-main">${progress} KCAL</span>`;
+        counter.classList.remove("is-split");
+        if (nextSignature !== prevSignature) {
+          animateHabitCounterTransition(counter, false);
+          counter.dataset.counterSignature = nextSignature;
+        }
         return;
       }
 
@@ -4877,9 +4884,12 @@
         counter.style.display = "none";
         counter.innerHTML = "";
         counter.classList.remove("is-split");
+        counter.dataset.counterSignature = "";
         return;
       }
 
+      const nextSignature = `${parts.mainProgress}/${goal}|+${parts.overflow}`;
+      const prevSignature = counter.dataset.counterSignature || "";
       counter.style.display = "inline-flex";
       counter.classList.toggle("is-split", parts.overflow > 0);
       counter.innerHTML = `
@@ -4892,6 +4902,10 @@
         ` : ""}
       `;
       startCounterOverflowShine(counter);
+      if (nextSignature !== prevSignature) {
+        animateHabitCounterTransition(counter, parts.overflow > 0);
+        counter.dataset.counterSignature = nextSignature;
+      }
     }
 
     function startCounterOverflowShine(scopeEl) {
@@ -4908,6 +4922,71 @@
           .to(shineEl, { xPercent: 300, duration: 0.86, ease: "power2.inOut" }, "<")
           .to(shineEl, { opacity: 0, duration: 0.2, ease: "power1.in" }, "<0.62");
       });
+    }
+
+    function animateHabitCounterTransition(counterEl, hasOverflow) {
+      if (!counterEl || !window.gsap) return;
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      if (reduceMotion) return;
+
+      gsap.killTweensOf(counterEl);
+      const mainEl = counterEl.querySelector(".counter-main");
+      const overflowEl = counterEl.querySelector(".counter-overflow");
+      const overflowTextEl = overflowEl?.querySelector(".counter-overflow-text");
+
+      const tl = gsap.timeline();
+      tl.fromTo(
+        counterEl,
+        { scale: 0.94, opacity: 0.82 },
+        { scale: 1, opacity: 1, duration: 0.26, ease: "power2.out", clearProps: "transform,opacity" },
+        0
+      );
+
+      if (mainEl) {
+        gsap.killTweensOf(mainEl);
+        tl.fromTo(
+          mainEl,
+          { y: 2, opacity: 0.85 },
+          { y: 0, opacity: 1, duration: 0.2, ease: "power2.out", clearProps: "transform,opacity" },
+          0.02
+        );
+      }
+
+      if (hasOverflow && overflowEl) {
+        gsap.killTweensOf(overflowEl);
+        tl.fromTo(
+          overflowEl,
+          { x: 12, opacity: 0, scaleX: 0.72, scaleY: 0.88, transformOrigin: "left center" },
+          {
+            x: 0,
+            opacity: 1,
+            scaleX: 1,
+            scaleY: 1,
+            duration: 0.34,
+            ease: "back.out(1.45)",
+            clearProps: "transform,opacity,transformOrigin"
+          },
+          0.05
+        );
+        if (overflowTextEl) {
+          gsap.killTweensOf(overflowTextEl);
+          tl.fromTo(
+            overflowTextEl,
+            { scale: 0.7, y: 2, opacity: 0 },
+            { scale: 1, y: 0, opacity: 1, duration: 0.22, ease: "back.out(2.2)", clearProps: "transform,opacity" },
+            0.17
+          );
+        }
+        tl.to(
+          overflowEl,
+          { y: -1, duration: 0.09, ease: "power1.out" },
+          0.3
+        ).to(
+          overflowEl,
+          { y: 0, duration: 0.11, ease: "power1.in", clearProps: "transform" },
+          0.39
+        );
+      }
     }
 
     function enforceSpeisequarkGoal(card, title) {
