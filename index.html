@@ -2990,13 +2990,55 @@
       align-items: center;
       justify-content: center;
       border-radius: 999px;
-      padding: 2px 7px;
+      padding: 2px 8px;
       font-size: 0.72rem;
       font-weight: 800;
       line-height: 1;
-      color: var(--c-bg);
-      background: color-mix(in srgb, var(--c-text) 82%, transparent);
+      color: #000000;
+      background: #facc15;
+      border: 2px solid #000000;
+      position: relative;
+      overflow: hidden;
       flex: 0 0 auto;
+      isolation: isolate;
+    }
+    .stat-overflow-chip-text {
+      position: relative;
+      z-index: 1;
+    }
+    .stat-overflow-chip-shine {
+      position: absolute;
+      top: -36%;
+      left: -46%;
+      width: 54%;
+      height: 182%;
+      border-radius: 999px;
+      background: linear-gradient(
+        100deg,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0.22) 34%,
+        rgba(255,255,255,0.78) 50%,
+        rgba(255,255,255,0.22) 66%,
+        rgba(255,255,255,0) 100%
+      );
+      transform: translateX(-180%) rotate(10deg);
+      opacity: 0;
+      pointer-events: none;
+      animation: statOverflowShine 2.2s ease-in-out infinite;
+      z-index: 0;
+    }
+    @keyframes statOverflowShine {
+      0%, 58%, 100% {
+        transform: translateX(-180%) rotate(10deg);
+        opacity: 0;
+      }
+      63% {
+        opacity: 0.78;
+      }
+      84% {
+        transform: translateX(260%) rotate(10deg);
+        opacity: 0.1;
+      }
     }
     .stat-fill {
       height:100%;
@@ -10082,7 +10124,12 @@ forgotPw.onclick = () => {
               <!-- Text nur wenn vorhanden -->
               <div class="stat-bar-label" style="color:${labelColor};">
                 ${hasTitle ? rawTitle : ""}
-                ${overflow > 0 ? `<span class="stat-overflow-chip">+${overflow}</span>` : ""}
+                ${overflow > 0 ? `
+                  <span class="stat-overflow-chip">
+                    <span class="stat-overflow-chip-text">+${overflow}</span>
+                    <span class="stat-overflow-chip-shine" aria-hidden="true"></span>
+                  </span>
+                ` : ""}
               </div>
             </div>
           </div>
