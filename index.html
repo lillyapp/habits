@@ -452,18 +452,18 @@
 
     .counter {
       padding: 0;
-      min-height: 30px;
+      height: 30px;
       border-radius: 999px;
       font-size: 1rem;
       font-weight: 700;
       display: none;
       align-items: center;
+      gap: 0;
       overflow: hidden;
       line-height: 1;
-
-      /* Light Mode */
+      position: relative;
+      box-sizing: border-box;
       background: #ffffff;
-      color: #000000;
       border: 2px solid #000000;
     }
 
@@ -475,21 +475,60 @@
       justify-content: center;
       white-space: nowrap;
       letter-spacing: 0.01em;
+      border-radius: 999px;
+      box-sizing: border-box;
     }
 
     .counter-main {
-      padding: 4px 12px;
+      padding: 0 12px;
       color: #000000;
       background: #ffffff;
+      position: relative;
+      z-index: 1;
     }
 
     .counter-overflow {
-      padding: 4px 10px;
+      padding: 0 12px;
+      background: #facc15;
+      color: #000000;
+      font-size: 1em;
+      font-weight: 700;
       border-left: 2px solid #000000;
-      background: #000000;
-      color: #ffffff;
-      font-size: 0.9em;
-      font-weight: 800;
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      border-radius: 0 999px 999px 0;
+      z-index: 2;
+    }
+
+    .counter:not(.is-split) .counter-overflow {
+      display: none;
+    }
+
+    .counter-overflow-text {
+      position: relative;
+      z-index: 1;
+    }
+
+    .counter-overflow-shine {
+      position: absolute;
+      top: -36%;
+      left: -46%;
+      width: 54%;
+      height: 182%;
+      border-radius: 999px;
+      background: linear-gradient(
+        100deg,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0.22) 34%,
+        rgba(255,255,255,0.78) 50%,
+        rgba(255,255,255,0.22) 66%,
+        rgba(255,255,255,0) 100%
+      );
+      transform: translateX(-180%) rotate(10deg);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 0;
     }
 
     .card-flip-btn {
@@ -4047,11 +4086,13 @@
       twink: getAppAssetPath("pep_twink.png"),
       hands: getAppAssetPath("pep_hands.png")
     });
+    const REMINDER_EATING_SOUND_SRC = getAppAssetPath("eating.mp3");
     let reminderMascotHoverState = false;
     let reminderMascotIsChewing = false;
     let reminderMascotChewTimers = [];
     let reminderMascotFramesPreloaded = false;
     let reminderTokenImagesPreloaded = false;
+    let reminderEatingAudio = null;
     let reminderTokenDriftTimers = [];
     let reminderMascotPaneOpenAnimationArmed = false;
     const HABIT_ICON_TYPES = ["brain", "dumbbell", "shapes"];
@@ -4197,6 +4238,7 @@
     });
     const HABIT_COLOR_PRESET_STORAGE_KEY = "habit_color_preset_v1";
     const HABIT_CUSTOM_COLOR_SELECTION_STORAGE_KEY = "habit_custom_color_selection_v1";
+    const SOUND_ENABLED_STORAGE_KEY = "app_sound_enabled_v1";
     const HABIT_COLOR_PRESETS = Object.freeze([
       { id: "sunset", label: "Sunset", colors: ["#ef4444", "#f59e0b", "#eab308"] },
       { id: "forest", label: "Forest", colors: ["#22c55e", "#10b981", "#14b8a6"] },
@@ -4251,6 +4293,29 @@
 
     function normalizeCookieModeEnabled(value) {
       return value === true;
+    }
+
+    function normalizeSoundEnabled(value) {
+      return value !== false;
+    }
+
+    function getStoredSoundEnabled() {
+      try {
+        const raw = localStorage.getItem(SOUND_ENABLED_STORAGE_KEY);
+        if (raw === null) return true;
+        if (raw === "0" || raw === "false") return false;
+        return true;
+      } catch (_) {
+        return true;
+      }
+    }
+
+    function setStoredSoundEnabled(enabled) {
+      const nextEnabled = normalizeSoundEnabled(Boolean(enabled));
+      try {
+        localStorage.setItem(SOUND_ENABLED_STORAGE_KEY, nextEnabled ? "1" : "0");
+      } catch (_) {}
+      return nextEnabled;
     }
 
     function normalizeHabitColorPresetId(value) {
@@ -4811,14 +4876,38 @@
       if (!parts.showCounter) {
         counter.style.display = "none";
         counter.innerHTML = "";
+        counter.classList.remove("is-split");
         return;
       }
 
       counter.style.display = "inline-flex";
+      counter.classList.toggle("is-split", parts.overflow > 0);
       counter.innerHTML = `
         <span class="counter-main">${parts.mainProgress}/${goal}</span>
-        ${parts.overflow > 0 ? `<span class="counter-overflow">+${parts.overflow}</span>` : ""}
+        ${parts.overflow > 0 ? `
+          <span class="counter-overflow">
+            <span class="counter-overflow-text">+${parts.overflow}</span>
+            <span class="counter-overflow-shine" aria-hidden="true"></span>
+          </span>
+        ` : ""}
       `;
+      startCounterOverflowShine(counter);
+    }
+
+    function startCounterOverflowShine(scopeEl) {
+      if (!scopeEl || !window.gsap) return;
+      const shimmerNodes = scopeEl.querySelectorAll(".counter-overflow-shine");
+      shimmerNodes.forEach((shineEl, idx) => {
+        if (!shineEl || shineEl.dataset.shineBound === "1") return;
+        shineEl.dataset.shineBound = "1";
+        gsap.set(shineEl, { xPercent: -240, opacity: 0 });
+        const delay = 0.2 + idx * 0.15;
+        const repeatDelay = 1.4 + Math.random() * 1.1;
+        gsap.timeline({ repeat: -1, delay, repeatDelay })
+          .to(shineEl, { opacity: 0.78, duration: 0.14, ease: "power1.out" })
+          .to(shineEl, { xPercent: 300, duration: 0.86, ease: "power2.inOut" }, "<")
+          .to(shineEl, { opacity: 0, duration: 0.2, ease: "power1.in" }, "<0.62");
+      });
     }
 
     function enforceSpeisequarkGoal(card, title) {
@@ -4826,7 +4915,6 @@
       if (!isSpeisequarkTitle(title)) return false;
 
       let changed = false;
-      let progress = parseInt(card.dataset.progress) || 0;
       const goal = parseInt(card.dataset.goal) || 0;
 
       if (goal !== 2) {
@@ -5211,6 +5299,7 @@
       if (!settingsViewEl) return;
       const mode = normalizeHabitCardDisplayMode(userSettings?.habit_card_display_mode);
       const cookieModeEnabled = normalizeCookieModeEnabled(userSettings?.cookie_mode_enabled);
+      const soundEnabled = getStoredSoundEnabled();
       const currentEmail = currentUser?.email || "";
       const themeMode = getStoredThemeMode();
       const habitColorPresetId = getStoredHabitColorPresetId();
@@ -5306,6 +5395,17 @@
               <div class="settings-segment" id="cookieModeGroup">
                 <button type="button" class="settings-segment-btn ${cookieModeEnabled ? "is-active" : ""}" data-cookie-mode="on">Aktiv</button>
                 <button type="button" class="settings-segment-btn ${!cookieModeEnabled ? "is-active" : ""}" data-cookie-mode="off">Deaktiviert</button>
+              </div>
+            </div>
+            <div class="settings-subsection">
+              <div class="settings-subsection-head">
+                <i data-lucide="volume-2"></i>
+                <div class="settings-subsection-title">Sounds</div>
+              </div>
+              <p class="settings-copy">Effekte in der Essens-Animation</p>
+              <div class="settings-segment" id="soundModeGroup">
+                <button type="button" class="settings-segment-btn ${soundEnabled ? "is-active" : ""}" data-sound-mode="on">Aktiv</button>
+                <button type="button" class="settings-segment-btn ${!soundEnabled ? "is-active" : ""}" data-sound-mode="off">Stumm</button>
               </div>
             </div>
             <div class="settings-subsection">
@@ -6026,6 +6126,29 @@
             nextEnabled
               ? "Cookie-Modus aktiviert: Nahrungsaufnahme/Bulking-Tracking ist eingeschaltet."
               : "Cookie-Modus deaktiviert.",
+            "success"
+          );
+        });
+      });
+
+      settingsViewEl.querySelectorAll("[data-sound-mode]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const nextEnabled = btn.dataset.soundMode === "on";
+          if (nextEnabled === getStoredSoundEnabled()) return;
+          setStoredSoundEnabled(nextEnabled);
+          if (!nextEnabled && reminderEatingAudio) {
+            try {
+              reminderEatingAudio.pause();
+              reminderEatingAudio.currentTime = 0;
+            } catch (_) {}
+          }
+          settingsViewEl.querySelectorAll("[data-sound-mode]").forEach(b => {
+            const isOn = b.dataset.soundMode === "on";
+            b.classList.toggle("is-active", isOn === nextEnabled);
+          });
+          setStatus(
+            displayStatus,
+            nextEnabled ? "Sounds aktiviert." : "Sounds deaktiviert.",
             "success"
           );
         });
@@ -8133,7 +8256,6 @@ forgotPw.onclick = () => {
     
     function attachCardLogic(card) {
       const input     = card.querySelector(".card-input");
-      const counter   = card.querySelector(".counter");
       const gpsArea   = card.querySelector("#gpsArea");
       const numArea   = card.querySelector("#numArea");
       const gpsInput  = card.querySelector("#gpsInput");
@@ -8245,6 +8367,24 @@ forgotPw.onclick = () => {
         if (y <= 1 && x > y) {
           x = y;
           card.dataset.progress = x;
+        }
+
+        if (y <= 1) {
+          const isActiveNow = x > 0;
+          card.dataset.active = isActiveNow ? "true" : "false";
+          if (!isActiveNow) {
+            card.style.background = "#e4e4e4";
+            input.style.color = "#666";
+          } else {
+            const idx = parseInt(card.dataset.index);
+            let col = card.dataset.color;
+            if (!col || col === "#e4e4e4") col = cycleColors[idx % cycleColors.length];
+            card.style.background = getHabitActiveCardBackgroundColor(col);
+            card.dataset.color = col;
+            input.style.color = getHabitActiveLabelColor(col);
+          }
+          if (flipBtn) flipBtn.style.color = input.style.color || "#666";
+          updateCardDisplayModeUI(card);
         }
 
         renderHabitCounter(card);
@@ -8451,17 +8591,15 @@ forgotPw.onclick = () => {
                 if (inputElTitle) inputElTitle.style.color = getHabitActiveLabelColor(col);
               }
             } else {
-              if (progress < goal) {
-                progress += 1;
-                active = true;
-                const idx = parseInt(cardEl.dataset.index);
-                let col = cardEl.dataset.color;
-                if (!col || col === '#e4e4e4') col = cycleColors[idx % cycleColors.length];
-                cardEl.style.background = getHabitActiveCardBackgroundColor(col);
-                cardEl.dataset.color = col;
-                const inputElTitle = cardEl.querySelector('.card-input');
-                if (inputElTitle) inputElTitle.style.color = getHabitActiveLabelColor(col);
-              }
+              progress += 1;
+              active = true;
+              const idx = parseInt(cardEl.dataset.index);
+              let col = cardEl.dataset.color;
+              if (!col || col === '#e4e4e4') col = cycleColors[idx % cycleColors.length];
+              cardEl.style.background = getHabitActiveCardBackgroundColor(col);
+              cardEl.dataset.color = col;
+              const inputElTitle = cardEl.querySelector('.card-input');
+              if (inputElTitle) inputElTitle.style.color = getHabitActiveLabelColor(col);
             }
           }
 
@@ -8490,18 +8628,7 @@ forgotPw.onclick = () => {
 
           cardEl.dataset.progress = progress;
           cardEl.dataset.active = active ? 'true' : 'false';
-
-          // Update counter UI
-          const counterEl = cardEl.querySelector('.counter');
-          if (counterEl) {
-            if (parseInt(cardEl.dataset.goal) >= 2) {
-              counterEl.style.display = 'block';
-              counterEl.textContent = progress + '/' + (parseInt(cardEl.dataset.goal) || 1);
-            } else {
-              counterEl.style.display = (progress > 0) ? 'block' : 'none';
-              if (progress > 0) counterEl.textContent = progress;
-            }
-          }
+          renderHabitCounter(cardEl);
 
           // Persist both subtask states and main progress
           saveHabit(cardEl);
@@ -8915,23 +9042,7 @@ forgotPw.onclick = () => {
           card.style.background = "#e4e4e4";
           input.style.color = "#666";
 
-          const counter = card.querySelector(".counter");
-          const goal    = parseInt(card.dataset.goal) || 1;
-          const isQR    = card.dataset.qr === "true";
-
-          if (isQR) {
-            // QR Habit → 0 KCAL
-            counter.style.display = "block";
-            counter.textContent = "0 KCAL";
-          } else {
-            // Normale Habits
-            if (goal >= 2) {
-              counter.style.display = "block";
-              counter.textContent = "0/" + goal;
-            } else {
-              counter.style.display = "none";
-            }
-          }
+          renderHabitCounter(card);
 
           syncHabitDayForProgress(habitId, 0);
           updateCardDisplayModeUI(card);
@@ -8944,7 +9055,6 @@ forgotPw.onclick = () => {
     
     async function proceedHabitToggle(card) {
       const input   = card.querySelector(".card-input");
-      const counter = card.querySelector(".counter");
       const flipBtn = card.querySelector(".card-flip-btn");
 
       if (!input.textContent.trim()) return;
@@ -8983,19 +9093,15 @@ forgotPw.onclick = () => {
           input.style.color     = getHabitActiveLabelColor(col);
         }
       } else {
-        if (progress < goal) {
-          progress += 1;
-          active = true;
+        progress += 1;
+        active = true;
 
-          let col = card.dataset.color;
-          if (!col || col === "#e4e4e4") col = cycleColors[idx % cycleColors.length];
+        let col = card.dataset.color;
+        if (!col || col === "#e4e4e4") col = cycleColors[idx % cycleColors.length];
 
-          card.style.background = getHabitActiveCardBackgroundColor(col);
-          card.dataset.color    = col;
-          input.style.color     = getHabitActiveLabelColor(col);
-        } else {
-          return;
-        }
+        card.style.background = getHabitActiveCardBackgroundColor(col);
+        card.dataset.color    = col;
+        input.style.color     = getHabitActiveLabelColor(col);
       }
       if (flipBtn) flipBtn.style.color = input.style.color || "#666";
 
@@ -9012,12 +9118,7 @@ forgotPw.onclick = () => {
       } catch (e) { /* ignore if elements missing */ }
       updateCardDisplayModeUI(card);
 
-      if (goal >= 2) {
-        counter.style.display = "block";
-        counter.textContent   = progress + "/" + goal;
-      } else {
-        counter.style.display = "none";
-      }
+      renderHabitCounter(card);
 
       // Reset subtasks after successful completion
       const rows = card.querySelectorAll(".subtask");
@@ -9390,26 +9491,37 @@ forgotPw.onclick = () => {
     const allHabits = [...myTop3, ...otherTop3].filter(Boolean);
     const ids = allHabits.map(h => h.id).filter(Boolean);
     const monthDaysMap = await loadHabitDaysForMonth(ids);
+    function getHabitOverflowCount(habit) {
+      const goal = Math.max(0, parseInt(habit?.goal) || 0);
+      const progress = Math.max(0, parseInt(habit?.progress) || 0);
+      if (goal < 2) return 0;
+      return Math.max(0, progress - goal);
+    }
     function buildUserMonthStats(items) {
       const normalized = [0, 1, 2].map(i => items?.[i] || null);
       let doneCount = 0;
+      let bonusCount = 0;
       const habitBreakdown = normalized.map((habit, idx) => {
         const title = (habit?.title || "").trim() || `Habit ${idx + 1}`;
         const daysSet = habit?.id ? (monthDaysMap[habit.id] || new Set()) : new Set();
+        const overflow = getHabitOverflowCount(habit);
         let habitDone = 0;
         for (let day = 1; day <= visibleDays; day++) {
           if (daysSet.has(day)) habitDone += 1;
         }
-        doneCount += habitDone;
+        doneCount += habitDone + overflow;
+        bonusCount += overflow;
         return {
           title,
-          done: habitDone,
-          percent: Math.round((habitDone / Math.max(1, visibleDays)) * 100)
+          done: habitDone + overflow,
+          bonus: overflow,
+          percent: Math.round(((habitDone + overflow) / Math.max(1, visibleDays)) * 100)
         };
       });
       const max = Math.max(1, visibleDays * 3);
       return {
         doneCount,
+        bonusCount,
         max,
         percent: Math.round((doneCount / max) * 100),
         avgPerDay: Math.round((doneCount / Math.max(1, visibleDays)) * 10) / 10,
@@ -9430,7 +9542,7 @@ forgotPw.onclick = () => {
       ? `${monthInfo.monthName} (bis heute)`
       : monthInfo.monthName;
 
-    function buildCompareRow(label, percent, doneCount, max, accent, avgPerDay) {
+    function buildCompareRow(label, percent, doneCount, max, accent, avgPerDay, bonusCount = 0) {
       return `
         <div class="reliability-compare-row">
           <div class="reliability-compare-row-top">
@@ -9440,7 +9552,7 @@ forgotPw.onclick = () => {
           <div class="reliability-compare-bar">
             <div class="reliability-compare-fill" style="width:${Math.max(0, Math.min(100, percent))}%; background:${accent};"></div>
           </div>
-          <div class="reliability-compare-meta">${doneCount} von ${max} möglichen Erledigungen • Ø ${avgPerDay}/Tag</div>
+          <div class="reliability-compare-meta">${doneCount} von ${max} möglichen Erledigungen${bonusCount > 0 ? ` (inkl. +${bonusCount} Zusatzleistung)` : ""} • Ø ${avgPerDay}/Tag</div>
         </div>
       `;
     }
@@ -9453,8 +9565,8 @@ forgotPw.onclick = () => {
         <div class="reliability-simple-title">Monatsvergleich</div>
         <div class="reliability-simple-subtitle">${escapeHtml(monthLabel)} • Grundlage: die 3 sichtbaren Habits</div>
         <div class="reliability-compare">
-          ${buildCompareRow("Du", myStats.percent, myStats.doneCount, myStats.max, myAccent, myStats.avgPerDay)}
-          ${buildCompareRow(otherName, otherStats.percent, otherStats.doneCount, otherStats.max, otherAccent, otherStats.avgPerDay)}
+          ${buildCompareRow("Du", myStats.percent, myStats.doneCount, myStats.max, myAccent, myStats.avgPerDay, myStats.bonusCount)}
+          ${buildCompareRow(otherName, otherStats.percent, otherStats.doneCount, otherStats.max, otherAccent, otherStats.avgPerDay, otherStats.bonusCount)}
         </div>
         <div class="reliability-help">
           <div class="reliability-help-row">${deltaText}</div>
@@ -9805,8 +9917,8 @@ forgotPw.onclick = () => {
         continue;
       }
 
-      const x = h.progress || 0;
-      const y = h.goal     || 0;
+      const x = Math.max(0, parseInt(h.progress) || 0);
+      const y = Math.max(0, parseInt(h.goal) || 0);
       const rawTitle = h.title || "";
       const hasTitle = rawTitle.trim().length > 0;
       const color = h.color || "#e5e7eb";
@@ -9820,18 +9932,19 @@ forgotPw.onclick = () => {
         .join("");
 
       let percent = 0;
+      let overflow = 0;
 
       // QR habit: max value = 21000 kcal
       if (h.qr_enabled === true || h.qr_enabled === "true") {
         const maxKcal = 21000;
-        const kcal = parseInt(h.progress) || 0;
-        percent = Math.min(100, Math.round((kcal / maxKcal) * 100));
+        percent = Math.min(100, Math.round((x / maxKcal) * 100));
       }
       else {
         if (y > 0) {
           percent = (y === 1)
             ? (x >= 1 ? 100 : 0)
-            : Math.round((x / y) * 100);
+            : Math.min(100, Math.round((Math.min(x, y) / y) * 100));
+          if (y >= 2 && x > y) overflow = x - y;
         }
       }
 
@@ -9858,6 +9971,7 @@ forgotPw.onclick = () => {
               <!-- Text nur wenn vorhanden -->
               <div class="stat-bar-label">
                 ${hasTitle ? rawTitle : ""}
+                ${overflow > 0 ? `<span class="stat-overflow-chip">+${overflow}</span>` : ""}
               </div>
             </div>
           </div>
@@ -10134,6 +10248,43 @@ forgotPw.onclick = () => {
       });
     }
 
+    function getReminderEatingAudio() {
+      if (!REMINDER_EATING_SOUND_SRC) return null;
+      if (reminderEatingAudio) return reminderEatingAudio;
+      try {
+        const audio = new Audio(REMINDER_EATING_SOUND_SRC);
+        audio.preload = "auto";
+        audio.volume = 0.72;
+        audio.playsInline = true;
+        reminderEatingAudio = audio;
+      } catch (_) {
+        reminderEatingAudio = null;
+      }
+      return reminderEatingAudio;
+    }
+
+    function preloadReminderEatingSound() {
+      if (!getStoredSoundEnabled()) return;
+      const audio = getReminderEatingAudio();
+      if (!audio) return;
+      try {
+        audio.load();
+      } catch (_) {}
+    }
+
+    function playReminderEatingSound() {
+      if (!getStoredSoundEnabled()) return;
+      const audio = getReminderEatingAudio();
+      if (!audio) return;
+      try {
+        audio.currentTime = 0;
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(() => {});
+        }
+      } catch (_) {}
+    }
+
     function setReminderMascotFrame(src, state = "") {
       const mascotImg = getReminderMascotImgEl();
       if (!mascotImg || !src) return;
@@ -10165,6 +10316,7 @@ forgotPw.onclick = () => {
 
     function playReminderMascotChew() {
       preloadReminderMascotFrames();
+      playReminderEatingSound();
       stopReminderMascotChew({ keepHoverState: false });
       reminderMascotIsChewing = true;
       const timeline = [
@@ -10503,6 +10655,7 @@ forgotPw.onclick = () => {
       reminderMascotPaneOpenAnimationArmed = false;
       preloadReminderMascotFrames();
       preloadReminderTokenImages();
+      preloadReminderEatingSound();
       updateReminderMascotHoverState(false);
       bindReminderTokenDrags(playfieldEl, dropZoneEl);
       animateReminderRender(state.completedCount);
