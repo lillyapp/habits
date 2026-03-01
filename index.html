@@ -451,16 +451,45 @@
     }
 
     .counter {
-      padding: 4px 12px;
+      padding: 0;
+      min-height: 30px;
       border-radius: 999px;
-      font-size: 1.2rem;
+      font-size: 1rem;
       font-weight: 700;
       display: none;
+      align-items: center;
+      overflow: hidden;
+      line-height: 1;
 
       /* Light Mode */
       background: #ffffff;
       color: #000000;
       border: 2px solid #000000;
+    }
+
+    .counter-main,
+    .counter-overflow {
+      height: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+    }
+
+    .counter-main {
+      padding: 4px 12px;
+      color: #000000;
+      background: #ffffff;
+    }
+
+    .counter-overflow {
+      padding: 4px 10px;
+      border-left: 2px solid #000000;
+      background: #000000;
+      color: #ffffff;
+      font-size: 0.9em;
+      font-weight: 800;
     }
 
     .card-flip-btn {
@@ -2908,12 +2937,27 @@
       height:100%;
       display:flex;
       align-items:center;
+      gap: 8px;
       padding-left:12px;
       font-weight:700;
       color:var(--c-text);
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
+    }
+
+    .stat-overflow-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--c-bg);
+      background: color-mix(in srgb, var(--c-text) 82%, transparent);
+      flex: 0 0 auto;
     }
     .stat-fill {
       height:100%;
@@ -4735,6 +4779,48 @@
       });
     }
 
+    function getHabitCounterParts(progress, goal) {
+      const safeGoal = Math.max(0, parseInt(goal) || 0);
+      const safeProgress = Math.max(0, parseInt(progress) || 0);
+      if (safeGoal < 2) {
+        return { mainProgress: safeProgress, overflow: 0, showCounter: false };
+      }
+      return {
+        mainProgress: Math.min(safeProgress, safeGoal),
+        overflow: Math.max(0, safeProgress - safeGoal),
+        showCounter: true
+      };
+    }
+
+    function renderHabitCounter(card) {
+      if (!card) return;
+      const counter = card.querySelector(".counter");
+      if (!counter) return;
+
+      const isQR = card.dataset.qr === "true";
+      const progress = Math.max(0, parseInt(card.dataset.progress) || 0);
+      const goal = Math.max(0, parseInt(card.dataset.goal) || 0);
+
+      if (isQR) {
+        counter.style.display = "inline-flex";
+        counter.innerHTML = `<span class="counter-main">${progress} KCAL</span>`;
+        return;
+      }
+
+      const parts = getHabitCounterParts(progress, goal);
+      if (!parts.showCounter) {
+        counter.style.display = "none";
+        counter.innerHTML = "";
+        return;
+      }
+
+      counter.style.display = "inline-flex";
+      counter.innerHTML = `
+        <span class="counter-main">${parts.mainProgress}/${goal}</span>
+        ${parts.overflow > 0 ? `<span class="counter-overflow">+${parts.overflow}</span>` : ""}
+      `;
+    }
+
     function enforceSpeisequarkGoal(card, title) {
       if (!card || card.dataset.qr === "true") return false;
       if (!isSpeisequarkTitle(title)) return false;
@@ -4748,20 +4834,10 @@
         changed = true;
       }
 
-      if (progress > 2) {
-        progress = 2;
-        card.dataset.progress = 2;
-        changed = true;
-      }
-
       const numArea = card.querySelector("#numArea");
       if (numArea) numArea.textContent = "2";
 
-      const counter = card.querySelector(".counter");
-      if (counter) {
-        counter.style.display = "block";
-        counter.textContent = progress + "/2";
-      }
+      renderHabitCounter(card);
 
       return changed;
     }
@@ -7986,23 +8062,7 @@ forgotPw.onclick = () => {
 
       // --- DOM REFS ---
       const input   = card.querySelector(".card-input");
-      const counter = card.querySelector(".counter");
       const flipBtn = card.querySelector(".card-flip-btn");
-      const isQR = qrEnabled;
-      const kcalTarget = 21000;
-
-      if (isQR) {
-        counter.style.display = "block";
-        counter.textContent = `${parseInt(progress)} KCAL`;
-      } else {
-        const goal = parseInt(card.dataset.goal) || 1;
-        if (goal >= 2) {
-          counter.style.display = "block";
-          counter.textContent = `${progress}/${goal}`;
-        } else {
-          counter.style.display = "none";
-        }
-      }
       const numArea = card.querySelector("#numArea");
 
       const line1 = card.querySelector(".gps-address-line1");
@@ -8027,12 +8087,7 @@ forgotPw.onclick = () => {
 
       // === Counter ===
       numArea.textContent = goal;
-      if (goal >= 2) {
-        counter.style.display = "block";
-        counter.textContent = progress + "/" + goal;
-      } else {
-        counter.style.display = "none";
-      }
+      renderHabitCounter(card);
 
       const enforced = enforceSpeisequarkGoal(card, input.textContent);
 
@@ -8059,15 +8114,10 @@ forgotPw.onclick = () => {
         delay
       });
       
-      if (qrEnabled) {
-        const kcalProgress = parseInt(progress) || 0;
-        counter.style.display = "block";
-        counter.textContent = `${kcalProgress} KCAL`;
-      }
-      
       attachCardLogic(card);
 
       if (enforced) {
+        renderHabitCounter(card);
         saveHabit(card);
       }
     }
@@ -8192,17 +8242,12 @@ forgotPw.onclick = () => {
         numArea.textContent = y;
 
         let x = parseInt(card.dataset.progress) || 0;
-        if (x > y) {
+        if (y <= 1 && x > y) {
           x = y;
           card.dataset.progress = x;
         }
 
-        if (y >= 2) {
-          counter.style.display = "block";
-          counter.textContent   = x + "/" + y;
-        } else {
-          counter.style.display = "none";
-        }
+        renderHabitCounter(card);
 
         saveHabit(card);
       });
@@ -8252,16 +8297,7 @@ forgotPw.onclick = () => {
 
           progress -= 1;
           card.dataset.progress = progress;
-
-          const goal = parseInt(card.dataset.goal) || 1;
-          const counter = card.querySelector(".counter");
-
-          if (goal >= 2) {
-            counter.style.display = "block";
-            counter.textContent = progress + "/" + goal;
-          } else {
-            if (progress <= 0) counter.style.display = "none";
-          }
+          renderHabitCounter(card);
 
           if (progress <= 0) {
             card.dataset.active = "false";
