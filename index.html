@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <title>Consistency</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <link rel="icon" type="image/png" href="/habits/icon.png">
-  <link rel="shortcut icon" type="image/png" href="/habits/icon.png">
-  <link rel="apple-touch-icon" href="/habits/icon.png">
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/lillyapp/habits/main/icon.png">
+  <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/lillyapp/habits/main/icon.png">
+  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/lillyapp/habits/main/icon.png">
   <link rel="manifest" href="/habits/manifest.json">
       
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3320,7 +3320,7 @@
         border-color: transparent;
         background: transparent;
         box-shadow: none;
-        transform: translateY(-2px);
+        transform: none;
       }
 
       .reminder-drop-mascot-wrap {
@@ -3337,9 +3337,57 @@
         transition: transform 0.18s ease, filter 0.18s ease;
       }
 
+      .reminder-drop-mascot-wrap.is-pane-opening {
+        animation: reminderHeadPanePop 0.62s cubic-bezier(0.2, 0.92, 0.24, 1) both;
+      }
+
       .reminder-drop-zone.is-active .reminder-drop-mascot-wrap {
-        transform: translateY(24px) scale(1.04);
+        transform: translateY(24px);
         filter: none;
+      }
+
+      .reminder-playfield-shell {
+        position: relative;
+        width: 100%;
+        z-index: 2;
+      }
+
+      .reminder-hands-row {
+        --hands-width: min(148px, 44vw);
+        position: absolute;
+        left: 50%;
+        top: 0;
+        transform: translate(-50%, -52%);
+        z-index: 4;
+        display: flex;
+        align-items: flex-start;
+        gap: clamp(28px, 6.6vw, 48px);
+        pointer-events: none;
+      }
+
+      .reminder-hand-piece {
+        position: relative;
+        width: calc(var(--hands-width) / 2);
+        aspect-ratio: 17 / 10;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .reminder-hand-img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: var(--hands-width);
+        height: 100%;
+        max-width: none;
+        object-fit: cover;
+        user-select: none;
+        -webkit-user-select: none;
+        pointer-events: none;
+      }
+
+      .reminder-hand-piece.is-right .reminder-hand-img {
+        left: calc(var(--hands-width) / -2);
       }
 
       .reminder-drop-mascot-img {
@@ -3576,13 +3624,20 @@
         100% { transform: translateY(-1px) scale(1); }
       }
 
+      @keyframes reminderHeadPanePop {
+        0% { transform: translateY(72px) scale(0.9); opacity: 0.95; }
+        58% { transform: translateY(18px) scale(1.03); opacity: 1; }
+        100% { transform: translateY(24px) scale(1); opacity: 1; }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         .reminder-token img.reminder-pop-in,
         .reminder-drop-token img.reminder-pop-in,
         .reminder-progress.reminder-pop,
         .reminder-token-badge.reminder-pop,
         .reminder-drop-zone.reminder-pop-complete,
-        .reminder-drop-zone.reminder-pop-undo {
+        .reminder-drop-zone.reminder-pop-undo,
+        .reminder-drop-mascot-wrap.is-pane-opening {
           animation: none !important;
         }
       }
@@ -3736,7 +3791,7 @@
       padding:20px;
       text-align:center;
     ">
-      <img id="medalImage" src="/habits/3FC2E555-7142-43BE-83DE-E5ED7A123793.png" style="
+      <img id="medalImage" src="https://raw.githubusercontent.com/lillyapp/habits/main/3FC2E555-7142-43BE-83DE-E5ED7A123793.png" style="
         width:140px;
         height:140px;
         margin-bottom:28px;
@@ -3909,10 +3964,13 @@
       "Du bist näher dran, als du denkst."
     ];
    
+    const GITHUB_ASSET_BASE = "https://raw.githubusercontent.com/lillyapp/habits/main";
     const getAppAssetPath = (fileName) => {
       if (!fileName) return "";
-      if (window.location?.protocol === "file:") return fileName;
-      return `/habits/${fileName}`;
+      const name = String(fileName).trim();
+      if (!name) return "";
+      if (/^https?:\/\//i.test(name)) return name;
+      return `${GITHUB_ASSET_BASE}/${name.replace(/^\/+/, "")}`;
     };
 
     const reminderChecklistItems = [
@@ -3934,13 +3992,15 @@
       chew1: getAppAssetPath("pep_chew1.png"),
       chew2: getAppAssetPath("pep_chew2.png"),
       chew3: getAppAssetPath("pep_chew3.png"),
-      twink: getAppAssetPath("pep_twink.png")
+      twink: getAppAssetPath("pep_twink.png"),
+      hands: getAppAssetPath("pep_hands.png")
     });
     let reminderMascotHoverState = false;
     let reminderMascotIsChewing = false;
     let reminderMascotChewTimers = [];
     let reminderMascotFramesPreloaded = false;
     let reminderTokenDriftTimers = [];
+    let reminderMascotPaneOpenAnimationArmed = false;
     const HABIT_ICON_TYPES = ["brain", "dumbbell", "shapes"];
     const THEME_MODE_STORAGE_KEY = "app_theme_mode_v1";
     const ENABLE_VERBOSE_CONSOLE = false;
@@ -4607,8 +4667,8 @@
       const reg = await getPushServiceWorkerRegistration();
       await reg.showNotification("Testnachricht", {
         body: "Push-Benachrichtigungen funktionieren auf diesem Gerät.",
-        icon: "/habits/3FC2E555-7142-43BE-83DE-E5ED7A123793.png",
-        badge: "/habits/3FC2E555-7142-43BE-83DE-E5ED7A123793.png",
+        icon: getAppAssetPath("3FC2E555-7142-43BE-83DE-E5ED7A123793.png"),
+        badge: getAppAssetPath("3FC2E555-7142-43BE-83DE-E5ED7A123793.png"),
         data: { url: "/habits/" }
       });
     }
@@ -4752,6 +4812,7 @@
     function closeNotificationsPane() {
       if (addBtnEl.dataset.mode !== "notifications") return;
       addBtnEl.dataset.mode = "main";
+      reminderMascotPaneOpenAnimationArmed = false;
       clearReminderTokenDrift();
       const closeBtn = document.getElementById("reminderCloseBtn");
       if (closeBtn) {
@@ -6466,6 +6527,7 @@
     });
     
     bellBtnEl.addEventListener("click", async () => {
+      reminderMascotPaneOpenAnimationArmed = true;
       await renderNotifications();
       lucide.createIcons({ scope: notificationsViewEl });
 
@@ -9957,7 +10019,8 @@ forgotPw.onclick = () => {
         REMINDER_MASCOT_FRAMES.chew1,
         REMINDER_MASCOT_FRAMES.chew2,
         REMINDER_MASCOT_FRAMES.chew3,
-        REMINDER_MASCOT_FRAMES.twink
+        REMINDER_MASCOT_FRAMES.twink,
+        REMINDER_MASCOT_FRAMES.hands
       ];
       frameUrls.forEach((src) => {
         if (!src) return;
@@ -10142,7 +10205,7 @@ forgotPw.onclick = () => {
         <div class="reminder-pane">
           <div class="reminder-game">
             <div class="reminder-drop-zone" id="reminderDropZone">
-              <div class="reminder-drop-mascot-wrap" id="reminderMascotWrap" aria-hidden="true">
+              <div class="reminder-drop-mascot-wrap ${reminderMascotPaneOpenAnimationArmed ? "is-pane-opening" : ""}" id="reminderMascotWrap" aria-hidden="true">
                 <img
                   id="reminderMascotImg"
                   class="reminder-drop-mascot-img"
@@ -10154,8 +10217,30 @@ forgotPw.onclick = () => {
               </div>
               <div class="reminder-drop-items" id="reminderDropItems" aria-hidden="true"></div>
             </div>
-            <div class="reminder-playfield" id="reminderPlayfield">
-              ${pendingHtml}
+            <div class="reminder-playfield-shell">
+              <div class="reminder-hands-row" aria-hidden="true">
+                <span class="reminder-hand-piece is-left">
+                  <img
+                    class="reminder-hand-img"
+                    src="${REMINDER_MASCOT_FRAMES.hands}"
+                    alt=""
+                    draggable="false"
+                    loading="eager"
+                  />
+                </span>
+                <span class="reminder-hand-piece is-right">
+                  <img
+                    class="reminder-hand-img"
+                    src="${REMINDER_MASCOT_FRAMES.hands}"
+                    alt=""
+                    draggable="false"
+                    loading="eager"
+                  />
+                </span>
+              </div>
+              <div class="reminder-playfield" id="reminderPlayfield">
+                ${pendingHtml}
+              </div>
             </div>
             <div class="reminder-progress-row">
               <div class="reminder-progress" id="reminderProgressLabel">${completedCount}/${totalTarget}</div>
@@ -10176,12 +10261,19 @@ forgotPw.onclick = () => {
 
       const playfieldEl = notificationsViewEl.querySelector("#reminderPlayfield");
       const dropZoneEl = notificationsViewEl.querySelector("#reminderDropZone");
+      const mascotWrapEl = notificationsViewEl.querySelector("#reminderMascotWrap");
       if (dropZoneEl) {
         const [c1, c2, c3] = getActiveHabitPresetColors();
         dropZoneEl.style.setProperty("--drop-c1", c1);
         dropZoneEl.style.setProperty("--drop-c2", c2);
         dropZoneEl.style.setProperty("--drop-c3", c3);
       }
+      if (mascotWrapEl && reminderMascotPaneOpenAnimationArmed) {
+        mascotWrapEl.addEventListener("animationend", () => {
+          mascotWrapEl.classList.remove("is-pane-opening");
+        }, { once: true });
+      }
+      reminderMascotPaneOpenAnimationArmed = false;
       preloadReminderMascotFrames();
       updateReminderMascotHoverState(false);
       const attachReminderTokenDrag = (tokenEl, { fromDropZone = false } = {}) => {
@@ -11419,13 +11511,13 @@ if ("serviceWorker" in navigator) {
 
         // Erfolg: showMedal = 1
         if (parseInt(data.showMedal) === 1) {
-          medalImage.src = "/habits/3FC2E555-7142-43BE-83DE-E5ED7A123793.png";
+          medalImage.src = getAppAssetPath("3FC2E555-7142-43BE-83DE-E5ED7A123793.png");
           medalText.textContent =
             `Yeah! Du hast eine Woche mehr geschafft! Dein Streak ist bei ${streak}.`;
         }
         // Misserfolg: showMedal = 0
         else {
-          medalImage.src = "/habits/3FC2E555-7142-43BE-83DE-E5ED7A123793.png";
+          medalImage.src = getAppAssetPath("3FC2E555-7142-43BE-83DE-E5ED7A123793.png");
           medalText.textContent =
             "Dein Streak wurde nicht erweitert.\nDu schaffst es!";
         }
