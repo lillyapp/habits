@@ -3528,8 +3528,16 @@
         pointer-events: none !important;
         animation: none !important;
         transform: none !important;
+        transform-origin: center center;
+        transition: transform 140ms ease;
         cursor: grabbing !important;
         opacity: 1 !important;
+      }
+
+      .reminder-token.reminder-token-ghost.is-over-mascot,
+      .reminder-drop-token.reminder-token-ghost.is-over-mascot,
+      .reminder-token-ghost.is-over-mascot {
+        transform: scale(0.72) !important;
       }
 
       .reminder-progress {
@@ -3999,6 +4007,7 @@
     let reminderMascotIsChewing = false;
     let reminderMascotChewTimers = [];
     let reminderMascotFramesPreloaded = false;
+    let reminderTokenImagesPreloaded = false;
     let reminderTokenDriftTimers = [];
     let reminderMascotPaneOpenAnimationArmed = false;
     const HABIT_ICON_TYPES = ["brain", "dumbbell", "shapes"];
@@ -9946,7 +9955,7 @@ forgotPw.onclick = () => {
       if (!lastAction?.dbId) return;
       reminderPendingAction = lastAction.from ? "complete" : "undo";
       await persistReminderTokenState(lastAction.dbId, lastAction.from, { trackHistory: false });
-      await runReminderRenderTransition(renderNotifications);
+      await refreshReminderPaneContent();
     }
 
     function getReminderTokenSeedPosition(index) {
@@ -9957,6 +9966,56 @@ forgotPw.onclick = () => {
         [22, 50], [54, 52]
       ];
       return spots[index % spots.length];
+    }
+
+    function syncReminderActionHistoryDay() {
+      const currentHistoryDay = getLocalDateString();
+      if (reminderActionHistoryDay !== currentHistoryDay) {
+        reminderActionHistoryDay = currentHistoryDay;
+        reminderActionHistory = [];
+      }
+    }
+
+    function buildReminderRenderState() {
+      syncReminderActionHistoryDay();
+      const tokens = getReminderTokens();
+      const completedTokens = tokens.filter(token => reminderChecklistState.has(token.dbId));
+      const pendingTokens = tokens.filter(token => !reminderChecklistState.has(token.dbId));
+      const pendingGroups = groupReminderTokens(pendingTokens);
+      const completedCount = completedTokens.length;
+      const totalTarget = tokens.length || 7;
+      const hasUndoAction = reminderActionHistory.length > 0;
+      return {
+        tokens,
+        completedTokens,
+        pendingTokens,
+        pendingGroups,
+        completedCount,
+        totalTarget,
+        hasUndoAction
+      };
+    }
+
+    function buildReminderPendingHtml(pendingGroups) {
+      return pendingGroups.map((group, idx) => {
+        const [x, y] = getReminderTokenSeedPosition(idx);
+        const firstDbId = group.dbIds[0] || "";
+        const dbIdsAttr = group.dbIds.join(",");
+        return `
+          <button
+            class="reminder-token"
+            type="button"
+            data-reminder-db-id="${firstDbId}"
+            data-reminder-db-ids="${dbIdsAttr}"
+            data-reminder-label="${escapeHtml(group.label)}"
+            style="left:${x}%;top:${y}%;--float-delay:${(idx * 0.22).toFixed(2)}s;--float-duration:${(4.1 + Math.random() * 2.3).toFixed(2)}s;"
+            aria-label="${escapeHtml(group.count > 1 ? `${group.label} (${group.count})` : group.label)}"
+          >
+            <img src="${group.imageSrc}" alt="${escapeHtml(group.label)}" loading="eager" draggable="false" />
+            ${group.count > 1 ? `<span class="reminder-token-badge">${group.count}</span>` : ""}
+          </button>
+        `;
+      }).join("") || `<div class="reminder-drop-hint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">Alles erledigt</div>`;
     }
 
     function clearReminderTokenDrift() {
@@ -10029,6 +10088,16 @@ forgotPw.onclick = () => {
       });
     }
 
+    function preloadReminderTokenImages() {
+      if (reminderTokenImagesPreloaded) return;
+      reminderTokenImagesPreloaded = true;
+      const srcSet = new Set(getReminderTokens().map(token => token.imageSrc).filter(Boolean));
+      srcSet.forEach((src) => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+
     function setReminderMascotFrame(src, state = "") {
       const mascotImg = getReminderMascotImgEl();
       if (!mascotImg || !src) return;
@@ -10086,18 +10155,6 @@ forgotPw.onclick = () => {
         stopReminderMascotChew({ keepHoverState: true });
       }, elapsed + 20);
       reminderMascotChewTimers.push(finishTimerId);
-    }
-
-    async function runReminderRenderTransition(renderFn) {
-      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-      if (!reduceMotion && typeof document.startViewTransition === "function") {
-        const transition = document.startViewTransition(async () => {
-          await renderFn();
-        });
-        await transition.finished.catch(() => {});
-        return;
-      }
-      await renderFn();
     }
 
     function animateReminderRender(completedCount) {
@@ -10162,44 +10219,178 @@ forgotPw.onclick = () => {
       reminderPendingAction = "";
     }
     
+    function applyReminderProgressUi(state) {
+      const progressEl = notificationsViewEl?.querySelector("#reminderProgressLabel");
+      if (progressEl) progressEl.textContent = `${state.completedCount}/${state.totalTarget}`;
+      const undoBtn = notificationsViewEl?.querySelector("#reminderUndoBtn");
+      if (undoBtn) {
+        undoBtn.disabled = !state.hasUndoAction;
+        undoBtn.classList.toggle("is-disabled", !state.hasUndoAction);
+      }
+    }
+
+    function attachReminderTokenDrag(tokenEl, playfieldEl, dropZoneEl, { fromDropZone = false } = {}) {
+      if (!tokenEl || !playfieldEl || !dropZoneEl) return;
+      const onPointerDown = (event) => {
+        event.preventDefault();
+        tokenEl.style.transitionDuration = "0ms, 0ms";
+        const pointerId = event.pointerId;
+        const tokenRect = tokenEl.getBoundingClientRect();
+        const offsetX = event.clientX - tokenRect.left;
+        const offsetY = event.clientY - tokenRect.top;
+        const dragGhost = tokenEl.cloneNode(true);
+        dragGhost.classList.add("reminder-token-ghost");
+        dragGhost.classList.remove("is-dragging-source");
+        dragGhost.style.width = `${tokenRect.width}px`;
+        dragGhost.style.height = `${tokenRect.height}px`;
+        dragGhost.style.left = `${tokenRect.left}px`;
+        dragGhost.style.top = `${tokenRect.top}px`;
+        document.body.appendChild(dragGhost);
+
+        tokenEl.classList.add("is-dragging-source");
+        try { tokenEl.setPointerCapture(pointerId); } catch (e) {}
+
+        let lastClientX = event.clientX;
+        let lastClientY = event.clientY;
+        const updateGhostPosition = (clientX, clientY) => {
+          const nextLeft = clientX - offsetX;
+          const nextTop = clientY - offsetY;
+          dragGhost.style.left = `${nextLeft}px`;
+          dragGhost.style.top = `${nextTop}px`;
+        };
+        const getGhostCenter = () => {
+          const rect = dragGhost.getBoundingClientRect();
+          return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        };
+        const isPointInRect = (x, y, rect) => (
+          x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
+        );
+        const mascotWrapEl = notificationsViewEl?.querySelector("#reminderMascotWrap");
+
+        const onPointerMove = (moveEvent) => {
+          lastClientX = moveEvent.clientX;
+          lastClientY = moveEvent.clientY;
+          updateGhostPosition(lastClientX, lastClientY);
+
+          const center = getGhostCenter();
+          const dropRect = dropZoneEl.getBoundingClientRect();
+          const ghostOverDrop = isPointInRect(center.x, center.y, dropRect);
+          const mascotRect = mascotWrapEl?.getBoundingClientRect();
+          const ghostOverMascot = Boolean(
+            mascotRect && isPointInRect(center.x, center.y, mascotRect)
+          );
+          dropZoneEl.classList.toggle("is-active", ghostOverDrop);
+          dragGhost.classList.toggle("is-over-mascot", ghostOverMascot);
+          updateReminderMascotHoverState(ghostOverDrop);
+        };
+
+        let dragFinished = false;
+        const cleanupDrag = () => {
+          tokenEl.classList.remove("is-dragging-source");
+          dropZoneEl.classList.remove("is-active");
+          dragGhost.classList.remove("is-over-mascot");
+          updateReminderMascotHoverState(false);
+          tokenEl.style.transitionDuration = "";
+          tokenEl.removeEventListener("pointermove", onPointerMove);
+          tokenEl.removeEventListener("pointerup", onPointerUp);
+          tokenEl.removeEventListener("pointercancel", onPointerCancel);
+          window.removeEventListener("pointermove", onPointerMove);
+          window.removeEventListener("pointerup", onPointerUp);
+          window.removeEventListener("pointercancel", onPointerCancel);
+          try { tokenEl.releasePointerCapture(pointerId); } catch (e) {}
+        };
+
+        const onPointerUp = async (upEvent) => {
+          if (dragFinished) return;
+          dragFinished = true;
+          cleanupDrag();
+          const safeClientX = Number.isFinite(upEvent?.clientX) ? upEvent.clientX : lastClientX;
+          const safeClientY = Number.isFinite(upEvent?.clientY) ? upEvent.clientY : lastClientY;
+          updateGhostPosition(safeClientX, safeClientY);
+
+          const center = getGhostCenter();
+          const dropRect = dropZoneEl.getBoundingClientRect();
+          const droppedInDropZone = isPointInRect(center.x, center.y, dropRect);
+          dragGhost.remove();
+
+          const dbIds = String(tokenEl.dataset.reminderDbIds || "")
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean);
+          const dbId = dbIds[0] || tokenEl.dataset.reminderDbId;
+          if (!dbId) return;
+
+          if (!fromDropZone && droppedInDropZone) {
+            reminderPendingAction = "complete";
+            await persistReminderTokenState(dbId, true, { trackHistory: true });
+            await refreshReminderPaneContent();
+            return;
+          }
+          if (fromDropZone && !droppedInDropZone) {
+            reminderPendingAction = "undo";
+            await persistReminderTokenState(dbId, false, { trackHistory: true });
+            await refreshReminderPaneContent();
+            return;
+          }
+          if (tokenEl.isConnected && playfieldEl?.isConnected) {
+            queueReminderTokenDrift(tokenEl, playfieldEl, 220 + Math.random() * 180);
+          }
+        };
+
+        const onPointerCancel = () => {
+          if (dragFinished) return;
+          dragFinished = true;
+          cleanupDrag();
+          dragGhost.remove();
+        };
+
+        tokenEl.addEventListener("pointermove", onPointerMove);
+        tokenEl.addEventListener("pointerup", onPointerUp);
+        tokenEl.addEventListener("pointercancel", onPointerCancel);
+        window.addEventListener("pointermove", onPointerMove);
+        window.addEventListener("pointerup", onPointerUp);
+        window.addEventListener("pointercancel", onPointerCancel);
+      };
+
+      tokenEl.addEventListener("pointerdown", onPointerDown);
+    }
+
+    function bindReminderTokenDrags(playfieldEl, dropZoneEl) {
+      if (!playfieldEl || !dropZoneEl) return;
+      const pendingTokenEls = Array.from(playfieldEl.querySelectorAll(".reminder-token"));
+      pendingTokenEls.forEach(tokenEl => attachReminderTokenDrag(tokenEl, playfieldEl, dropZoneEl, { fromDropZone: false }));
+      startReminderTokenDrift(playfieldEl);
+    }
+
+    async function refreshReminderPaneContent({ animate = true } = {}) {
+      const playfieldEl = notificationsViewEl?.querySelector("#reminderPlayfield");
+      const dropZoneEl = notificationsViewEl?.querySelector("#reminderDropZone");
+      if (!playfieldEl || !dropZoneEl) {
+        await renderNotifications();
+        return;
+      }
+
+      const state = buildReminderRenderState();
+      clearReminderTokenDrift();
+      playfieldEl.innerHTML = buildReminderPendingHtml(state.pendingGroups);
+      bindReminderTokenDrags(playfieldEl, dropZoneEl);
+      applyReminderProgressUi(state);
+      if (animate) animateReminderRender(state.completedCount);
+      else {
+        updateReminderMascotHoverState(false);
+        reminderLastCompletedCount = state.completedCount;
+        reminderPendingAction = "";
+      }
+    }
+
     async function renderNotifications() {
       clearReminderTokenDrift();
       if (currentUser?.id) {
         await checkReminderResetDaily();
         await loadReminderClicksForDay(currentUser.id);
       }
-      const currentHistoryDay = getLocalDateString();
-      if (reminderActionHistoryDay !== currentHistoryDay) {
-        reminderActionHistoryDay = currentHistoryDay;
-        reminderActionHistory = [];
-      }
-      const tokens = getReminderTokens();
-      const completedTokens = tokens.filter(token => reminderChecklistState.has(token.dbId));
-      const pendingTokens = tokens.filter(token => !reminderChecklistState.has(token.dbId));
-      const pendingGroups = groupReminderTokens(pendingTokens);
-      const completedCount = completedTokens.length;
-      const totalTarget = tokens.length || 7;
-      const hasUndoAction = reminderActionHistory.length > 0;
-
-      const pendingHtml = pendingGroups.map((group, idx) => {
-        const [x, y] = getReminderTokenSeedPosition(idx);
-        const firstDbId = group.dbIds[0] || "";
-        const dbIdsAttr = group.dbIds.join(",");
-        return `
-          <button
-            class="reminder-token"
-            type="button"
-            data-reminder-db-id="${firstDbId}"
-            data-reminder-db-ids="${dbIdsAttr}"
-            data-reminder-label="${escapeHtml(group.label)}"
-            style="left:${x}%;top:${y}%;--float-delay:${(idx * 0.22).toFixed(2)}s;--float-duration:${(4.1 + Math.random() * 2.3).toFixed(2)}s;"
-            aria-label="${escapeHtml(group.count > 1 ? `${group.label} (${group.count})` : group.label)}"
-          >
-            <img src="${group.imageSrc}" alt="${escapeHtml(group.label)}" loading="lazy" draggable="false" />
-            ${group.count > 1 ? `<span class="reminder-token-badge">${group.count}</span>` : ""}
-          </button>
-        `;
-      }).join("") || `<div class="reminder-drop-hint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">Alles erledigt</div>`;
+      const state = buildReminderRenderState();
+      const pendingHtml = buildReminderPendingHtml(state.pendingGroups);
 
       notificationsViewEl.innerHTML = `
         <div class="reminder-pane">
@@ -10243,14 +10434,14 @@ forgotPw.onclick = () => {
               </div>
             </div>
             <div class="reminder-progress-row">
-              <div class="reminder-progress" id="reminderProgressLabel">${completedCount}/${totalTarget}</div>
+              <div class="reminder-progress" id="reminderProgressLabel">${state.completedCount}/${state.totalTarget}</div>
               <button
                 type="button"
-                class="reminder-undo-btn ${hasUndoAction ? "" : "is-disabled"}"
+                class="reminder-undo-btn ${state.hasUndoAction ? "" : "is-disabled"}"
                 id="reminderUndoBtn"
                 aria-label="Letzte Aktion rückgängig"
                 title="Letzte Aktion rückgängig"
-                ${hasUndoAction ? "" : "disabled"}
+                ${state.hasUndoAction ? "" : "disabled"}
               >
                 <i data-lucide="undo-2"></i>
               </button>
@@ -10275,131 +10466,10 @@ forgotPw.onclick = () => {
       }
       reminderMascotPaneOpenAnimationArmed = false;
       preloadReminderMascotFrames();
+      preloadReminderTokenImages();
       updateReminderMascotHoverState(false);
-      const attachReminderTokenDrag = (tokenEl, { fromDropZone = false } = {}) => {
-        const onPointerDown = (event) => {
-          if (!dropZoneEl) return;
-          event.preventDefault();
-          tokenEl.style.transitionDuration = "0ms, 0ms";
-          const pointerId = event.pointerId;
-          const tokenRect = tokenEl.getBoundingClientRect();
-          const offsetX = event.clientX - tokenRect.left;
-          const offsetY = event.clientY - tokenRect.top;
-          const dragGhost = tokenEl.cloneNode(true);
-          dragGhost.classList.add("reminder-token-ghost");
-          dragGhost.classList.remove("is-dragging-source");
-          dragGhost.style.width = `${tokenRect.width}px`;
-          dragGhost.style.height = `${tokenRect.height}px`;
-          dragGhost.style.left = `${tokenRect.left}px`;
-          dragGhost.style.top = `${tokenRect.top}px`;
-          document.body.appendChild(dragGhost);
-
-          tokenEl.classList.add("is-dragging-source");
-          try { tokenEl.setPointerCapture(pointerId); } catch (e) {}
-
-          let lastClientX = event.clientX;
-          let lastClientY = event.clientY;
-          const updateGhostPosition = (clientX, clientY) => {
-            const nextLeft = clientX - offsetX;
-            const nextTop = clientY - offsetY;
-            dragGhost.style.left = `${nextLeft}px`;
-            dragGhost.style.top = `${nextTop}px`;
-          };
-          const getGhostCenter = () => {
-            const rect = dragGhost.getBoundingClientRect();
-            return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-          };
-          const isPointInRect = (x, y, rect) => (
-            x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
-          );
-
-          const onPointerMove = (moveEvent) => {
-            lastClientX = moveEvent.clientX;
-            lastClientY = moveEvent.clientY;
-            updateGhostPosition(lastClientX, lastClientY);
-
-            const center = getGhostCenter();
-            const dropRect = dropZoneEl.getBoundingClientRect();
-            const ghostOverDrop = isPointInRect(center.x, center.y, dropRect);
-            dropZoneEl.classList.toggle("is-active", ghostOverDrop);
-            updateReminderMascotHoverState(ghostOverDrop);
-          };
-
-          let dragFinished = false;
-          const cleanupDrag = () => {
-            tokenEl.classList.remove("is-dragging-source");
-            dropZoneEl.classList.remove("is-active");
-            updateReminderMascotHoverState(false);
-            tokenEl.style.transitionDuration = "";
-            tokenEl.removeEventListener("pointermove", onPointerMove);
-            tokenEl.removeEventListener("pointerup", onPointerUp);
-            tokenEl.removeEventListener("pointercancel", onPointerCancel);
-            window.removeEventListener("pointermove", onPointerMove);
-            window.removeEventListener("pointerup", onPointerUp);
-            window.removeEventListener("pointercancel", onPointerCancel);
-            try { tokenEl.releasePointerCapture(pointerId); } catch (e) {}
-          };
-
-          const onPointerUp = async (upEvent) => {
-            if (dragFinished) return;
-            dragFinished = true;
-            cleanupDrag();
-            const safeClientX = Number.isFinite(upEvent?.clientX) ? upEvent.clientX : lastClientX;
-            const safeClientY = Number.isFinite(upEvent?.clientY) ? upEvent.clientY : lastClientY;
-            updateGhostPosition(safeClientX, safeClientY);
-
-            const center = getGhostCenter();
-            const dropRect = dropZoneEl.getBoundingClientRect();
-            const droppedInDropZone = isPointInRect(center.x, center.y, dropRect);
-            dragGhost.remove();
-
-            const dbIds = String(tokenEl.dataset.reminderDbIds || "")
-              .split(",")
-              .map((id) => id.trim())
-              .filter(Boolean);
-            const dbId = dbIds[0] || tokenEl.dataset.reminderDbId;
-            if (!dbId) return;
-
-            if (!fromDropZone && droppedInDropZone) {
-              reminderPendingAction = "complete";
-              await persistReminderTokenState(dbId, true, { trackHistory: true });
-              await runReminderRenderTransition(renderNotifications);
-              return;
-            }
-            if (fromDropZone && !droppedInDropZone) {
-              reminderPendingAction = "undo";
-              await persistReminderTokenState(dbId, false, { trackHistory: true });
-              await runReminderRenderTransition(renderNotifications);
-              return;
-            }
-            if (tokenEl.isConnected && playfieldEl?.isConnected) {
-              queueReminderTokenDrift(tokenEl, playfieldEl, 220 + Math.random() * 180);
-            }
-          };
-
-          const onPointerCancel = () => {
-            if (dragFinished) return;
-            dragFinished = true;
-            cleanupDrag();
-            dragGhost.remove();
-          };
-
-          tokenEl.addEventListener("pointermove", onPointerMove);
-          tokenEl.addEventListener("pointerup", onPointerUp);
-          tokenEl.addEventListener("pointercancel", onPointerCancel);
-          window.addEventListener("pointermove", onPointerMove);
-          window.addEventListener("pointerup", onPointerUp);
-          window.addEventListener("pointercancel", onPointerCancel);
-        };
-
-        tokenEl.addEventListener("pointerdown", onPointerDown);
-      };
-
-      const pendingTokenEls = playfieldEl ? Array.from(playfieldEl.querySelectorAll(".reminder-token")) : [];
-      pendingTokenEls.forEach(tokenEl => attachReminderTokenDrag(tokenEl, { fromDropZone: false }));
-      startReminderTokenDrift(playfieldEl);
-
-      animateReminderRender(completedCount);
+      bindReminderTokenDrags(playfieldEl, dropZoneEl);
+      animateReminderRender(state.completedCount);
 
       const undoBtn = notificationsViewEl.querySelector("#reminderUndoBtn");
       if (undoBtn) {
