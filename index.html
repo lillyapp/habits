@@ -4135,6 +4135,9 @@
     let reminderMascotFramesPreloaded = false;
     let reminderTokenImagesPreloaded = false;
     let reminderEatingAudio = null;
+    let reminderEatingAudioCtx = null;
+    let reminderEatingAudioBufferPromise = null;
+    let reminderEatingSourceNode = null;
     let reminderTokenDriftTimers = [];
     let reminderMascotPaneOpenAnimationArmed = false;
     const HABIT_ICON_TYPES = ["brain", "dumbbell", "shapes"];
