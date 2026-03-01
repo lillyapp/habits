@@ -193,173 +193,6 @@
       color: var(--c-text);
     }
 
-    /* Intro progress screen */
-    #introProgressScreen {
-      position: fixed;
-      inset: 0;
-      background: var(--c-bg);
-      color: var(--c-text);
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 28px 20px 34px;
-      text-align: center;
-      z-index: 25;
-      opacity: 0;
-    }
-
-    #introProgressScreen h2 {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    #introProgressLayout {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      width: 100%;
-    }
-
-    #introProgressMessage {
-      display: block;
-      max-width: 420px;
-      text-align: justify;
-      text-justify: inter-word;
-      line-height: 1.4;
-    }
-
-    #introProgressChart {
-      width: min(260px, 70vw);
-      aspect-ratio: 1 / 1;
-      position: relative;
-      margin: 18px 0 16px;
-    }
-
-    #introProgressChart svg {
-      width: 100%;
-      height: 100%;
-      display: block;
-      position: relative;
-      z-index: 2;
-    }
-
-    #introStreakCenter {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-      z-index: 3;
-    }
-
-    #introStreakValue {
-      font-size: 36px;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .intro-ring-track {
-      fill: none;
-      stroke: var(--c-card);
-      stroke-width: 12;
-    }
-
-    .intro-ring {
-      fill: none;
-      stroke-width: 12;
-      stroke-linecap: round;
-      transform: rotate(-90deg);
-      transform-origin: 50% 50%;
-    }
-
-    #introProgressMessage {
-      margin-top: 8px;
-      font-size: 16px;
-      font-weight: 500;
-      color: var(--c-text);
-    }
-
-    .has-sf-pro #introHeadline {
-      font-size: 32px;
-    }
-
-    .has-sf-pro #introProgressMessage {
-      font-weight: 600;
-    }
-
-    .intro-compare {
-      margin-top: 8px;
-    }
-
-    .intro-compare-highlight {
-      position: relative;
-      display: inline-block;
-      padding-bottom: 2px;
-    }
-
-    .intro-compare-underline {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 2px;
-      background: currentColor;
-      transform: scaleX(0);
-      transform-origin: left;
-    }
-
-    #introContinueBtn {
-      margin-top: 24px;
-      padding: 14px 26px;
-      border-radius: 20px;
-      border: none;
-      background: var(--c-text);
-      color: var(--c-bg);
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    #introConfetti {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-    }
-
-    @media (min-width: 768px) {
-      #introProgressLayout {
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 28px;
-        text-align: left;
-      }
-
-      #introProgressMessage {
-        max-width: 320px;
-        text-align: justify;
-        text-justify: inter-word;
-      }
-
-      #introProgressChart {
-        margin: 0;
-        width: 240px;
-      }
-    }
-
-    .intro-confetti-piece {
-      position: absolute;
-      width: 8px;
-      height: 14px;
-      opacity: 0.9;
-    }
-
     /* rolling-text styles removed */
 
     #loginButtonBar {
@@ -3472,8 +3305,10 @@
         border: 2px dashed color-mix(in srgb, var(--c-text) 26%, transparent);
         background: color-mix(in srgb, var(--c-card) 85%, transparent);
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 10px;
         padding: 10px 12px;
         box-shadow: none;
         transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
@@ -3492,6 +3327,34 @@
         transform: translateY(-1px);
       }
 
+      .reminder-drop-mascot-wrap {
+        width: min(160px, 48vw);
+        aspect-ratio: 1 / 1;
+        border-radius: 18px;
+        padding: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: color-mix(in srgb, var(--c-bg) 58%, transparent);
+        border: 1px solid color-mix(in srgb, var(--c-text) 8%, transparent);
+        transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+      }
+
+      .reminder-drop-zone.is-active .reminder-drop-mascot-wrap {
+        transform: scale(1.02);
+        background: color-mix(in srgb, var(--drop-c1) 12%, var(--c-bg));
+        border-color: color-mix(in srgb, var(--drop-c1) 40%, transparent);
+      }
+
+      .reminder-drop-mascot-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        user-select: none;
+        -webkit-user-select: none;
+        pointer-events: none;
+      }
+
       .reminder-drop-items {
         display: flex;
         align-items: center;
@@ -3499,6 +3362,7 @@
         flex-wrap: wrap;
         gap: 8px;
         width: 100%;
+        min-height: 54px;
       }
 
       .reminder-drop-token {
@@ -3817,30 +3681,6 @@
   </div>
 </div>
 
-<!-- INTRO PROGRESS SCREEN -->
-<div id="introProgressScreen" aria-hidden="true">
-  <div id="introConfetti"></div>
-  <h2 id="introHeadline">Dein Fortschritt</h2>
-  <div id="introProgressLayout">
-    <div id="introProgressChart" aria-hidden="true">
-      <svg viewBox="0 0 200 200" role="img" aria-label="Fortschrittsringe">
-        <circle class="intro-ring-track ring-1" cx="100" cy="100" r="70"></circle>
-        <circle class="intro-ring-track ring-2" cx="100" cy="100" r="52"></circle>
-        <circle class="intro-ring-track ring-3" cx="100" cy="100" r="34"></circle>
-
-        <circle class="intro-ring ring-1" cx="100" cy="100" r="70"></circle>
-        <circle class="intro-ring ring-2" cx="100" cy="100" r="52"></circle>
-        <circle class="intro-ring ring-3" cx="100" cy="100" r="34"></circle>
-      </svg>
-      <div id="introStreakCenter">
-        <div id="introStreakValue">0</div>
-      </div>
-    </div>
-    <div id="introProgressMessage">Du hast es bald geschafft! Bleib dran.</div>
-  </div>
-  <button id="introContinueBtn">Weiter</button>
-</div>
-
 <!-- MAIN HABIT PAGE (3 Klötze) -->
 <div id="appPage">
     <!-- WEEKLY MEDAL SCREEN -->
@@ -3984,14 +3824,7 @@
     const loginForm     = document.getElementById("loginForm");
     const loginError    = document.getElementById("loginError");
     const appPage       = document.getElementById("appPage");
-    const introProgressScreen = document.getElementById("introProgressScreen");
-    const introHeadline = document.getElementById("introHeadline");
     const loginHeadline = document.getElementById("loginHeadline");
-    const introProgressMessage = document.getElementById("introProgressMessage");
-    const introContinueBtn = document.getElementById("introContinueBtn");
-    const introConfetti = document.getElementById("introConfetti");
-    const introRings = Array.from(document.querySelectorAll(".intro-ring"));
-    const introStreakValue = document.getElementById("introStreakValue");
     const btnLogin      = document.getElementById("btnLogin");
     const btnRegister   = document.getElementById("btnRegister");
     const loginOkBtn    = document.getElementById("loginOkBtn");
@@ -4054,6 +3887,25 @@
     const reminderChecklistState = new Set();
     let reminderLastCompletedCount = null;
     let reminderPendingAction = "";
+    const REMINDER_MASCOT_FRAMES = Object.freeze({
+      idle: getAppAssetPath("pep_normal.png"),
+      open: getAppAssetPath("pep_smile.png"),
+      chew1: getAppAssetPath("pep_chew1.png"),
+      chew2: getAppAssetPath("pep_chew2.png"),
+      chew3: getAppAssetPath("pep_chew3.png")
+    });
+    const REMINDER_MASCOT_CHEW_SEQUENCE = Object.freeze([
+      REMINDER_MASCOT_FRAMES.open,
+      REMINDER_MASCOT_FRAMES.chew1,
+      REMINDER_MASCOT_FRAMES.chew2,
+      REMINDER_MASCOT_FRAMES.chew3,
+      REMINDER_MASCOT_FRAMES.chew2
+    ]);
+    let reminderMascotHoverState = false;
+    let reminderMascotIsChewing = false;
+    let reminderMascotChewIntervalId = null;
+    let reminderMascotChewTimeoutId = null;
+    let reminderMascotFramesPreloaded = false;
     const HABIT_ICON_TYPES = ["brain", "dumbbell", "shapes"];
     const THEME_MODE_STORAGE_KEY = "app_theme_mode_v1";
     const ENABLE_VERBOSE_CONSOLE = false;
@@ -4229,10 +4081,6 @@
     };
 
     let unreadNotificationCount = 0;
-
-    // Legacy Supabase notification polling removed (notifications are handled via Web Push/FCM).
-    function startNotificationPolling() {}
-    function stopNotificationPolling() {}
 
     const avatarOptions = [
       "https://raw.githubusercontent.com/lillyapp/lillyapp/main/avatar04.png",
@@ -4840,7 +4688,6 @@
     let deleteTimeout = null;
     let deletePanelVisible = false;
     const PERM_KEYS = {
-      notifications: "perm_notifications_asked_v1",
       motion: "perm_motion_asked_v1"
     };
 
@@ -4851,49 +4698,6 @@
       "#ea580c","#ca8a04","#4d7c0f","#15803d","#047857","#0f766e",
       "#0369a1","#1d4ed8","#4338ca","#6d28d9","#7e22ce","#be185d"
     ];
-
-    // ================================
-    // Motivational notification texts
-    // ================================
-
-    // When the user is behind (passive-aggressive but caring)
-    const MOTIVATION_TEXTS_TRAILING = [
-      "Heute war noch Luft nach oben. Morgen zählt wieder.",
-      "Du weißt selbst: Du kannst das besser. Und du wirst es zeigen.",
-      "Nicht schlimm. Aber wir beide wissen, dass da mehr drin ist.",
-      "Ein kleiner Hänger ist kein Rückschritt. Aufstehen lohnt sich.",
-      "Du bist nicht raus – du bist nur kurz langsamer.",
-      "Das Ziel ist noch da. Es wartet geduldig auf dich.",
-      "Kein Drama. Aber auch kein Grund stehenzubleiben.",
-      "Andere ziehen vorbei – noch. Das ist kein Urteil.",
-      "Du hast schon bewiesen, dass du es kannst.",
-      "Morgen ist ein verdammt guter Zeitpunkt, um zurückzukommen."
-    ];
-
-    // When the user is leading (positive reinforcement)
-    const MOTIVATION_TEXTS_LEADING = [
-      "Stark. Genau so entsteht Konstanz.",
-      "Du führst – und zwar verdient.",
-      "Das sieht nach echter Routine aus.",
-      "Sehr gut. Das ist kein Zufall mehr.",
-      "Du setzt gerade den Maßstab.",
-      "Sauber durchgezogen. Respekt.",
-      "So fühlt sich Dranbleiben an.",
-      "Du machst es vor. Weiter so.",
-      "Konsequent. Und genau deshalb vorne.",
-      "Das ist Momentum. Nutz es."
-    ];
-
-    // Helper to get a random text from a pool
-    function pickRandomMotivationText(pool) {
-      if (!Array.isArray(pool) || pool.length === 0) return "";
-      return pool[Math.floor(Math.random() * pool.length)];
-    }
-
-    async function requestNotificationPermissionOnce() {
-      // Legacy custom push flow removed. Push opt-in is handled from Settings (FCM).
-      localStorage.setItem(PERM_KEYS.notifications, "1");
-    }
 
     async function requestMotionPermissionOnce() {
       if (localStorage.getItem(PERM_KEYS.motion) === "1") return;
@@ -6720,7 +6524,6 @@
 
     if (logoutDesktopBtn) {
       logoutDesktopBtn.addEventListener("click", async () => {
-        stopNotificationPolling();
         try {
           await supabaseClient.auth.signOut();
         } catch (e) {
@@ -6776,13 +6579,6 @@
         });
       });
     }
-
-    if (introContinueBtn) {
-      introContinueBtn.addEventListener("click", async () => {
-        await proceedAfterIntro();
-      });
-    }
-
 
     function darken(hex, f=0.55) {
       let r = parseInt(hex.slice(1,3),16)*f|0;
@@ -7047,163 +6843,6 @@
         .replace(/'/g, "&#39;");
     }
 
-    function getIntroRingData() {
-      const fallbackColors = ["#ff2d55", "#34c759", "#0a84ff"];
-      const data = [];
-      for (let i = 0; i < 3; i++) {
-        const habit = habits[i];
-        const progress = habit ? parseInt(habit.progress) || 0 : 0;
-        const rawGoal = habit ? habit.goal : 0;
-        const goal = (rawGoal === null || rawGoal === undefined) ? 0 : parseInt(rawGoal) || 0;
-        const color = habit?.color || fallbackColors[i];
-        data.push({ progress, goal, color });
-      }
-      return data;
-    }
-
-    function animateIntroRings(ringData) {
-      if (!introRings.length) return;
-      introRings.forEach((ring, idx) => {
-        const { progress, goal, color } = ringData[idx] || {};
-        const pct = goal > 0 ? Math.min(progress / goal, 1) : 0;
-        const r = ring.r.baseVal.value;
-        const circumference = 2 * Math.PI * r;
-        ring.style.stroke = color || "#ffffff";
-        ring.style.strokeDasharray = `${circumference}`;
-        ring.style.strokeDashoffset = `${circumference * (1 - pct)}`;
-      });
-    }
-
-
-    function launchIntroConfetti() {
-      if (!introConfetti || !introProgressScreen) return;
-      introConfetti.innerHTML = "";
-      const colors = ["#ff2d55", "#34c759", "#0a84ff", "#ffd60a", "#ff9f0a"];
-      const rect = introProgressScreen.getBoundingClientRect();
-      const pieces = 70;
-      for (let i = 0; i < pieces; i++) {
-        const piece = document.createElement("div");
-        piece.className = "intro-confetti-piece";
-        piece.style.background = colors[i % colors.length];
-        piece.style.left = `${Math.random() * rect.width}px`;
-        piece.style.top = `${-20 - Math.random() * 40}px`;
-        introConfetti.appendChild(piece);
-
-        const drift = (Math.random() - 0.5) * 120;
-        gsap.to(piece, {
-          y: rect.height + 60,
-          x: drift,
-          rotation: Math.random() * 360,
-          duration: 1.8 + Math.random() * 1.2,
-          ease: "power1.in",
-          delay: Math.random() * 0.35,
-          onComplete: () => piece.remove()
-        });
-      }
-    }
-
-    async function showIntroProgressScreen() {
-      if (!introProgressScreen) {
-        showAppAfterDataLoaded();
-        return;
-      }
-
-      introFlowDone = false;
-      updateLoginOrbsFromHabits();
-      const ringData = getIntroRingData();
-      const allComplete = ringData.every(item => item.goal > 0 && item.progress >= item.goal);
-      const streakValue = currentUser ? await loadStreakForUser(currentUser.id) : 0;
-      const fallbackName = currentUser?.email ? currentUser.email.split("@")[0] : "da";
-      const displayName = currentUser?.user_metadata?.display_name || fallbackName;
-      const habitIds = habits.map(h => h.id).filter(Boolean);
-      const monthlyCounts = await loadHabitDayCountsForMonth(habitIds);
-      let compareLine = "";
-      let compareShouldUnderline = false;
-
-      if (introStreakValue) {
-        introStreakValue.textContent = `${streakValue}`;
-      }
-
-      if (introHeadline) {
-        introHeadline.textContent = `Hallo ${displayName}, lass uns kurz auf deinen Fortschritt schauen.`;
-      }
-
-      try {
-        let otherUserData = otherUser;
-        if (!otherUserData) {
-          otherUserData = await loadOtherUser();
-          otherUser = otherUserData;
-        }
-
-        if (otherUserData) {
-          const otherHabits = await loadHabitsForUser(otherUserData.id);
-          const myTotal = ringData.reduce((sum, item) => {
-            const goal = item.goal || 0;
-            const pct = goal > 0 ? Math.min(item.progress / goal, 1) : 0;
-            return sum + pct;
-          }, 0);
-          const otherTotal = otherHabits.reduce((sum, habit) => {
-            const progress = parseInt(habit.progress) || 0;
-            const rawGoal = habit.goal;
-            const goal = (rawGoal === null || rawGoal === undefined) ? 0 : parseInt(rawGoal) || 0;
-            const pct = goal > 0 ? Math.min(progress / goal, 1) : 0;
-            return sum + pct;
-          }, 0);
-          let compareWord = "gleichmäßig produktiv";
-          if (myTotal > otherTotal) {
-            compareWord = "produktiver";
-          } else if (myTotal < otherTotal) {
-            compareWord = "weniger produktiv";
-          }
-          const otherName = escapeHtml(otherUserData.display_name || "User2");
-          compareShouldUnderline = compareWord === "produktiver" || compareWord === "weniger produktiv";
-          const compareWordHtml = compareShouldUnderline
-            ? `<span class="intro-compare-highlight">${compareWord}<span class="intro-compare-underline"></span></span>`
-            : compareWord;
-          if (compareWord === "gleichmäßig produktiv") {
-            compareLine = `Du und ${otherName} sind gleichmäßig produktiv.`;
-          } else {
-            compareLine = `Du bist gerade ${compareWordHtml} als ${otherName}.`;
-          }
-        } else {
-          compareLine = "Du bist gerade produktiv im Vergleich zu User2.";
-        }
-      } catch (err) {
-        console.error("intro comparison error:", err);
-      }
-
-      if (introProgressMessage) {
-        const parts = habits.map(habit => {
-          const title = habit?.title ? escapeHtml(habit.title) : "Habit";
-          const count = monthlyCounts[habit.id] || 0;
-          const color = habit?.color || "var(--c-text)";
-          return `<span style="color:${color}">${count}x ${title}</span>`;
-        });
-        const compareHtml = compareLine ? `<div class="intro-compare">${compareLine}</div>` : "";
-        introProgressMessage.innerHTML = `Du hast diesen Monat ${parts.join(", ")} erledigt. Man merkt schon fast Konsistenz.${compareHtml}`;
-        if (compareShouldUnderline) {
-          const underlineEl = introProgressMessage.querySelector(".intro-compare-underline");
-          if (underlineEl) underlineEl.style.transform = "scaleX(1)";
-        }
-      }
-
-      introProgressScreen.style.display = "flex";
-      introProgressScreen.setAttribute("aria-hidden", "false");
-      introProgressScreen.style.opacity = "1";
-
-      if (loginScreen && loginScreen.style.display !== "none") {
-        gsap.to(loginScreen, {
-          opacity: 0,
-          duration: 0.35,
-          ease: "sine.inOut",
-          onComplete: () => { loginScreen.style.display = "none"; }
-        });
-      }
-
-      animateIntroRings(ringData);
-    }
-    
-
     function showAppAfterDataLoaded() {
       updateLoginOrbsFromHabits();
       appPage.style.display = "block";
@@ -7212,19 +6851,6 @@
         duration:0.5,
         ease:"sine.inOut"
       });
-
-      if (introProgressScreen) {
-        gsap.to(introProgressScreen, {
-          opacity: 0,
-          duration: 0.3,
-          ease: "sine.inOut",
-          onComplete: () => {
-            introProgressScreen.style.display = "none";
-            introProgressScreen.setAttribute("aria-hidden", "true");
-            introProgressScreen.style.opacity = "";
-          }
-        });
-      }
 
       if (loginScreen) {
         gsap.to(loginScreen, {
@@ -7482,43 +7108,6 @@ async function enforceUnlockedSessionOrLogout() {
   try { await supabaseClient.auth.signOut(); } catch (e) {}
   currentUser = null;
   return true;
-}
-
-async function waitForSupabaseVerifiedSession(timeoutMs = 10 * 60 * 1000, pollMs = 2000) {
-  return await new Promise((resolve) => {
-    let settled = false;
-    let intervalId = null;
-    let timeoutId = null;
-    let authSub = null;
-
-    const finish = (session) => {
-      if (settled) return;
-      settled = true;
-      try { if (intervalId) clearInterval(intervalId); } catch (e) {}
-      try { if (timeoutId) clearTimeout(timeoutId); } catch (e) {}
-      try { authSub?.subscription?.unsubscribe?.(); } catch (e) {}
-      resolve(session || null);
-    };
-
-    try {
-      const subRes = supabaseClient.auth.onAuthStateChange((event, session) => {
-        if (session?.user) finish(session);
-      });
-      authSub = subRes?.data || subRes;
-    } catch (e) {
-      debugLog("onAuthStateChange subscribe error:", e);
-    }
-
-    intervalId = setInterval(async () => {
-      if (settled) return;
-      try {
-        const { data } = await supabaseClient.auth.getSession();
-        if (data?.session?.user) finish(data.session);
-      } catch (e) {}
-    }, Math.max(800, pollMs));
-
-    timeoutId = setTimeout(() => finish(null), Math.max(3000, timeoutMs));
-  });
 }
 
 function setRegisterPinStep(unlocked) {
@@ -8076,8 +7665,6 @@ forgotPw.onclick = () => {
     // -------------------------------
     // Notifications / Push (legacy Supabase flow removed)
     // -------------------------------
-    async function ensurePushInfoRow() { return; }
-    
     async function loadUnreadNotificationCount() {
       unreadNotificationCount = 0;
       return 0;
@@ -8090,10 +7677,6 @@ forgotPw.onclick = () => {
     async function markAllNotificationsRead() {
       unreadNotificationCount = 0;
     }
-
-    async function registerPushSubscription() { return; }
-    
-    
     function refreshBellIcon() {
       if (!bellBtnEl) return;
 
@@ -9586,52 +9169,6 @@ forgotPw.onclick = () => {
     return { start, end };
   }
 
-  async function performStreakResetForUser(uid) {
-    const habits = await loadHabitsForUser(uid);
-
-    const allFull =
-      habits.length === 3 &&
-      habits.every(h => {
-        if (h.qr_enabled === true || h.qr_enabled === "true") return false;
-        const goal = h.goal || 0;
-        return goal > 0 && h.progress >= goal;
-      });
-
-    const { data: streakRow, error: readErr } = await supabaseClient
-      .from("streak_view")
-      .select("current_streak, longest_streak")
-      .eq("user_id", uid)
-      .single();
-
-    if (readErr) {
-      console.error("streak read error", readErr);
-      return;
-    }
-
-    const current = streakRow?.current_streak ?? 0;
-    const longest = streakRow?.longest_streak ?? 0;
-
-    const nextCurrent = allFull ? current + 1 : 0;
-    const nextLongest = Math.max(longest, nextCurrent);
-
-    await supabaseClient
-      .from("streak_view")
-      .upsert(
-        {
-          user_id: uid,
-          current_streak: nextCurrent,
-          longest_streak: nextLongest,
-          last_update: new Date().toISOString()
-        },
-        { onConflict: "user_id" }
-      );
-
-    await supabaseClient.rpc(
-      "reset_progress_for_users",
-      { uids: [uid] }
-    );
-  }
-
   async function checkStreakResetGate() {
     const { start, end } = getWeekRange();
     const startStr = getLocalDateString(start);
@@ -10231,15 +9768,6 @@ forgotPw.onclick = () => {
       return [item.id];
     }
 
-    function getReminderCount(item) {
-      const ids = getReminderIds(item);
-      return ids.reduce((sum, id) => sum + (reminderChecklistState.has(id) ? 1 : 0), 0);
-    }
-
-    function isReminderComplete(item) {
-      return getReminderCount(item) >= getReminderTarget(item);
-    }
-
     function getReminderTokens() {
       const tokens = [];
       reminderChecklistItems.forEach(item => {
@@ -10276,10 +9804,6 @@ forgotPw.onclick = () => {
         group.count += 1;
       });
       return Array.from(groups.values());
-    }
-
-    function getReminderCompletedCount(tokens = getReminderTokens()) {
-      return tokens.reduce((sum, token) => sum + (reminderChecklistState.has(token.dbId) ? 1 : 0), 0);
     }
 
     function getReminderTotalTarget() {
@@ -10322,6 +9846,79 @@ forgotPw.onclick = () => {
       return spots[index % spots.length];
     }
 
+    function getReminderMascotImgEl() {
+      return notificationsViewEl?.querySelector("#reminderMascotImg") || null;
+    }
+
+    function preloadReminderMascotFrames() {
+      if (reminderMascotFramesPreloaded) return;
+      reminderMascotFramesPreloaded = true;
+      const frameUrls = [
+        REMINDER_MASCOT_FRAMES.idle,
+        REMINDER_MASCOT_FRAMES.open,
+        REMINDER_MASCOT_FRAMES.chew1,
+        REMINDER_MASCOT_FRAMES.chew2,
+        REMINDER_MASCOT_FRAMES.chew3
+      ];
+      frameUrls.forEach((src) => {
+        if (!src) return;
+        const img = new Image();
+        img.src = src;
+      });
+    }
+
+    function setReminderMascotFrame(src, state = "") {
+      const mascotImg = getReminderMascotImgEl();
+      if (!mascotImg || !src) return;
+      if (mascotImg.getAttribute("src") !== src) mascotImg.setAttribute("src", src);
+      if (state) mascotImg.dataset.state = state;
+    }
+
+    function stopReminderMascotChew({ keepHoverState = true } = {}) {
+      if (reminderMascotChewIntervalId) {
+        clearInterval(reminderMascotChewIntervalId);
+        reminderMascotChewIntervalId = null;
+      }
+      if (reminderMascotChewTimeoutId) {
+        clearTimeout(reminderMascotChewTimeoutId);
+        reminderMascotChewTimeoutId = null;
+      }
+      reminderMascotIsChewing = false;
+      const shouldOpen = keepHoverState && reminderMascotHoverState;
+      setReminderMascotFrame(
+        shouldOpen ? REMINDER_MASCOT_FRAMES.open : REMINDER_MASCOT_FRAMES.idle,
+        shouldOpen ? "open" : "idle"
+      );
+    }
+
+    function updateReminderMascotHoverState(isHovering) {
+      reminderMascotHoverState = Boolean(isHovering);
+      if (reminderMascotIsChewing) return;
+      setReminderMascotFrame(
+        reminderMascotHoverState ? REMINDER_MASCOT_FRAMES.open : REMINDER_MASCOT_FRAMES.idle,
+        reminderMascotHoverState ? "open" : "idle"
+      );
+    }
+
+    function playReminderMascotChew() {
+      preloadReminderMascotFrames();
+      stopReminderMascotChew({ keepHoverState: false });
+      reminderMascotIsChewing = true;
+      let frameIndex = 0;
+
+      const tick = () => {
+        const frameSrc = REMINDER_MASCOT_CHEW_SEQUENCE[frameIndex % REMINDER_MASCOT_CHEW_SEQUENCE.length];
+        setReminderMascotFrame(frameSrc, "chew");
+        frameIndex += 1;
+      };
+
+      tick();
+      reminderMascotChewIntervalId = setInterval(tick, 120);
+      reminderMascotChewTimeoutId = setTimeout(() => {
+        stopReminderMascotChew({ keepHoverState: true });
+      }, 950);
+    }
+
     async function runReminderRenderTransition(renderFn) {
       const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
       if (!reduceMotion && typeof document.startViewTransition === "function") {
@@ -10337,6 +9934,7 @@ forgotPw.onclick = () => {
     function animateReminderRender(completedCount) {
       const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
       if (reduceMotion || !notificationsViewEl) {
+        updateReminderMascotHoverState(false);
         reminderLastCompletedCount = completedCount;
         reminderPendingAction = "";
         return;
@@ -10381,6 +9979,14 @@ forgotPw.onclick = () => {
         dropZoneEl.classList.remove("reminder-pop-complete", "reminder-pop-undo");
         void dropZoneEl.offsetWidth;
         dropZoneEl.classList.add(className);
+      }
+
+      if (reminderPendingAction === "complete") {
+        playReminderMascotChew();
+      } else if (reminderPendingAction === "undo") {
+        stopReminderMascotChew({ keepHoverState: false });
+      } else {
+        updateReminderMascotHoverState(false);
       }
 
       reminderLastCompletedCount = completedCount;
@@ -10438,6 +10044,16 @@ forgotPw.onclick = () => {
         <div class="reminder-pane">
           <div class="reminder-game">
             <div class="reminder-drop-zone" id="reminderDropZone">
+              <div class="reminder-drop-mascot-wrap" id="reminderMascotWrap" aria-hidden="true">
+                <img
+                  id="reminderMascotImg"
+                  class="reminder-drop-mascot-img"
+                  src="${REMINDER_MASCOT_FRAMES.idle}"
+                  alt=""
+                  draggable="false"
+                  loading="eager"
+                />
+              </div>
               <div class="reminder-drop-items" id="reminderDropItems">
                 ${completedHtml || `<div class="reminder-drop-hint">Hierher ziehen</div>`}
               </div>
@@ -10458,6 +10074,8 @@ forgotPw.onclick = () => {
         dropZoneEl.style.setProperty("--drop-c2", c2);
         dropZoneEl.style.setProperty("--drop-c3", c3);
       }
+      preloadReminderMascotFrames();
+      updateReminderMascotHoverState(false);
       const attachReminderTokenDrag = (tokenEl, { fromDropZone = false } = {}) => {
         const onPointerDown = (event) => {
           if (!dropZoneEl) return;
@@ -10503,12 +10121,14 @@ forgotPw.onclick = () => {
             const dropRect = dropZoneEl.getBoundingClientRect();
             const ghostOverDrop = isPointInRect(center.x, center.y, dropRect);
             dropZoneEl.classList.toggle("is-active", ghostOverDrop);
+            updateReminderMascotHoverState(ghostOverDrop);
           };
 
           let dragFinished = false;
           const cleanupDrag = () => {
             tokenEl.classList.remove("is-dragging-source");
             dropZoneEl.classList.remove("is-active");
+            updateReminderMascotHoverState(false);
             tokenEl.removeEventListener("pointermove", onPointerMove);
             tokenEl.removeEventListener("pointerup", onPointerUp);
             tokenEl.removeEventListener("pointercancel", onPointerCancel);
@@ -11260,10 +10880,6 @@ forgotPw.onclick = () => {
     deleteAllHabits();
   });
 
-  deletePanel.addEventListener("click", () => {
-    // Optional: hier könnte man das Timeout abbrechen etc.
-  });
-
   // Login-Kreis schwebend animieren
 
   /*
@@ -11279,21 +10895,6 @@ forgotPw.onclick = () => {
     
     // requestAllPermissions removed: permissions are now requested via intro flow only.
     
-    function urlBase64ToUint8Array(base64String) {
-      const padding = '='.repeat((4 - base64String.length % 4) % 4);
-      const base64 = (base64String + padding)
-        .replace(/-/g, '+')
-        .replace(/_/g, '/');
-
-      const rawData = atob(base64);
-      const outputArray = new Uint8Array(rawData.length);
-
-      for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-      }
-      return outputArray;
-    }
-
      // Auto permission + push subscribe removed; handled in intro flow.
     
     function getQRParam() {
