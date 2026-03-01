@@ -6261,12 +6261,7 @@
           const nextEnabled = btn.dataset.soundMode === "on";
           if (nextEnabled === getStoredSoundEnabled()) return;
           setStoredSoundEnabled(nextEnabled);
-          if (!nextEnabled && reminderEatingAudio) {
-            try {
-              reminderEatingAudio.pause();
-              reminderEatingAudio.currentTime = 0;
-            } catch (_) {}
-          }
+          if (!nextEnabled) stopReminderEatingSound();
           settingsViewEl.querySelectorAll("[data-sound-mode]").forEach(b => {
             const isOn = b.dataset.soundMode === "on";
             b.classList.toggle("is-active", isOn === nextEnabled);
@@ -10409,6 +10404,59 @@ forgotPw.onclick = () => {
       });
     }
 
+    function isIOSLikeDevice() {
+      const ua = navigator.userAgent || "";
+      const isIOS = /iPad|iPhone|iPod/.test(ua);
+      const isIPadOS = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+      return isIOS || isIPadOS;
+    }
+
+    function clearReminderMediaSession() {
+      if (!("mediaSession" in navigator)) return;
+      try { navigator.mediaSession.metadata = null; } catch (_) {}
+      try { navigator.mediaSession.playbackState = "none"; } catch (_) {}
+    }
+
+    function getReminderEatingAudioContext() {
+      if (reminderEatingAudioCtx) return reminderEatingAudioCtx;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      try {
+        reminderEatingAudioCtx = new Ctx();
+      } catch (_) {
+        reminderEatingAudioCtx = null;
+      }
+      return reminderEatingAudioCtx;
+    }
+
+    function loadReminderEatingAudioBuffer() {
+      if (!REMINDER_EATING_SOUND_SRC) return Promise.resolve(null);
+      if (reminderEatingAudioBufferPromise) return reminderEatingAudioBufferPromise;
+      const ctx = getReminderEatingAudioContext();
+      if (!ctx) return Promise.resolve(null);
+      reminderEatingAudioBufferPromise = fetch(REMINDER_EATING_SOUND_SRC)
+        .then((res) => res.arrayBuffer())
+        .then((buf) => new Promise((resolve, reject) => {
+          ctx.decodeAudioData(buf, resolve, reject);
+        }))
+        .catch(() => null);
+      return reminderEatingAudioBufferPromise;
+    }
+
+    function stopReminderEatingSound() {
+      if (reminderEatingSourceNode) {
+        try { reminderEatingSourceNode.stop(0); } catch (_) {}
+        reminderEatingSourceNode = null;
+      }
+      if (reminderEatingAudio) {
+        try {
+          reminderEatingAudio.pause();
+          reminderEatingAudio.currentTime = 0;
+        } catch (_) {}
+      }
+      clearReminderMediaSession();
+    }
+
     function getReminderEatingAudio() {
       if (!REMINDER_EATING_SOUND_SRC) return null;
       if (reminderEatingAudio) return reminderEatingAudio;
@@ -10417,6 +10465,9 @@ forgotPw.onclick = () => {
         audio.preload = "auto";
         audio.volume = 0.72;
         audio.playsInline = true;
+        audio.disableRemotePlayback = true;
+        audio.setAttribute("x-webkit-airplay", "deny");
+        audio.addEventListener("ended", clearReminderMediaSession);
         reminderEatingAudio = audio;
       } catch (_) {
         reminderEatingAudio = null;
@@ -10426,6 +10477,10 @@ forgotPw.onclick = () => {
 
     function preloadReminderEatingSound() {
       if (!getStoredSoundEnabled()) return;
+      if (isIOSLikeDevice()) {
+        loadReminderEatingAudioBuffer().catch(() => {});
+        return;
+      }
       const audio = getReminderEatingAudio();
       if (!audio) return;
       try {
@@ -10435,6 +10490,32 @@ forgotPw.onclick = () => {
 
     function playReminderEatingSound() {
       if (!getStoredSoundEnabled()) return;
+      if (isIOSLikeDevice()) {
+        const ctx = getReminderEatingAudioContext();
+        if (!ctx) return;
+        if (ctx.state === "suspended") {
+          ctx.resume().catch(() => {});
+        }
+        loadReminderEatingAudioBuffer().then((buffer) => {
+          if (!buffer || !ctx) return;
+          if (reminderEatingSourceNode) {
+            try { reminderEatingSourceNode.stop(0); } catch (_) {}
+          }
+          const source = ctx.createBufferSource();
+          const gain = ctx.createGain();
+          gain.gain.value = 0.72;
+          source.buffer = buffer;
+          source.connect(gain);
+          gain.connect(ctx.destination);
+          reminderEatingSourceNode = source;
+          source.onended = () => {
+            if (reminderEatingSourceNode === source) reminderEatingSourceNode = null;
+            clearReminderMediaSession();
+          };
+          try { source.start(0); } catch (_) {}
+        }).catch(() => {});
+        return;
+      }
       const audio = getReminderEatingAudio();
       if (!audio) return;
       try {
