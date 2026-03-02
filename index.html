@@ -2615,34 +2615,6 @@
     .stats-streak.is-winner .stats-streak-shine {
       animation: streakShine 5s ease-in-out 0.1s both;
     }
-    .stats-streak.is-loser .stats-streak-clouds {
-      display: inline-flex;
-    }
-    .stats-streak-clouds {
-      position: absolute;
-      right: 10px;
-      top: -28px;
-      display: none;
-      width: 52px;
-      height: 38px;
-      z-index: 2;
-    }
-    .stats-streak-clouds .stats-cloud {
-      position: absolute;
-      inset: 0;
-      width: 52px;
-      height: 38px;
-      opacity: 0;
-      object-fit: contain;
-      filter: drop-shadow(0 1px 0 rgba(0,0,0,0.08));
-      animation: cloudFlash 5s ease both;
-    }
-    .stats-streak-clouds .stats-cloud:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-    .stats-streak-clouds .stats-cloud:nth-child(3) {
-      animation-delay: 0.4s;
-    }
     @keyframes streakPop {
       0% { transform: scale(0.92); }
       60% { transform: scale(1.03); }
@@ -2656,12 +2628,6 @@
     @keyframes streakPopOut {
       0% { transform: scale(1); opacity: 1; }
       100% { transform: scale(0.92); opacity: 0; }
-    }
-    @keyframes cloudFlash {
-      0% { opacity: 0; transform: scale(0.9); }
-      8% { opacity: 0.95; transform: scale(1); }
-      18% { opacity: 0; transform: scale(1.05); }
-      100% { opacity: 0; transform: scale(1.05); }
     }
     .stat-item { margin-bottom:18px; }
     .stats-panel-toggle {
@@ -11105,15 +11071,10 @@ forgotPw.onclick = () => {
               ${myName}
             </div>
           </div>
-          <div class="stats-streak ${winnerKey === "me" ? "is-winner" : ""} ${loserKey === "me" ? "is-loser" : ""}" data-streak="me">
+          <div class="stats-streak ${winnerKey === "me" ? "is-winner" : ""}" data-streak="me">
             <span class="stats-streak-shine" aria-hidden="true"></span>
             <span class="stats-streak-icon"><i data-lucide="goal"></i></span>
             <span class="stats-streak-value">${myStreakValue}</span>
-            <span class="stats-streak-clouds" aria-hidden="true">
-              <img class="stats-cloud" src="${GITHUB_ASSET_BASE}/cloud1.png" alt="" />
-              <img class="stats-cloud" src="${GITHUB_ASSET_BASE}/cloud2.png" alt="" />
-              <img class="stats-cloud" src="${GITHUB_ASSET_BASE}/cloud3.png" alt="" />
-            </span>
           </div>
 
         </div>
@@ -11180,15 +11141,10 @@ forgotPw.onclick = () => {
                 <i data-lucide="star"></i>
               </button>
             </div>
-            <div class="stats-streak ${winnerKey === "other" ? "is-winner" : ""} ${loserKey === "other" ? "is-loser" : ""}" data-streak="other">
+            <div class="stats-streak ${winnerKey === "other" ? "is-winner" : ""}" data-streak="other">
               <span class="stats-streak-shine" aria-hidden="true"></span>
               <span class="stats-streak-icon"><i data-lucide="goal"></i></span>
               <span class="stats-streak-value">${otherStreakValue}</span>
-              <span class="stats-streak-clouds" aria-hidden="true">
-                <img class="stats-cloud" src="${GITHUB_ASSET_BASE}/cloud1.png" alt="" />
-                <img class="stats-cloud" src="${GITHUB_ASSET_BASE}/cloud2.png" alt="" />
-                <img class="stats-cloud" src="${GITHUB_ASSET_BASE}/cloud3.png" alt="" />
-              </span>
             </div>
           </div>
         `;
@@ -11265,7 +11221,7 @@ forgotPw.onclick = () => {
 
       statsViewEl.innerHTML = html;
       lucide.createIcons({ scope: statsViewEl });
-      const streakHighlights = statsViewEl.querySelectorAll(".stats-streak.is-winner, .stats-streak.is-loser");
+      const streakHighlights = statsViewEl.querySelectorAll(".stats-streak.is-winner");
       if (streakHighlights.length) {
         setTimeout(() => {
           streakHighlights.forEach(el => {
@@ -11274,9 +11230,6 @@ forgotPw.onclick = () => {
               setTimeout(() => {
                 el.classList.remove("is-winner", "is-winner-out");
               }, 320);
-            }
-            if (el.classList.contains("is-loser")) {
-              el.classList.remove("is-loser");
             }
           });
         }, 5000);
