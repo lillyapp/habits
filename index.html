@@ -2570,10 +2570,87 @@
       font-size:var(--stats-streak-size);
       font-weight:700;
       line-height:1;
+      position: relative;
     }
     .stats-streak-icon {
       width:0.9em;
       height:0.9em;
+    }
+    .stats-streak.is-winner {
+      background: #facc15;
+      border: 2px solid #000;
+      border-radius: 999px;
+      padding: 6px 12px;
+      color: #000;
+      overflow: hidden;
+      animation: streakPop 0.45s ease;
+    }
+    .stats-streak.is-winner .stats-streak-icon svg,
+    .stats-streak.is-winner .stats-streak-icon i {
+      color: #000;
+      stroke: #000;
+    }
+    .stats-streak-shine {
+      position: absolute;
+      top: -40%;
+      left: -60%;
+      width: 55%;
+      height: 190%;
+      border-radius: 999px;
+      background: linear-gradient(
+        100deg,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0.22) 34%,
+        rgba(255,255,255,0.78) 50%,
+        rgba(255,255,255,0.22) 66%,
+        rgba(255,255,255,0) 100%
+      );
+      transform: translateX(-180%) rotate(10deg);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .stats-streak.is-winner .stats-streak-shine {
+      animation: streakShine 1.1s ease-in-out 0.1s both;
+    }
+    .stats-streak.is-loser .stats-streak-clouds {
+      display: inline-flex;
+    }
+    .stats-streak-clouds {
+      position: absolute;
+      right: 6px;
+      top: -14px;
+      display: none;
+      gap: 2px;
+      z-index: 2;
+    }
+    .stats-streak-clouds .stats-cloud {
+      width: 12px;
+      height: 12px;
+      opacity: 0;
+      object-fit: contain;
+      filter: drop-shadow(0 1px 0 rgba(0,0,0,0.08));
+      animation: cloudFlash 0.7s ease both;
+    }
+    .stats-streak-clouds .stats-cloud:nth-child(2) {
+      animation-delay: 0.12s;
+    }
+    .stats-streak-clouds .stats-cloud:nth-child(3) {
+      animation-delay: 0.24s;
+    }
+    @keyframes streakPop {
+      0% { transform: scale(0.92); }
+      60% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+    @keyframes streakShine {
+      0% { transform: translateX(-180%) rotate(10deg); opacity: 0; }
+      35% { opacity: 0.8; }
+      100% { transform: translateX(260%) rotate(10deg); opacity: 0; }
+    }
+    @keyframes cloudFlash {
+      0% { opacity: 0; transform: translateY(6px); }
+      35% { opacity: 0.9; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-4px); }
     }
     .stat-item { margin-bottom:18px; }
     .stats-panel-toggle {
@@ -2619,6 +2696,12 @@
       justify-content:space-between;
       gap:10px;
       margin-bottom:12px;
+    }
+    .stats-user-left {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      min-width:0;
     }
 
     .stats-fav-user-btn {
@@ -3835,18 +3918,6 @@
         object-fit:cover;
         display:block;
       }
-    /* ================================
-       Hide streak indicators (visual only)
-       ================================ */
-    .streak,
-    .streak-value,
-    .streak-counter,
-    [data-streak],
-    #streakView,
-    #streakCounter,
-    .streak-badge {
-      display: none !important;
-    }
   </style>
   <!-- Counter positioning fix for expanded/front mode -->
   <!-- (removed previous override, see below for new state-based CSS) -->
@@ -9572,10 +9643,27 @@ forgotPw.onclick = () => {
       end_date: endStr
     });
 
-    if (error) {
+    if (error && error.code !== "23505") {
       console.error("checkStreakResetGate rpc error:", error);
     }
   }
+
+  window.triggerWeeklyStreakReset = async (dateStr = "") => {
+    const baseDate = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
+    if (Number.isNaN(baseDate.getTime())) {
+      return { ok: false, error: "Invalid date. Use YYYY-MM-DD." };
+    }
+    const { start, end } = getWeekRange(baseDate);
+    const startStr = getLocalDateString(start);
+    const endStr = getLocalDateString(end);
+    const { error } = await supabaseClient.rpc("check_streak_reset_weekly", {
+      start_date: startStr,
+      end_date: endStr
+    });
+    if (error && error.code !== "23505") return { ok: false, start: startStr, end: endStr, error };
+    if (error && error.code === "23505") return { ok: true, start: startStr, end: endStr, note: "already reset" };
+    return { ok: true, start: startStr, end: endStr };
+  };
 
   async function checkReminderResetDaily() {
     const day = getLocalDateString();
@@ -10979,6 +11067,15 @@ forgotPw.onclick = () => {
         loadStreakForUserCached(currentUser.id),
         otherUserData ? loadStreakForUserCached(otherUserData.id) : Promise.resolve(null)
       ]);
+      const myStreakValue = parseInt(myStreak || 0) || 0;
+      const otherStreakValue = parseInt(otherStreak || 0) || 0;
+      const hasStreakComparison = Boolean(otherUserData);
+      const winnerKey = hasStreakComparison && myStreakValue !== otherStreakValue
+        ? (myStreakValue > otherStreakValue ? "me" : "other")
+        : "";
+      const loserKey = hasStreakComparison && winnerKey
+        ? (winnerKey === "me" ? "other" : "me")
+        : "";
 
       let html = "";
 
@@ -10996,6 +11093,16 @@ forgotPw.onclick = () => {
             <div id="editableName" class="stats-name" style="line-height:1; margin:0; padding:0; cursor:pointer;">
               ${myName}
             </div>
+          </div>
+          <div class="stats-streak ${winnerKey === "me" ? "is-winner" : ""} ${loserKey === "me" ? "is-loser" : ""}" data-streak="me">
+            <span class="stats-streak-shine" aria-hidden="true"></span>
+            <span class="stats-streak-icon"><i data-lucide="goal"></i></span>
+            <span class="stats-streak-value">${myStreakValue}</span>
+            <span class="stats-streak-clouds" aria-hidden="true">
+              <img class="stats-cloud" src="${GITHUB_ASSET_BASE}/cloud1.png" alt="" />
+              <img class="stats-cloud" src="${GITHUB_ASSET_BASE}/cloud2.png" alt="" />
+              <img class="stats-cloud" src="${GITHUB_ASSET_BASE}/cloud3.png" alt="" />
+            </span>
           </div>
 
         </div>
@@ -11050,16 +11157,28 @@ forgotPw.onclick = () => {
 
         html += `
           <div class="stats-user-head">
-            <div class="stats-name-row">
-              <div class="stats-name" style="
-                line-height:1;
-                margin:0;
-                padding:0;
-              ">${otherName}</div>
+            <div class="stats-user-left">
+              <div class="stats-name-row">
+                <div class="stats-name" style="
+                  line-height:1;
+                  margin:0;
+                  padding:0;
+                ">${otherName}</div>
+              </div>
+              <button type="button" class="stats-fav-user-btn is-active" data-stats-favorite-user="${otherUserId}" aria-label="Als zweiten Nutzer merken" title="Als zweiten Nutzer merken">
+                <i data-lucide="star"></i>
+              </button>
             </div>
-            <button type="button" class="stats-fav-user-btn is-active" data-stats-favorite-user="${otherUserId}" aria-label="Als zweiten Nutzer merken" title="Als zweiten Nutzer merken">
-              <i data-lucide="star"></i>
-            </button>
+            <div class="stats-streak ${winnerKey === "other" ? "is-winner" : ""} ${loserKey === "other" ? "is-loser" : ""}" data-streak="other">
+              <span class="stats-streak-shine" aria-hidden="true"></span>
+              <span class="stats-streak-icon"><i data-lucide="goal"></i></span>
+              <span class="stats-streak-value">${otherStreakValue}</span>
+              <span class="stats-streak-clouds" aria-hidden="true">
+                <img class="stats-cloud" src="${GITHUB_ASSET_BASE}/cloud1.png" alt="" />
+                <img class="stats-cloud" src="${GITHUB_ASSET_BASE}/cloud2.png" alt="" />
+                <img class="stats-cloud" src="${GITHUB_ASSET_BASE}/cloud3.png" alt="" />
+              </span>
+            </div>
           </div>
         `;
 
@@ -11090,12 +11209,14 @@ forgotPw.onclick = () => {
           html += `
             <div class="stats-extra-user-item${idx >= extraVisibleStep ? " is-hidden" : ""}" data-extra-user-index="${idx}">
               <div class="stats-user-head">
-                <div class="stats-name-row">
-                  <div class="stats-name" style="line-height:1; margin:0; padding:0; font-size:1.35rem;">${escapeHtml(name)}</div>
+                <div class="stats-user-left">
+                  <div class="stats-name-row">
+                    <div class="stats-name" style="line-height:1; margin:0; padding:0; font-size:1.35rem;">${escapeHtml(name)}</div>
+                  </div>
+                  <button type="button" class="stats-fav-user-btn" data-stats-favorite-user="${userId}" aria-label="Als zweiten Nutzer merken" title="Als zweiten Nutzer merken">
+                    <i data-lucide="star"></i>
+                  </button>
                 </div>
-                <button type="button" class="stats-fav-user-btn" data-stats-favorite-user="${userId}" aria-label="Als zweiten Nutzer merken" title="Als zweiten Nutzer merken">
-                  <i data-lucide="star"></i>
-                </button>
               </div>
               <div class="stats-user-panel">
                 ${barsHtml(entry.habits || [], `otherList-${idx}`)}
